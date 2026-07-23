@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="LabelDecisionApp.Console/LabelDecisionApp.Console.csproj" />
+  <Project Path="LabelDecisionApp.Integration/LabelDecisionApp.Integration.csproj" />
+  <Project Path="LabelDecisionApp.Tests/LabelDecisionApp.Tests.csproj" />
+  <Project Path="LabelDecisionApp.Worker/LabelDecisionApp.Worker.csproj" />
+  <Project Path="LabelDecisionApp.CartonUi/LabelDecisionApp.CartonUi.csproj" />
+</Solution>
