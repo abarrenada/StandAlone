@@ -1,0 +1,3 @@
+# Configuration flag: Enable two primary items per setup
+# When this file exists, the startup form shows both "Primary Item" and "2nd Primary Item" fields
+# (Only applies when DoesManStk flag is also enabled and not in Mexico mode)

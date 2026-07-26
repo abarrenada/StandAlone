@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="StandAlone.Console/StandAlone.Console.csproj" />
+  <Project Path="StandAlone.Integration/StandAlone.Integration.csproj" />
+  <Project Path="StandAlone.Tests/StandAlone.Tests.csproj" />
+  <Project Path="StandAlone.Worker/StandAlone.Worker.csproj" />
+  <Project Path="StandAlone.CartonUi/StandAlone.CartonUi.csproj" />
+</Solution>

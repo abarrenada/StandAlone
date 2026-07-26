@@ -121,113 +121,169 @@ LineId,StackNum,IRef,PlcMsg,Shade,Size,ErrMsg
 
 ## 3. itemdet.csv — US Item Master Data
 
-**Purpose**: Item catalog for **US/non-Mexico items**. Lookup table by `IRef`.
+**Purpose**: Item catalog for **US/non-Mexico items**. Complete data from Progress `itemdet` + `itemhdr` tables.
 
 **Location**: `C:\LabelPrint\data\` (configurable in Settings)
 
 **Filename**: `itemdet.csv` (shared, not line-specific)
 
-**Columns** (in order):
+**Columns** (43 total, see CSV_FILES_GUIDE_ENHANCED.md for complete list):
 
 | Column | Type | Example | Notes |
 |--------|------|---------|-------|
-| **IRef** | Integer | 42 | Item reference ID (primary key) |
-| **ItemNumber** | String | "SKU-12345" | Item/SKU number |
-| **LisQty** | Integer | 24 | Quantity per label/case |
+| **IRef** | Integer | 615229 | Item reference ID (primary key) |
+| **ItemNumber** | String | "FL9036MOD1P4" | Item/SKU number |
+| **LisQty** | Integer | 100 | Quantity per label/case |
+| **SalesQty** | Decimal | 12.5 | Sales quantity per package |
+| **SalesUOM** | String | "SF" | Sales unit of measure |
+| **PkgWeight** | Decimal | 37.5 | Package weight in lbs |
+| ... | ... | ... | (33 additional fields from itemdet + itemhdr) |
+| **ColorDesc** | String | "FL90-WHITE" | Color description (for Primary Item display) |
+| **ShapeDesc** | String | "3 X 6 X 0.31 IN" | Shape/size description (for Primary Item display) |
+| **SeriesDesc** | String | "FINISH LINE" | Series name (for Primary Item display) |
 
-**Format**: Comma-separated values (CSV)
+**Format**: Comma-separated values (CSV), UTF-8 encoding
 
-**Header**:
+**Header** (full 43-column header — see CSV_FILES_GUIDE_ENHANCED.md):
 ```
-IRef,ItemNumber,LisQty
+IRef,ItemNumber,LisQty,SalesQty,SalesUOM,PkgWeight,CartonUPC_NumSys,CartonUPC_Mfg,CartonUPC_Prod,CartonUPC_Chkdgt,CustomerChar,Grade,PkgIndicator,CardPrinter,LISDescription,Shade,BoxesPerPallet,NeedPalletLabel,Company,Status,Extract,ColorDesc,ShapeDesc,SeriesDesc,Brand,TypeOfTile,ColorId,SizeShape,WmsUOM,Plant,ProductType,SingleUPC_NumSys,SingleUPC_Mfg,SingleUPC_Prod,SingleUPC_Chkdgt,PEI,WA,COF,Tone,CreateUser,UpdateUser,CreateDate,UpdateDate,LabelTypeCode
 ```
 
-**Example Data**:
+**Example Row**:
 ```csv
-IRef,ItemNumber,LisQty
-1,ABC-001,12
-2,ABC-002,12
-15,XYZ-100,24
-28,PQR-050,6
-42,LMN-999,12
-99,UNKNOWN,0
+615229,FL9036MOD1P4,100,12.5,SF,37.5,0,81516,63098,1,"",1,1,"","FLSH",555,45,true,"DT","A","",FL90-WHITE,3 X 6 X 0.31 IN,FINISH LINE,DB,PRC,FL90,3X6,BX,610,"",0,81516,63098,1,3,8.5,0.67,N,admin,admin,2026-01-15,2026-07-20,0
 ```
 
 **Key Notes**:
 - Used when stacker `PlcMsg` position 33-34 is NOT "M-"
 - `IRef` values must match those in `stackers{NN}.csv` / `boxes{NN}.csv`
 - `ItemNumber` is displayed on labels and in the Browse grid
+- **NEW**: Primary Item field in startup form displays description as: `ColorDesc | ShapeDesc | SeriesDesc`
+  - Example: `FL90-WHITE | 3 X 6 X 0.31 IN | FINISH LINE`
 - `LisQty` = quantity per label (used for multi-part labels or case packing)
+- All 43 columns required for complete NiceLabel XML export and item data
 - If `IRef` not found, item displays as "(Unknown)"
+
+**Backward Compatibility**:
+- CSV parser auto-detects column count
+- Legacy 3-column format (IRef, ItemNumber, LisQty) still supported
+- New 43-column format recommended for production
 
 ---
 
 ## 4. mitemdet.csv — Mexico Item Master Data
 
-**Purpose**: Item catalog for **Mexico items only**. Lookup table by `IRef`.
+**Purpose**: Item catalog for **Mexico items only**. Complete data from Progress `itemdet` + `itemhdr` tables.
 
 **Location**: `C:\LabelPrint\data\` (configurable in Settings)
 
 **Filename**: `mitemdet.csv` (shared, not line-specific)
 
-**Columns** (in order):
+**Columns** (43 total, identical structure to itemdet.csv):
 
 | Column | Type | Example | Notes |
 |--------|------|---------|-------|
 | **IRef** | Integer | 50 | Item reference ID (primary key) |
 | **ItemNumber** | String | "MEX-12345" | Item/SKU number (Mexico variant) |
 | **LisQty** | Integer | 12 | Quantity per label/case |
+| ... | ... | ... | (40 additional fields, same as itemdet.csv) |
 
-**Format**: Comma-separated values (CSV)
+**Format**: Comma-separated values (CSV), UTF-8 encoding
 
-**Header**:
+**Header** (identical to itemdet.csv, 43 columns):
 ```
-IRef,ItemNumber,LisQty
+IRef,ItemNumber,LisQty,SalesQty,SalesUOM,...ColorDesc,ShapeDesc,SeriesDesc,...
 ```
 
 **Example Data**:
 ```csv
-IRef,ItemNumber,LisQty
-50,MEX-001,12
-51,MEX-002,6
-52,MEX-003,24
+50,MEX-001,12,12.0,SF,...FL90-WHITE,3 X 6 X 0.31 IN,FINISH LINE,...
+51,MEX-002,6,8.0,PC,...WHITE,CLASSIC,STANDARD,...
+52,MEX-003,24,15.0,SF,...NATURAL,TILE,COLLECTION,...
 ```
 
 **Key Notes**:
 - Used when stacker `PlcMsg` position 33-34 == "M-"
-- Structure identical to `itemdet.csv`; kept separate for sourcing/audit purposes
+- Structure identical to `itemdet.csv` (43 columns); kept separate for sourcing/audit purposes
 - If Mexico mode is disabled (config flag `DoesMexico` = false), this file is not read
 - `IRef` values in Mexico items can overlap with US items (IRef 50 can exist in both files)
+- Primary Item lookup automatically searches mitemdet if item not found in itemdet
 
 ---
 
 ## Complete Flow Example
 
-### Scenario: Line 01, Stack 1, Item Lookup
+### Scenario: Primary Item Lookup with Description
 
-**1. PLC writes to `boxes01.csv`:**
+**1. User enters Primary Item in startup form:**
+```
+TextBox "Primary Item:": FL9036MOD1P4
+User presses Enter or Tab
+```
+
+**2. Async lookup triggered → searches itemdet.csv:**
 ```csv
-1001,1,2026-07-22 14:30:45," 1","65-char message with item at pos 33..."，""，1
+IRef: 615229
+ItemNumber: FL9036MOD1P4
+...
+ColorDesc: FL90-WHITE
+ShapeDesc: 3 X 6 X 0.31 IN
+SeriesDesc: FINISH LINE
+...
 ```
 
-**2. UI requests last 12 boxes → reads `boxes01.csv`**
+**3. Description displays below TextBox:**
+```
+FL90-WHITE | 3 X 6 X 0.31 IN | FINISH LINE
+(shown in light green, italic, below item field)
+```
 
-**3. UI needs item details → reads `stackers01.csv`:**
+**4. User clicks Begin → PLC startup message sent with selected label size**
+
+---
+
+### Scenario: Box Reprint with Full Item Data
+
+**1. User selects box in Browse grid:**
+```
+RecId: 1001
+Time: 14:30:45
+Sorter Message: " 1" (stack 1)
+Part/*Error: (pending item lookup)
+```
+
+**2. UI reads stacker configuration:**
 ```csv
-1," 1",42,"M-...",1234,"L",""
+LineId: 1
+StackNum: " 1"
+IRef: 615229
+PlcMsg: (65 chars with M- at pos 33) → Mexico item
+Shade: 1234
+Size: "L"
+ErrMsg: "" (valid)
 ```
 
-**4. Stacker shows IRef=42, PlcMsg contains "M-" → Mexico item lookup**
-
-**5. UI searches `mitemdet.csv` for IRef=42:**
+**3. IRef=615229 + Mexico flag → lookup mitemdet.csv:**
 ```csv
-42,MEX-12345,12
+615229,FL9036MOD1P4,100,12.5,SF,37.5,...,FL90-WHITE,3 X 6 X 0.31 IN,FINISH LINE,...
 ```
 
-**6. UI displays:**
+**4. Browse grid updates:**
 ```
-ItemDisplay = "MEX-12345-12-1234-L"
-(ItemNumber-Qty-Shade-Size)
+Sorter Message: " 1-FL9036MOD1P4-100-1234-L"
+Part/*Error: (full item description)
+```
+
+**5. User presses F1 (Reprint) → XML export includes all 43 itemdet fields:**
+```xml
+<LABEL>
+  <ITEM>FL9036MOD1P4</ITEM>
+  <COLOR_DESC>FL90-WHITE</COLOR_DESC>
+  <SHAPE_DESC>3 X 6 X 0.31 IN</SHAPE_DESC>
+  <SERIES_DESC>FINISH LINE</SERIES_DESC>
+  ...
+  (all 43 fields from itemdet CSV)
+</LABEL>
 ```
 
 ---

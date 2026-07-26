@@ -1,0 +1,25 @@
+<Document Type="Label" CreatedAt="2026-07-25T20:04:51.7467394-05:00">
+  <LabelData>
+    <BoxRecord>
+      <RecId>6</RecId>
+      <LineId>1</LineId>
+      <MakeTime>2026-07-25T19:47:12.0000000</MakeTime>
+      <StackNum>3</StackNum>
+      <PlcMsg>3                               FL9036MOD1P4</PlcMsg>
+      <ErrMsg></ErrMsg>
+      <PrintNum>1</PrintNum>
+      <ItemDisplay>FL9036MOD1P4-100-5550-L</ItemDisplay>
+      <SorterMessage>3  FL9036MOD1P4</SorterMessage>
+    </BoxRecord>
+    <StackerRecord>
+      <LineId>1</LineId>
+      <StackNum>3</StackNum>
+      <IRef>615229</IRef>
+      <Shade>555</Shade>
+      <Size>L</Size>
+      <IsValid>false</IsValid>
+      <IsMexicoItem>false</IsMexicoItem>
+      <ErrorMessage>""</ErrorMessage>
+    </StackerRecord>
+  </LabelData>
+</Document>

@@ -1,13 +1,13 @@
-﻿# Label Decision .NET Migration
+﻿# StandAlone .NET Migration
 
 This project replaces the Progress/OpenEdge-based PLC-to-label-printing workflow with a standalone .NET system.
 
 ## Architecture
 
-- LabelDecisionApp.Console: Core service for CSV parsing and label decision logic
-- LabelDecisionApp.Integration: Input adapters (file, serial), PLC payload parser, printer interface
-- LabelDecisionApp.Worker: Long-running background service for production
-- LabelDecisionApp.Tests: Unit tests
+- StandAlone.Console: Core service for CSV parsing and label decision logic
+- StandAlone.Integration: Input adapters (file, serial), PLC payload parser, printer interface
+- StandAlone.Worker: Long-running background service for production
+- StandAlone.Tests: Unit tests
 
 ## Key Features
 
