@@ -52,5 +52,7 @@ Thumbs.db
 # Project-specific
 carton-settings.json
 *.csv
+!StandAlone.Console/sample-item-label-types.csv
+!StandAlone.Console/sample-item-running.csv
 NoGo*.txt
 plc*.txt
