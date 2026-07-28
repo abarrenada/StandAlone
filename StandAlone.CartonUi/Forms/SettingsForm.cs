@@ -16,6 +16,12 @@ public class SettingsForm : Form
         "HttpPost",
     };
 
+    private static readonly string[] CartonPrintModes =
+    {
+        "PLC Signal",
+        "Manual Qty",
+    };
+
     private AppSettings _settings = null!;
 
     public SettingsForm()
@@ -165,6 +171,15 @@ public class SettingsForm : Form
         AddRow(scroll, row++, "Output Type:", outputTypeCombo);
         AddRow(scroll, row++, "Output Address:", new TextBox { Text = _settings.LabelOutputAddress });
 
+        // Carton process mode
+        AddLabel(scroll, row++, 0, "━━ Carton Process ━━", true);
+        var cartonModeCombo = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
+        cartonModeCombo.Items.AddRange(CartonPrintModes);
+        cartonModeCombo.SelectedItem = CartonPrintModes.Contains(_settings.CartonPrintMode)
+            ? _settings.CartonPrintMode
+            : "PLC Signal";
+        AddRow(scroll, row++, "Carton Mode:", cartonModeCombo);
+
         // Save/Cancel buttons (always visible footer)
         var panel = new Panel
         {
@@ -284,6 +299,11 @@ public class SettingsForm : Form
         {
             _settings.PlcConnectionType = combos[0].Text;
             _settings.LabelOutputType = combos[1].Text;
+        }
+
+        if (combos.Count >= 3)
+        {
+            _settings.CartonPrintMode = combos[2].Text;
         }
     }
 }

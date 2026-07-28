@@ -45,6 +45,7 @@ public class MainForm : Form
     private TextBox? _primaryItemInput;
     private Label? _primaryItemDescLabel;  // ← Description display below Primary Item
     private TextBox? _secondaryItemInput;
+    private NumericUpDown? _manualQtyInput;
     private Button _btnBegin = null!;
 
     // ── Browse panel controls ─────────────────────────────────────────────────
@@ -117,7 +118,17 @@ public class MainForm : Form
             BackColor = Color.DarkSlateGray, ForeColor = Color.LightGray,
             FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 9f),
         };
-        btnSettings.Click += (_, _) => { using var dlg = new SettingsForm(); dlg.ShowDialog(this); };
+        btnSettings.Click += (_, _) =>
+        {
+            using var dlg = new SettingsForm();
+            dlg.ShowDialog(this);
+
+            _settings = SettingsManager.Load();
+            Controls.Remove(_startupPanel);
+            _startupPanel.Dispose();
+            BuildStartupPanel();
+            ShowStartup();
+        };
         _startupPanel.Controls.Add(btnSettings);
 
         // ── Shift  y=120 ──────────────────────────────────────────────────────
@@ -208,6 +219,19 @@ public class MainForm : Form
                 Text = _settings.CurrentSecondaryItem,
             };
             _startupPanel.Controls.Add(_secondaryItemInput);
+            nextY += 50;
+        }
+
+        if (string.Equals(_settings.CartonPrintMode, "Manual Qty", StringComparison.OrdinalIgnoreCase))
+        {
+            _startupPanel.Controls.Add(MakeLabel("Carton Qty:", new Point(labelX, nextY + 4), labelW));
+            _manualQtyInput = new NumericUpDown
+            {
+                Location = new Point(inputX, nextY), Size = new Size(120, 30),
+                Minimum = 1, Maximum = 999, Value = 1,
+                Font = new Font("Segoe UI", 11f),
+            };
+            _startupPanel.Controls.Add(_manualQtyInput);
             nextY += 50;
         }
 
@@ -314,6 +338,12 @@ public class MainForm : Form
             _settings.CurrentSecondaryItem = _secondaryItemInput.Text.Trim();
         SettingsManager.Save(_settings);
 
+        if (string.Equals(_settings.CartonPrintMode, "Manual Qty", StringComparison.OrdinalIgnoreCase))
+        {
+            _ = SendManualCartonPrintAsync();
+            return;
+        }
+
         // Progress: "50, ," + shift + "," + inspector + "," + labelSize → PLC pipe
         try { _plcPipe.SendStartup(_shift, _inspector.Trim(), _labelSize, _config.PlcPipePath); }
         catch (Exception ex) { SetStatus($"Warning: PLC pipe write failed: {ex.Message}"); }
@@ -413,6 +443,73 @@ public class MainForm : Form
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         });
+    }
+
+    private async Task SendManualCartonPrintAsync()
+    {
+        if (_primaryItemInput is null || _manualQtyInput is null)
+        {
+            SetStatus("Manual print controls are unavailable.");
+            return;
+        }
+
+        var itemNumber = _primaryItemInput.Text.Trim();
+        if (string.IsNullOrWhiteSpace(itemNumber))
+        {
+            MessageBox.Show("Enter a primary item before manual printing.", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            _primaryItemInput.Focus();
+            return;
+        }
+
+        var quantity = (int)_manualQtyInput.Value;
+        if (quantity < 1 || quantity > 999)
+        {
+            MessageBox.Show("Carton quantity must be between 1 and 999.", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            _manualQtyInput.Focus();
+            return;
+        }
+
+        try
+        {
+            var itemDetail = await _boxRepo.GetItemDetailByNumberAsync(itemNumber, _config.DoesMexico, CancellationToken.None);
+            if (itemDetail is null)
+            {
+                MessageBox.Show($"Cannot find item '{itemNumber}' in item master.", "Item Not Found", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(_settings.LabelOutputAddress))
+            {
+                SetStatus("Warning: Label output address is empty.");
+                return;
+            }
+
+            var job = new ManualCartonPrintJob(
+                itemDetail.ItemNumber,
+                quantity,
+                _inspector,
+                _shift,
+                _labelSize,
+                itemDetail.GetPrimaryItemDescription(),
+                Environment.UserName,
+                DateTime.Now);
+
+            var exporter = new NiceLabelXmlExporter(_settings.LabelOutputAddress);
+            var success = await exporter.ExportManualCartonAsync(job, CancellationToken.None);
+            if (success)
+            {
+                SetStatus($"Manual carton print sent for {itemDetail.ItemNumber} x{quantity}.");
+                ShowBrowse();
+            }
+            else
+            {
+                SetStatus("Warning: Failed to send manual carton print job.");
+            }
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"Manual print error: {ex.Message}");
+        }
     }
 
     private void AppendToFile(string filePath, string record)

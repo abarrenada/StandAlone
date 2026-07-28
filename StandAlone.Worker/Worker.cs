@@ -1,5 +1,6 @@
 using StandAlone.Console.Services;
 using StandAlone.Integration.Services;
+using System.Text.Json;
 
 namespace StandAlone.Worker;
 
@@ -14,6 +15,8 @@ public class Worker : BackgroundService
     private readonly string _inputDirectory;
     private readonly string _csvPath;
     private readonly string _runningCsvPath;
+    private readonly string _failedPalletQueuePath;
+    private readonly object _queueLock = new();
 
     public Worker(ILogger<Worker> logger, ILabelDecisionService labelService, IPlcPayloadParser payloadParser, ILabelPrinter printer, ISapIntegrationService sapIntegration, IConfiguration config)
     {
@@ -26,6 +29,7 @@ public class Worker : BackgroundService
         _inputDirectory = config["Input:Directory"] ?? Path.Combine(AppContext.BaseDirectory, "input");
         _csvPath = config["Input:CsvPath"] ?? Path.Combine(AppContext.BaseDirectory, "item-label-types.csv");
         _runningCsvPath = config["Input:RunningCsvPath"] ?? Path.Combine(AppContext.BaseDirectory, "item-running.csv");
+        _failedPalletQueuePath = config["Pallet:FailedQueuePath"] ?? Path.Combine(AppContext.BaseDirectory, "failed-pallet-labels.queue");
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -50,6 +54,7 @@ public class Worker : BackgroundService
         {
             while (!stoppingToken.IsCancellationRequested)
             {
+                await RetryFailedPalletLabelsAsync(stoppingToken);
                 await Task.Delay(5000, stoppingToken);
             }
         }
@@ -165,6 +170,7 @@ public class Worker : BackgroundService
         else
         {
             _logger.LogError("Pallet label generation failed: {error}", output.ErrorMessage);
+            QueueFailedPalletLabel(matchingItem.ItemNumber, matchingItem.Plant, decision.LabelFormat, matchingItem.SerialNumber, output.ErrorMessage);
         }
     }
 
@@ -206,5 +212,121 @@ public class Worker : BackgroundService
         {
             _logger.LogError("EOL pallet integration failed: {error}", result.ErrorMessage);
         }
+    }
+
+    private void QueueFailedPalletLabel(string itemNumber, int plant, string labelFormat, string serialNumber, string? error)
+    {
+        try
+        {
+            var queueDir = Path.GetDirectoryName(_failedPalletQueuePath);
+            if (!string.IsNullOrWhiteSpace(queueDir))
+                Directory.CreateDirectory(queueDir);
+
+            var job = new FailedPalletLabelJob
+            {
+                ItemNumber = itemNumber,
+                Plant = plant,
+                LabelFormat = labelFormat,
+                SerialNumber = serialNumber,
+                LastError = error,
+                QueuedAt = DateTimeOffset.UtcNow,
+            };
+
+            var line = JsonSerializer.Serialize(job);
+            lock (_queueLock)
+            {
+                File.AppendAllText(_failedPalletQueuePath, line + Environment.NewLine);
+            }
+
+            _logger.LogWarning("Queued failed pallet label for retry: serial={serial}, item={item}", serialNumber, itemNumber);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Could not queue failed pallet label for retry.");
+        }
+    }
+
+    private async Task RetryFailedPalletLabelsAsync(CancellationToken cancellationToken)
+    {
+        if (!File.Exists(_failedPalletQueuePath))
+            return;
+
+        List<string> queuedLines;
+        lock (_queueLock)
+        {
+            queuedLines = File.ReadAllLines(_failedPalletQueuePath)
+                .Where(line => !string.IsNullOrWhiteSpace(line))
+                .ToList();
+        }
+
+        if (queuedLines.Count == 0)
+            return;
+
+        var remaining = new List<string>();
+
+        foreach (var line in queuedLines)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            FailedPalletLabelJob? job;
+            try
+            {
+                job = JsonSerializer.Deserialize<FailedPalletLabelJob>(line);
+            }
+            catch
+            {
+                // Ignore malformed lines instead of poisoning the retry queue.
+                continue;
+            }
+
+            if (job is null || string.IsNullOrWhiteSpace(job.ItemNumber))
+                continue;
+
+            try
+            {
+                var output = await _printer.PrintAsync(job.ItemNumber, job.Plant, job.LabelFormat, cancellationToken, job.SerialNumber);
+                if (output.Success)
+                {
+                    _logger.LogInformation("Replayed failed pallet label successfully: serial={serial}, item={item}", job.SerialNumber, job.ItemNumber);
+                    continue;
+                }
+
+                job.LastError = output.ErrorMessage;
+                job.RetryCount++;
+                job.LastTriedAt = DateTimeOffset.UtcNow;
+                remaining.Add(JsonSerializer.Serialize(job));
+            }
+            catch (Exception ex)
+            {
+                job.LastError = ex.Message;
+                job.RetryCount++;
+                job.LastTriedAt = DateTimeOffset.UtcNow;
+                remaining.Add(JsonSerializer.Serialize(job));
+            }
+        }
+
+        lock (_queueLock)
+        {
+            if (remaining.Count == 0)
+            {
+                File.Delete(_failedPalletQueuePath);
+            }
+            else
+            {
+                File.WriteAllLines(_failedPalletQueuePath, remaining);
+            }
+        }
+    }
+
+    private sealed class FailedPalletLabelJob
+    {
+        public string ItemNumber { get; set; } = string.Empty;
+        public int Plant { get; set; }
+        public string LabelFormat { get; set; } = "PALLET_LABEL";
+        public string SerialNumber { get; set; } = string.Empty;
+        public string? LastError { get; set; }
+        public int RetryCount { get; set; }
+        public DateTimeOffset QueuedAt { get; set; }
+        public DateTimeOffset? LastTriedAt { get; set; }
     }
 }

@@ -25,6 +25,9 @@ public class AppSettings
     /// <summary>For HttpPost: target URL. For SerialPort: COM port + baud.</summary>
     public string LabelOutputAddress { get; set; } = string.Empty;
 
+    /// <summary>"PLC Signal" or "Manual Qty".</summary>
+    public string CartonPrintMode { get; set; } = "PLC Signal";
+
     public string MasterPasswordHash { get; set; } = string.Empty;
 
     /// <summary>Hashed with SHA256 for comparison.</summary>

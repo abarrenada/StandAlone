@@ -28,6 +28,7 @@ public static class SettingsManager
                     return GetDefaults();
 
                 settings.LabelOutputType = NormalizeLabelOutputType(settings.LabelOutputType);
+                settings.CartonPrintMode = NormalizeCartonPrintMode(settings.CartonPrintMode);
                 return settings;
             }
             catch { /* parsing error, return defaults */ }
@@ -62,6 +63,7 @@ public static class SettingsManager
             PlcAddress = "COM1",
             PlcBaudRate = 9600,
             LabelOutputType = "NiceLabel Xml",
+            CartonPrintMode = "PLC Signal",
             MasterPasswordHash = AppSettings.HashPassword("admin123"), // Default: "admin123"
         };
     }
@@ -77,6 +79,19 @@ public static class SettingsManager
             "serialport" => "SerialPort",
             "networkprinter" or "network printer" => "NetworkPrinter",
             "httppost" or "http post" => "HttpPost",
+            _ => value,
+        };
+    }
+
+    private static string NormalizeCartonPrintMode(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return "PLC Signal";
+
+        return value.Trim().ToLowerInvariant() switch
+        {
+            "plc" or "plc signal" or "signals" => "PLC Signal",
+            "manual" or "manual qty" or "manual quantity" => "Manual Qty",
             _ => value,
         };
     }

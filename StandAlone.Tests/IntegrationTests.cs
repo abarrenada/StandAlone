@@ -23,17 +23,23 @@ public class IntegrationTests
         var tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
         Directory.CreateDirectory(tempDir);
 
+        const string serial = "SER12345678901234567890";
+
         try
         {
             var printer = new FileLabelPrinter(tempDir);
-            var result = printer.PrintAsync("ABC123", 1, "PALLET_LABEL", CancellationToken.None, "SER12345678901234567890").GetAwaiter().GetResult();
+            var result = printer.PrintAsync("ABC123", 1, "PALLET_LABEL", CancellationToken.None, serial).GetAwaiter().GetResult();
 
             Assert.True(result.Success);
             var files = Directory.GetFiles(tempDir, "*.xml");
             Assert.Single(files);
+            Assert.Contains(serial, Path.GetFileName(files[0]));
+
             var content = File.ReadAllText(files[0]);
+            Assert.Contains("<PalletLabelDocument>", content);
             Assert.Contains("<LabelFormat>PALLET_LABEL</LabelFormat>", content);
-            Assert.Contains("<SerialNumber>SER12345678901234567890</SerialNumber>", content);
+            Assert.Contains($"<PalletId>{serial}</PalletId>", content);
+            Assert.Contains($"<SerialNumber>{serial}</SerialNumber>", content);
         }
         finally
         {

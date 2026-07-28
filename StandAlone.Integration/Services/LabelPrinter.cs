@@ -30,7 +30,11 @@ public class FileLabelPrinter : ILabelPrinter
     {
         var timestamp = DateTimeOffset.UtcNow.ToString("yyyyMMdd_HHmmss");
         var safeLabelFormat = labelFormat.Replace(" ", "_").ToUpperInvariant();
-        var fileName = $"label_{safeLabelFormat}_{itemNumber}_{plant}_{timestamp}.xml";
+        var safeItem = SanitizeFileToken(itemNumber);
+        var safeSerial = SanitizeFileToken(serialNumber);
+        var fileName = string.IsNullOrWhiteSpace(safeSerial)
+            ? $"label_{safeLabelFormat}_{safeItem}_{plant}_{timestamp}.xml"
+            : $"label_{safeLabelFormat}_{safeItem}_{plant}_{safeSerial}_{timestamp}.xml";
         var filePath = Path.Combine(_outputDirectory, fileName);
 
         var content = GenerateLabelXml(labelFormat, itemNumber, plant, serialNumber);
@@ -66,16 +70,47 @@ public class FileLabelPrinter : ILabelPrinter
     private static string GenerateLabelXml(string labelFormat, string itemNumber, int plant, string? serialNumber)
     {
         var printedAt = DateTimeOffset.UtcNow;
-        var serialSection = string.IsNullOrWhiteSpace(serialNumber)
+        var escapedFormat = System.Security.SecurityElement.Escape(labelFormat);
+        var escapedItem = System.Security.SecurityElement.Escape(itemNumber);
+        var escapedSerial = System.Security.SecurityElement.Escape(serialNumber ?? string.Empty);
+
+        if (string.Equals(labelFormat, "PALLET_LABEL", StringComparison.OrdinalIgnoreCase))
+        {
+            var palletId = string.IsNullOrWhiteSpace(escapedSerial)
+                ? $"PALLET-{plant}-{printedAt:yyyyMMddHHmmss}"
+                : escapedSerial;
+
+            return $@"<?xml version=""1.0"" encoding=""utf-8""?>
+<PalletLabelDocument>
+  <LabelFormat>{escapedFormat}</LabelFormat>
+  <PalletId>{palletId}</PalletId>
+  <ItemNumber>{escapedItem}</ItemNumber>
+  <Plant>{plant}</Plant>
+  <SerialNumber>{escapedSerial}</SerialNumber>
+  <PrintedAt>{printedAt:O}</PrintedAt>
+</PalletLabelDocument>";
+        }
+
+        var serialSection = string.IsNullOrWhiteSpace(escapedSerial)
             ? string.Empty
-            : $"  <SerialNumber>{System.Security.SecurityElement.Escape(serialNumber)}</SerialNumber>\n";
+            : $"  <SerialNumber>{escapedSerial}</SerialNumber>\n";
 
         return $@"<?xml version=""1.0"" encoding=""utf-8""?>
 <LabelDocument>
-  <LabelFormat>{System.Security.SecurityElement.Escape(labelFormat)}</LabelFormat>
-  <ItemNumber>{System.Security.SecurityElement.Escape(itemNumber)}</ItemNumber>
+  <LabelFormat>{escapedFormat}</LabelFormat>
+  <ItemNumber>{escapedItem}</ItemNumber>
   <Plant>{plant}</Plant>
 {serialSection}  <PrintedAt>{printedAt:O}</PrintedAt>
 </LabelDocument>";
+    }
+
+    private static string SanitizeFileToken(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return string.Empty;
+
+        var invalid = Path.GetInvalidFileNameChars();
+        var chars = value.Trim().Select(ch => invalid.Contains(ch) ? '_' : ch).ToArray();
+        return new string(chars);
     }
 }
