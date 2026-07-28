@@ -22,6 +22,14 @@ public class SettingsForm : Form
         "Manual Qty",
     };
 
+    private static readonly string[] ThermalPrinterTypes =
+    {
+        "SATO",
+        "IPL",
+        "ZPL",
+        "Fingerprint",
+    };
+
     private AppSettings _settings = null!;
 
     public SettingsForm()
@@ -140,40 +148,54 @@ public class SettingsForm : Form
 
         // CSV Paths section
         AddLabel(scroll, row++, 0, "━━ CSV File Paths ━━", true);
-        AddRow(scroll, row++, "Boxes CSV:", new TextBox { Text = _settings.BoxesCsvPath });
-        AddRow(scroll, row++, "Stackers CSV:", new TextBox { Text = _settings.StackersCsvPath });
-        AddRow(scroll, row++, "Itemdet CSV:", new TextBox { Text = _settings.ItemdetCsvPath });
-        AddRow(scroll, row++, "MItemdet CSV:", new TextBox { Text = _settings.MitemdetCsvPath });
+        AddRow(scroll, row++, "Boxes CSV:", new TextBox { Name = "BoxesCsvPath", Text = _settings.BoxesCsvPath });
+        AddRow(scroll, row++, "Stackers CSV:", new TextBox { Name = "StackersCsvPath", Text = _settings.StackersCsvPath });
+        AddRow(scroll, row++, "Itemdet CSV:", new TextBox { Name = "ItemdetCsvPath", Text = _settings.ItemdetCsvPath });
+        AddRow(scroll, row++, "MItemdet CSV:", new TextBox { Name = "MitemdetCsvPath", Text = _settings.MitemdetCsvPath });
 
         // Production settings
         AddLabel(scroll, row++, 0, "━━ Production ━━", true);
-        var lineInput = new NumericUpDown { Minimum = 1, Maximum = 99 };
+        var lineInput = new NumericUpDown { Name = "ProductionLineNumber", Minimum = 1, Maximum = 99 };
         lineInput.Value = _settings.ProductionLineNumber;
         AddRow(scroll, row++, "Line Number:", lineInput);
 
         // PLC settings
         AddLabel(scroll, row++, 0, "━━ PLC Connection ━━", true);
-        var connTypeCombo = new ComboBox { Text = _settings.PlcConnectionType, DropDownStyle = ComboBoxStyle.DropDownList };
+        var connTypeCombo = new ComboBox
+        {
+            Name = "PlcConnectionType",
+            DropDownStyle = ComboBoxStyle.DropDownList,
+        };
         connTypeCombo.Items.AddRange(new[] { "SerialPort", "IP" });
+        connTypeCombo.SelectedItem = string.Equals(_settings.PlcConnectionType, "IP", StringComparison.OrdinalIgnoreCase)
+            ? "IP"
+            : "SerialPort";
         AddRow(scroll, row++, "Connection Type:", connTypeCombo);
-        AddRow(scroll, row++, "Address (COM/IP):", new TextBox { Text = _settings.PlcAddress });
-        var baudInput = new NumericUpDown { Minimum = 300, Maximum = 115200 };
+        AddRow(scroll, row++, "Address (COM/IP):", new TextBox { Name = "PlcAddress", Text = _settings.PlcAddress });
+        var baudInput = new NumericUpDown { Name = "PlcBaudRate", Minimum = 300, Maximum = 115200 };
         baudInput.Value = _settings.PlcBaudRate;
         AddRow(scroll, row++, "Baud Rate:", baudInput);
 
         // Label output
         AddLabel(scroll, row++, 0, "━━ Label Output ━━", true);
-        var outputTypeCombo = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
+        var outputTypeCombo = new ComboBox { Name = "LabelOutputType", DropDownStyle = ComboBoxStyle.DropDownList };
         outputTypeCombo.Items.AddRange(LabelOutputTypes);
         outputTypeCombo.SelectedItem = LabelOutputTypes.Contains(_settings.LabelOutputType)
             ? _settings.LabelOutputType
             : "NiceLabel Xml";
         AddRow(scroll, row++, "Output Type:", outputTypeCombo);
-        AddRow(scroll, row++, "Output Address:", new TextBox { Text = _settings.LabelOutputAddress });
+        AddRow(scroll, row++, "Output Address:", new TextBox { Name = "LabelOutputAddress", Text = _settings.LabelOutputAddress });
+
+        var thermalTypeCombo = new ComboBox { Name = "ThermalPrinterType", DropDownStyle = ComboBoxStyle.DropDownList };
+        thermalTypeCombo.Items.AddRange(ThermalPrinterTypes);
+        thermalTypeCombo.SelectedItem = ThermalPrinterTypes.Contains(_settings.ThermalPrinterType)
+            ? _settings.ThermalPrinterType
+            : "SATO";
+        AddRow(scroll, row++, "Thermal Type:", thermalTypeCombo);
 
         // Carton process mode
         AddLabel(scroll, row++, 0, "━━ Carton Process ━━", true);
-        var cartonModeCombo = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
+        var cartonModeCombo = new ComboBox { Name = "CartonPrintMode", DropDownStyle = ComboBoxStyle.DropDownList };
         cartonModeCombo.Items.AddRange(CartonPrintModes);
         cartonModeCombo.SelectedItem = CartonPrintModes.Contains(_settings.CartonPrintMode)
             ? _settings.CartonPrintMode
@@ -271,39 +293,40 @@ public class SettingsForm : Form
 
     private void CollectSettingsFromControls(TableLayoutPanel panel)
     {
-        // Simple approach: look for controls by type and update _settings
-        var textBoxes = panel.Controls.OfType<TextBox>().ToList();
-        var numericUpDowns = panel.Controls.OfType<NumericUpDown>().ToList();
-        var combos = panel.Controls.OfType<ComboBox>().ToList();
+        var allControls = panel.Controls.Cast<Control>().ToList();
 
-        if (textBoxes.Count >= 4)
+        string GetText(string name) => allControls.FirstOrDefault(c => c.Name == name)?.Text ?? string.Empty;
+        string GetComboValue(string name, string fallback)
         {
-            _settings.BoxesCsvPath = textBoxes[0].Text;
-            _settings.StackersCsvPath = textBoxes[1].Text;
-            _settings.ItemdetCsvPath = textBoxes[2].Text;
-            _settings.MitemdetCsvPath = textBoxes[3].Text;
+            if (allControls.FirstOrDefault(c => c.Name == name) is ComboBox combo)
+            {
+                if (combo.SelectedItem is string selected && !string.IsNullOrWhiteSpace(selected))
+                    return selected;
+                if (!string.IsNullOrWhiteSpace(combo.Text))
+                    return combo.Text;
+            }
+            return fallback;
         }
-        if (textBoxes.Count >= 6)
+        int GetInt(string name, int fallback)
         {
-            _settings.PlcAddress = textBoxes[4].Text;
-            _settings.LabelOutputAddress = textBoxes[5].Text;
-        }
-
-        if (numericUpDowns.Count >= 2)
-        {
-            _settings.ProductionLineNumber = (int)numericUpDowns[0].Value;
-            _settings.PlcBaudRate = (int)numericUpDowns[1].Value;
+            if (allControls.FirstOrDefault(c => c.Name == name) is NumericUpDown n)
+                return (int)n.Value;
+            return fallback;
         }
 
-        if (combos.Count >= 2)
-        {
-            _settings.PlcConnectionType = combos[0].Text;
-            _settings.LabelOutputType = combos[1].Text;
-        }
+        _settings.BoxesCsvPath = GetText("BoxesCsvPath");
+        _settings.StackersCsvPath = GetText("StackersCsvPath");
+        _settings.ItemdetCsvPath = GetText("ItemdetCsvPath");
+        _settings.MitemdetCsvPath = GetText("MitemdetCsvPath");
+        _settings.PlcAddress = GetText("PlcAddress");
+        _settings.LabelOutputAddress = GetText("LabelOutputAddress");
 
-        if (combos.Count >= 3)
-        {
-            _settings.CartonPrintMode = combos[2].Text;
-        }
+        _settings.ProductionLineNumber = GetInt("ProductionLineNumber", _settings.ProductionLineNumber);
+        _settings.PlcBaudRate = GetInt("PlcBaudRate", _settings.PlcBaudRate);
+
+        _settings.PlcConnectionType = GetComboValue("PlcConnectionType", "SerialPort");
+        _settings.LabelOutputType = GetComboValue("LabelOutputType", "NiceLabel Xml");
+        _settings.ThermalPrinterType = GetComboValue("ThermalPrinterType", "SATO");
+        _settings.CartonPrintMode = GetComboValue("CartonPrintMode", "PLC Signal");
     }
 }

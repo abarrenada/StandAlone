@@ -1,0 +1,36 @@
+NETWORK PRINTER LABEL JOB
+=========================
+GeneratedAt: 2026-07-28 16:03:20
+PrinterType: NetworkPrinter
+PrinterAddress: \\10.55.16.160\MANNONE
+JobMode: Manual Qty (Simulated)
+
+CURRENT PART LABEL
+------------------
+PartNumber: FL9036MOD1P4
+IRef: 615229
+Shade: 555
+Size: L
+Description: FL90-WHITE | 3 X 6 X 0.31 IN | FINISH LINE
+Brand: DB
+UOM: BX
+
+SOURCE CONTEXT
+--------------
+ProductionLine: 1
+LatestBoxRecId: 6
+LatestStackNum: 3
+LatestPlcMessage: "3                               FL9036MOD1P4"
+
+PRINT PAYLOAD (simulated text output)
+-------------------------------------
+PART=FL9036MOD1P4
+IREF=615229
+SHADE=555
+SIZE=L
+DESC=FL90-WHITE | 3 X 6 X 0.31 IN | FINISH LINE
+LINE=1
+STACK=3
+QTY=1
+
+END OF JOB

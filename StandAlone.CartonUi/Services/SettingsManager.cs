@@ -27,8 +27,10 @@ public static class SettingsManager
                 if (settings is null)
                     return GetDefaults();
 
+                settings.PlcConnectionType = NormalizePlcConnectionType(settings.PlcConnectionType);
                 settings.LabelOutputType = NormalizeLabelOutputType(settings.LabelOutputType);
                 settings.CartonPrintMode = NormalizeCartonPrintMode(settings.CartonPrintMode);
+                settings.ThermalPrinterType = NormalizeThermalPrinterType(settings.ThermalPrinterType);
                 return settings;
             }
             catch { /* parsing error, return defaults */ }
@@ -63,6 +65,7 @@ public static class SettingsManager
             PlcAddress = "COM1",
             PlcBaudRate = 9600,
             LabelOutputType = "NiceLabel Xml",
+            ThermalPrinterType = "SATO",
             CartonPrintMode = "PLC Signal",
             MasterPasswordHash = AppSettings.HashPassword("admin123"), // Default: "admin123"
         };
@@ -83,6 +86,19 @@ public static class SettingsManager
         };
     }
 
+    private static string NormalizePlcConnectionType(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return "SerialPort";
+
+        return value.Trim().ToLowerInvariant() switch
+        {
+            "ip" => "IP",
+            "serialport" or "serial" => "SerialPort",
+            _ => "SerialPort",
+        };
+    }
+
     private static string NormalizeCartonPrintMode(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -92,6 +108,21 @@ public static class SettingsManager
         {
             "plc" or "plc signal" or "signals" => "PLC Signal",
             "manual" or "manual qty" or "manual quantity" => "Manual Qty",
+            _ => value,
+        };
+    }
+
+    private static string NormalizeThermalPrinterType(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return "SATO";
+
+        return value.Trim().ToLowerInvariant() switch
+        {
+            "sato" => "SATO",
+            "ipl" => "IPL",
+            "zpl" => "ZPL",
+            "fingerprint" => "Fingerprint",
             _ => value,
         };
     }

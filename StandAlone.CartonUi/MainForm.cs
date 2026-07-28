@@ -25,6 +25,10 @@ public class MainForm : Form
     private readonly IBoxRepository _boxRepo;
     private readonly IPlcPipeService _plcPipe;
     private AppSettings _settings = null!;
+    private CancellationTokenSource? _plcMonitorCts;
+    private Task? _plcMonitorTask;
+    private DateTime _lastPlc8AutoPrintUtc = DateTime.MinValue;
+    private int _plc8AutoPrintInProgress;
 
     // ── Session state (set in startup panel) ─────────────────────────────────
     private int _shift;
@@ -54,6 +58,7 @@ public class MainForm : Form
     private Label _browseTitleLabel = null!;
     private Label _stoppedLabel = null!;
     private Label _statusLabel = null!;
+    private ListBox _plcInputList = null!;
     private Button _btnF1Reprint = null!;
     private Button _btnF3ReprintByStack = null!;
     private Button _btnF4NewSetup = null!;
@@ -84,6 +89,9 @@ public class MainForm : Form
         BuildStartupPanel();
         BuildBrowsePanel();
         ShowStartup();
+
+        StartPlcIpMonitorIfConfigured();
+        FormClosing += (_, _) => StopPlcIpMonitor();
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -123,7 +131,9 @@ public class MainForm : Form
             using var dlg = new SettingsForm();
             dlg.ShowDialog(this);
 
+            StopPlcIpMonitor();
             _settings = SettingsManager.Load();
+            StartPlcIpMonitorIfConfigured();
             Controls.Remove(_startupPanel);
             _startupPanel.Dispose();
             BuildStartupPanel();
@@ -340,7 +350,10 @@ public class MainForm : Form
 
         if (string.Equals(_settings.CartonPrintMode, "Manual Qty", StringComparison.OrdinalIgnoreCase))
         {
-            _ = SendManualCartonPrintAsync();
+            // Do not auto-print on Begin. Enter run mode and wait for PLC/read-triggered
+            // workflow or explicit user print action.
+            ShowBrowse();
+            SetStatus("Manual Qty mode ready. Waiting for PLC/read-triggered or explicit print action.");
             return;
         }
 
@@ -445,12 +458,17 @@ public class MainForm : Form
         });
     }
 
-    private async Task SendManualCartonPrintAsync()
+    private async Task<bool> SendManualCartonPrintAsync()
     {
         if (_primaryItemInput is null || _manualQtyInput is null)
         {
-            SetStatus("Manual print controls are unavailable.");
-            return;
+            MessageBox.Show(
+                "Manual Qty mode is enabled, but startup controls are unavailable.\r\n" +
+                "Check your startup flags/configuration and try again.",
+                "Manual Print Unavailable",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+            return false;
         }
 
         var itemNumber = _primaryItemInput.Text.Trim();
@@ -458,7 +476,7 @@ public class MainForm : Form
         {
             MessageBox.Show("Enter a primary item before manual printing.", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             _primaryItemInput.Focus();
-            return;
+            return false;
         }
 
         var quantity = (int)_manualQtyInput.Value;
@@ -466,7 +484,7 @@ public class MainForm : Form
         {
             MessageBox.Show("Carton quantity must be between 1 and 999.", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             _manualQtyInput.Focus();
-            return;
+            return false;
         }
 
         try
@@ -475,13 +493,17 @@ public class MainForm : Form
             if (itemDetail is null)
             {
                 MessageBox.Show($"Cannot find item '{itemNumber}' in item master.", "Item Not Found", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
+                return false;
             }
 
             if (string.IsNullOrWhiteSpace(_settings.LabelOutputAddress))
             {
-                SetStatus("Warning: Label output address is empty.");
-                return;
+                MessageBox.Show(
+                    "Label Output Address is empty. Configure it in Settings before manual printing.",
+                    "Output Address Required",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return false;
             }
 
             var job = new ManualCartonPrintJob(
@@ -494,21 +516,30 @@ public class MainForm : Form
                 Environment.UserName,
                 DateTime.Now);
 
-            var exporter = new NiceLabelXmlExporter(_settings.LabelOutputAddress);
-            var success = await exporter.ExportManualCartonAsync(job, CancellationToken.None);
+            var success = await ExportManualLabelAsync(itemDetail, job, CancellationToken.None);
             if (success)
             {
                 SetStatus($"Manual carton print sent for {itemDetail.ItemNumber} x{quantity}.");
-                ShowBrowse();
+                return true;
             }
             else
             {
-                SetStatus("Warning: Failed to send manual carton print job.");
+                MessageBox.Show(
+                    "Failed to send manual carton print job.",
+                    "Manual Print Failed",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return false;
             }
         }
         catch (Exception ex)
         {
-            SetStatus($"Manual print error: {ex.Message}");
+            MessageBox.Show(
+                $"Manual print error:\r\n{ex.Message}",
+                "Manual Print Error",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+            return false;
         }
     }
 
@@ -581,6 +612,31 @@ public class MainForm : Form
             ForeColor = Color.LightYellow, Font = new Font("Segoe UI", 10f),
         };
         _browsePanel.Controls.Add(msgLabel);
+
+        var plcLabel = new Label
+        {
+            Text = "PLC Input (Live)",
+            Location = new Point(820, 540), Size = new Size(160, 20),
+            ForeColor = Color.LightGreen, Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+            TextAlign = ContentAlignment.MiddleLeft,
+        };
+        _browsePanel.Controls.Add(plcLabel);
+
+        _plcInputList = new ListBox
+        {
+            Location = new Point(820, 560),
+            Size = new Size(160, 80),
+            Font = new Font("Consolas", 8.5f),
+            BackColor = Color.Black,
+            ForeColor = Color.LightGreen,
+            BorderStyle = BorderStyle.FixedSingle,
+            DrawMode = DrawMode.OwnerDrawFixed,
+            SelectionMode = SelectionMode.None,
+        };
+        _plcInputList.DrawItem += PlcInputList_DrawItem;
+        _browsePanel.Controls.Add(_plcInputList);
+        plcLabel.BringToFront();
+        _plcInputList.BringToFront();
 
         // ── Function-key buttons ─────────────────────────────────────────────
         int btnY = 430, btnX = 8;
@@ -816,8 +872,15 @@ public class MainForm : Form
                 if (box != null)
                 {
                     var stacker = await _boxRepo.GetStackerAsync(_config.LineNumber, row.StackNum.Trim(), CancellationToken.None);
-                    // ItemDisplay is the "PartOrError" field from the row
-                    await ExportLabelToNiceLabelXmlAsync(box, stacker, row.PartOrError, CancellationToken.None);
+                    ItemDetail? itemDetail = null;
+                    if (stacker is not null)
+                    {
+                        itemDetail = await _boxRepo.GetItemDetailByIRefAsync(
+                            stacker.IRef, stacker.IsMexicoItem, CancellationToken.None);
+                    }
+
+                    // ItemDisplay is the "PartOrError" field shown in the browse grid.
+                    await ExportLabelAsync(box, stacker, itemDetail, row.PartOrError, CancellationToken.None);
                 }
             }
             catch (Exception ex)
@@ -873,35 +936,200 @@ public class MainForm : Form
     }
 
     /// <summary>
-    /// Exports label data to NiceLabel XML format if configured.
+    /// Exports label data using the selected output type.
     /// </summary>
-    private async Task ExportLabelToNiceLabelXmlAsync(BoxRecord box, StackerRecord? stacker, string itemDisplay, CancellationToken ct)
+    private async Task ExportLabelAsync(BoxRecord box, StackerRecord? stacker, ItemDetail? itemDetail, string itemDisplay, CancellationToken ct)
     {
         try
         {
-            // Check if output type is NiceLabel Xml
             var outputType = _settings.LabelOutputType?.Replace(" ", string.Empty, StringComparison.OrdinalIgnoreCase);
-            if (!string.Equals(outputType, "NiceLabelXml", StringComparison.OrdinalIgnoreCase))
-                return;
 
-            if (string.IsNullOrWhiteSpace(_settings.LabelOutputAddress))
+            if (string.Equals(outputType, "NiceLabelXml", StringComparison.OrdinalIgnoreCase))
             {
-                SetStatus("Warning: NiceLabel Xml selected but Output Address is empty.");
+                if (string.IsNullOrWhiteSpace(_settings.LabelOutputAddress))
+                {
+                    SetStatus("Warning: NiceLabel Xml selected but Output Address is empty.");
+                    return;
+                }
+
+                var xmlExporter = new NiceLabelXmlExporter(_settings.LabelOutputAddress);
+                var xmlSuccess = await xmlExporter.ExportAsync(box, stacker, itemDisplay, ct);
+
+                if (xmlSuccess)
+                    SetStatus($"Label exported to: {_settings.LabelOutputAddress}");
+                else
+                    SetStatus($"Warning: Failed to export label to {_settings.LabelOutputAddress}");
                 return;
             }
 
-            var exporter = new NiceLabelXmlExporter(_settings.LabelOutputAddress);
-            var success = await exporter.ExportAsync(box, stacker, itemDisplay, ct);
+            if (string.Equals(outputType, "NetworkPrinter", StringComparison.OrdinalIgnoreCase))
+            {
+                var payload = BuildThermalPayload(
+                    labelFormat: ResolveThermalLabelFormat(itemDetail),
+                    labelTypeCode: itemDetail?.LabelTypeCode ?? 0,
+                    palletId: string.Empty,
+                    itemNumber: itemDetail?.ItemNumber ?? itemDisplay,
+                    iRef: itemDetail?.IRef ?? stacker?.IRef ?? 0,
+                    plant: itemDetail?.Plant ?? 0,
+                    partDescription: itemDetail?.GetPrimaryItemDescription() ?? itemDisplay,
+                    colorDesc: itemDetail?.ColorDesc ?? string.Empty,
+                    shapeDesc: itemDetail?.ShapeDesc ?? string.Empty,
+                    seriesDesc: itemDetail?.SeriesDesc ?? string.Empty,
+                    labelSize: _labelSize,
+                    stackNumber: box.StackNum.Trim(),
+                    shade: stacker?.Shade.ToString() ?? string.Empty,
+                    size: stacker?.Size ?? _labelSize,
+                    boxesPerPallet: itemDetail?.BoxesPerPallet ?? 0,
+                    salesQty: itemDetail?.SalesQty ?? 0m,
+                    salesUom: itemDetail?.SalesUOM ?? string.Empty,
+                    packageWeight: itemDetail?.PkgWeight ?? 0m,
+                    quantity: Math.Max(1, box.PrintNum),
+                    uccBarcode: itemDetail?.GetUCC() ?? string.Empty,
+                    cartonUpc: itemDetail?.GetCartonUPC() ?? string.Empty);
 
-            if (success)
-                SetStatus($"Label exported to: {_settings.LabelOutputAddress}");
-            else
-                SetStatus($"Warning: Failed to export label to {_settings.LabelOutputAddress}");
+                var thermalExporter = new ThermalPrinterCommandExporter(
+                    _settings.LabelOutputAddress,
+                    _config.DataDirectory,
+                    _settings.ThermalPrinterType);
+
+                var thermalResult = await thermalExporter.ExportAsync(payload, ct);
+                if (thermalResult.Success)
+                    SetStatus($"{_settings.ThermalPrinterType} sent to '{thermalResult.DispatchTarget ?? "(no target)"}' and archived at {thermalResult.ArchivePath}");
+                else
+                    SetStatus($"Thermal export error: {thermalResult.ErrorMessage} (archive: {thermalResult.ArchivePath})");
+                return;
+            }
+
+            SetStatus($"Output type '{_settings.LabelOutputType}' is not implemented for automatic export.");
         }
         catch (Exception ex)
         {
             SetStatus($"Export error: {ex.Message}");
         }
+    }
+
+    private async Task<bool> ExportManualLabelAsync(ItemDetail itemDetail, ManualCartonPrintJob job, CancellationToken ct)
+    {
+        var outputType = _settings.LabelOutputType?.Replace(" ", string.Empty, StringComparison.OrdinalIgnoreCase);
+
+        if (string.Equals(outputType, "NiceLabelXml", StringComparison.OrdinalIgnoreCase))
+        {
+            var xmlExporter = new NiceLabelXmlExporter(_settings.LabelOutputAddress);
+            return await xmlExporter.ExportManualCartonAsync(job, ct);
+        }
+
+        if (string.Equals(outputType, "NetworkPrinter", StringComparison.OrdinalIgnoreCase))
+        {
+            var payload = BuildThermalPayload(
+                labelFormat: ResolveThermalLabelFormat(itemDetail),
+                labelTypeCode: itemDetail.LabelTypeCode,
+                palletId: string.Empty,
+                itemNumber: job.ItemNumber,
+                iRef: itemDetail.IRef,
+                plant: itemDetail.Plant,
+                partDescription: job.PartDescription,
+                colorDesc: itemDetail.ColorDesc,
+                shapeDesc: itemDetail.ShapeDesc,
+                seriesDesc: itemDetail.SeriesDesc,
+                labelSize: job.LabelSize,
+                stackNumber: "MANUAL",
+                shade: itemDetail.Shade.ToString(),
+                size: itemDetail.SizeShape,
+                boxesPerPallet: itemDetail.BoxesPerPallet,
+                salesQty: itemDetail.SalesQty,
+                salesUom: itemDetail.SalesUOM,
+                packageWeight: itemDetail.PkgWeight,
+                quantity: job.Quantity,
+                uccBarcode: itemDetail.GetUCC(),
+                cartonUpc: itemDetail.GetCartonUPC());
+
+            var thermalExporter = new ThermalPrinterCommandExporter(
+                _settings.LabelOutputAddress,
+                _config.DataDirectory,
+                _settings.ThermalPrinterType);
+
+            var thermalResult = await thermalExporter.ExportAsync(payload, ct);
+            if (thermalResult.Success)
+            {
+                SetStatus($"{_settings.ThermalPrinterType} sent to '{thermalResult.DispatchTarget ?? "(no target)"}' and archived at {thermalResult.ArchivePath}");
+                return true;
+            }
+
+            SetStatus($"Thermal export error: {thermalResult.ErrorMessage} (archive: {thermalResult.ArchivePath})");
+            return false;
+        }
+
+        SetStatus($"Output type '{_settings.LabelOutputType}' is not supported in manual mode.");
+        return false;
+    }
+
+    private ThermalLabelPayload BuildThermalPayload(
+        string labelFormat,
+        int labelTypeCode,
+        string palletId,
+        string itemNumber,
+        int iRef,
+        int plant,
+        string partDescription,
+        string colorDesc,
+        string shapeDesc,
+        string seriesDesc,
+        string labelSize,
+        string stackNumber,
+        string shade,
+        string size,
+        int boxesPerPallet,
+        decimal salesQty,
+        string salesUom,
+        decimal packageWeight,
+        int quantity,
+        string uccBarcode,
+        string cartonUpc)
+    {
+        return new ThermalLabelPayload
+        {
+            LabelFormat = labelFormat,
+            LabelTypeCode = labelTypeCode,
+            PalletId = palletId,
+            ItemNumber = itemNumber,
+            IRef = iRef,
+            Plant = plant,
+            PartDescription = partDescription,
+            ColorDesc = colorDesc,
+            ShapeDesc = shapeDesc,
+            SeriesDesc = seriesDesc,
+            LabelSize = labelSize,
+            StackNumber = stackNumber,
+            Shade = shade,
+            Size = size,
+            BoxesPerPallet = boxesPerPallet,
+            SalesQty = salesQty,
+            SalesUom = salesUom,
+            PackageWeight = packageWeight,
+            Inspector = _inspector,
+            Shift = _shift,
+            LineNumber = _config.LineNumber,
+            Quantity = Math.Clamp(quantity, 1, 999),
+            UccBarcode = uccBarcode,
+            CartonUpc = cartonUpc,
+            CreatedAtUtc = DateTime.UtcNow,
+        };
+    }
+
+    private static string ResolveThermalLabelFormat(ItemDetail? itemDetail)
+    {
+        if (itemDetail is null)
+            return "CARTON_LABEL";
+
+        // Progress-style behavior: label format is derived from item label type code.
+        return itemDetail.LabelTypeCode switch
+        {
+            1 => "SLAB_LABEL",
+            2 => "PALLET_LABEL",
+            3 => "FINISHED_GOOD_LABEL",
+            4 => "WIP_LABEL",
+            _ => "CARTON_LABEL",
+        };
     }
 
     // F6 — View stop reason
@@ -980,6 +1208,226 @@ public class MainForm : Form
         BackColor = back, ForeColor = Color.White, FlatStyle = FlatStyle.Flat,
         Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
     };
+
+    private void StartPlcIpMonitorIfConfigured()
+    {
+        if (!string.Equals(_settings.PlcConnectionType, "IP", StringComparison.OrdinalIgnoreCase))
+        {
+            AddPlcInputLine("monitor disabled (SerialPort)");
+            return;
+        }
+
+        if (!OmronNPortMonitorService.TryParseEndpoint(_settings.PlcAddress, out var host, out var port))
+        {
+            SetStatus($"PLC monitor skipped: invalid PLC address '{_settings.PlcAddress}'.");
+            return;
+        }
+
+        var logPath = Path.Combine(_config.DataDirectory, "plc-ip-monitor.log");
+        var service = new OmronNPortMonitorService(host, port, logPath);
+        service.OnStatus = msg =>
+        {
+            if (!IsDisposed && IsHandleCreated)
+            {
+                try
+                {
+                    BeginInvoke(new Action(() => SetStatus(msg)));
+                }
+                catch
+                {
+                    // ignore UI shutdown race
+                }
+            }
+        };
+        service.OnFrame = frame =>
+        {
+            if (!IsDisposed && IsHandleCreated)
+            {
+                try
+                {
+                    BeginInvoke(new Action(() => AddPlcInputFrame(frame)));
+                }
+                catch
+                {
+                    // ignore UI shutdown race
+                }
+            }
+        };
+
+        _plcMonitorCts = new CancellationTokenSource();
+        _plcMonitorTask = Task.Run(() => service.RunAsync(_plcMonitorCts.Token));
+        AddPlcInputLine($"monitor start {host}:{port}");
+    }
+
+    private void StopPlcIpMonitor()
+    {
+        try
+        {
+            _plcMonitorCts?.Cancel();
+            AddPlcInputLine("monitor stop");
+        }
+        catch
+        {
+            // best-effort shutdown
+        }
+    }
+
+    private void AddPlcInputFrame(PlcDecodedFrame frame)
+    {
+        var decoded = frame.DecodedValue;
+        var line = $"{frame.Timestamp:HH:mm:ss}  {decoded,-8}  {frame.Signature}";
+        AddPlcInputLine(line);
+
+        _ = AppendPlcFrameToBrowseAsync(frame);
+
+        if (string.Equals(decoded, "8", StringComparison.OrdinalIgnoreCase))
+            _ = AutoPrintForPlc8Async();
+    }
+
+    private async Task AppendPlcFrameToBrowseAsync(PlcDecodedFrame frame)
+    {
+        if (!_browsePanel.Visible)
+            return;
+
+        // Only known decoded values are converted to sorter rows.
+        if (!int.TryParse(frame.DecodedValue, out var decodedNumber))
+            return;
+
+        try
+        {
+            var itemNumber = _settings.CurrentPrimaryItem?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(itemNumber))
+                return;
+
+            var itemDetail = await _boxRepo.GetItemDetailByNumberAsync(itemNumber, _config.DoesMexico, CancellationToken.None);
+            if (itemDetail is null)
+                return;
+
+            var boxFile = Path.Combine(_config.DataDirectory, $"boxes{_config.LineNumber:00}.csv");
+            var stackerFile = Path.Combine(_config.DataDirectory, $"stackers{_config.LineNumber:00}.csv");
+
+            int nextRecId = 1;
+            if (File.Exists(boxFile))
+            {
+                foreach (var line in File.ReadAllLines(boxFile))
+                {
+                    if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#") || line.StartsWith("RecId", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    var parts = line.Split(',');
+                    if (parts.Length >= 1 && int.TryParse(parts[0].Trim().Trim('"'), out var recId))
+                        nextRecId = Math.Max(nextRecId, recId + 1);
+                }
+            }
+
+            var stackNumber = Math.Clamp(decodedNumber, 1, 99);
+            var stackNum = $" {stackNumber}";
+            var plcMsg = stackNum + new string(' ', 31) + itemDetail.ItemNumber.PadRight(30);
+            if (plcMsg.Length < 65) plcMsg = plcMsg.PadRight(65);
+
+            var now = DateTime.Now;
+            var boxRecord = $"{nextRecId},{_config.LineNumber},{now:yyyy-MM-dd HH:mm:ss},{stackNum},{plcMsg},,1";
+            var stackerRecord = $"{_config.LineNumber},{stackNum},{itemDetail.IRef},{plcMsg},{itemDetail.Shade},{itemDetail.SizeShape},";
+
+            AppendToFile(boxFile, boxRecord);
+            AppendToFile(stackerFile, stackerRecord);
+
+            await RefreshBrowseAsync();
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"PLC browse append error: {ex.Message}");
+        }
+    }
+
+    private async Task AutoPrintForPlc8Async()
+    {
+        // Ignore PLC triggers outside the active browse/run state.
+        if (!_browsePanel.Visible)
+            return;
+
+        var nowUtc = DateTime.UtcNow;
+        if (nowUtc - _lastPlc8AutoPrintUtc < TimeSpan.FromMilliseconds(700))
+            return;
+
+        if (Interlocked.Exchange(ref _plc8AutoPrintInProgress, 1) == 1)
+            return;
+
+        _lastPlc8AutoPrintUtc = nowUtc;
+        try
+        {
+            var itemNumber = _settings.CurrentPrimaryItem?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(itemNumber))
+            {
+                SetStatus("PLC 8 received, but Current Primary Item is empty.");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(_labelSize))
+            {
+                SetStatus("PLC 8 received before startup completion (label size missing).");
+                return;
+            }
+
+            var itemDetail = await _boxRepo.GetItemDetailByNumberAsync(itemNumber, _config.DoesMexico, CancellationToken.None);
+            if (itemDetail is null)
+            {
+                SetStatus($"PLC 8 print skipped: item '{itemNumber}' not found.");
+                return;
+            }
+
+            var job = new ManualCartonPrintJob(
+                itemDetail.ItemNumber,
+                1,
+                _inspector,
+                _shift,
+                _labelSize,
+                itemDetail.GetPrimaryItemDescription(),
+                Environment.UserName,
+                DateTime.Now);
+
+            var success = await ExportManualLabelAsync(itemDetail, job, CancellationToken.None);
+            if (success)
+                SetStatus($"PLC 8 auto-print sent for {itemDetail.ItemNumber}.");
+            else
+                SetStatus($"PLC 8 auto-print failed for {itemDetail.ItemNumber}.");
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"PLC 8 auto-print error: {ex.Message}");
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _plc8AutoPrintInProgress, 0);
+        }
+    }
+
+    private void AddPlcInputLine(string line)
+    {
+        if (_plcInputList is null || _plcInputList.IsDisposed)
+            return;
+
+        _plcInputList.Items.Insert(0, line);
+        while (_plcInputList.Items.Count > 6)
+            _plcInputList.Items.RemoveAt(_plcInputList.Items.Count - 1);
+    }
+
+    private void PlcInputList_DrawItem(object? sender, DrawItemEventArgs e)
+    {
+        e.DrawBackground();
+
+        if (e.Index < 0 || e.Index >= _plcInputList.Items.Count)
+            return;
+
+        var text = _plcInputList.Items[e.Index]?.ToString() ?? string.Empty;
+        var color = text.Contains("unknown", StringComparison.OrdinalIgnoreCase)
+            ? Color.OrangeRed
+            : Color.LightGreen;
+
+        using var brush = new SolidBrush(color);
+        e.Graphics.DrawString(text, e.Font, brush, e.Bounds);
+        e.DrawFocusRectangle();
+    }
 
     // ═══════════════════════════════════════════════════════════════════════════
     //  BROWSE ROW VIEW MODEL

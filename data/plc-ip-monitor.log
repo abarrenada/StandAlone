@@ -1,0 +1,111 @@
+[2026-07-28 18:11:07.805] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-07-28 18:11:07.849] connected
+[2026-07-28 18:11:17.886] monitor_stop
+[2026-07-28 18:11:17.893] connected
+[2026-07-28 18:11:46.434] monitor_stop
+[2026-07-28 18:11:46.441] connected
+[2026-07-28 18:12:10.055] monitor_stop
+[2026-07-28 18:14:15.782] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-07-28 18:14:15.828] connected
+[2026-07-28 18:14:25.790] monitor_stop
+[2026-07-28 18:14:33.581] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-07-28 18:14:33.590] connected
+[2026-07-28 18:14:41.413] monitor_stop
+[2026-07-28 18:14:41.414] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-07-28 18:14:41.420] connected
+[2026-07-28 18:14:58.774] chunk bytes=4 pending=4 ascii=[....] hex=[00-18-F0-98]
+[2026-07-28 18:14:58.777] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:14:58.783] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-18-F0-98-1E-30-66-C0] u16be=[24,61592,7728,26304] u16le=[6144,39152,12318,49254] guesses=[digits=0;u32be0=1634456;u32be1=506488512]
+[2026-07-28 18:15:00.797] chunk bytes=4 pending=4 ascii=[....] hex=[00-18-F0-98]
+[2026-07-28 18:15:00.799] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:15:00.801] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-18-F0-98-1E-30-66-C0] u16be=[24,61592,7728,26304] u16le=[6144,39152,12318,49254] guesses=[digits=0;u32be0=1634456;u32be1=506488512]
+[2026-07-28 18:15:02.770] chunk bytes=4 pending=4 ascii=[....] hex=[00-18-F0-98]
+[2026-07-28 18:15:02.773] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:15:02.774] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-18-F0-98-1E-30-66-C0] u16be=[24,61592,7728,26304] u16le=[6144,39152,12318,49254] guesses=[digits=0;u32be0=1634456;u32be1=506488512]
+[2026-07-28 18:15:04.778] chunk bytes=4 pending=4 ascii=[....] hex=[00-18-F0-98]
+[2026-07-28 18:15:04.780] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:15:04.781] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-18-F0-98-1E-30-66-C0] u16be=[24,61592,7728,26304] u16le=[6144,39152,12318,49254] guesses=[digits=0;u32be0=1634456;u32be1=506488512]
+[2026-07-28 18:15:06.296] chunk bytes=4 pending=4 ascii=[....] hex=[00-18-F0-98]
+[2026-07-28 18:15:06.299] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:15:06.301] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-18-F0-98-1E-30-66-C0] u16be=[24,61592,7728,26304] u16le=[6144,39152,12318,49254] guesses=[digits=0;u32be0=1634456;u32be1=506488512]
+[2026-07-28 18:20:48.524] chunk bytes=4 pending=4 ascii=[....] hex=[00-98-E0-98]
+[2026-07-28 18:20:48.527] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:20:48.529] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-98-E0-98-1E-30-66-C0] u16be=[152,57496,7728,26304] u16le=[38912,39136,12318,49254] guesses=[digits=0;u32be0=10018968;u32be1=506488512]
+[2026-07-28 18:20:49.557] chunk bytes=4 pending=4 ascii=[....] hex=[00-98-E0-98]
+[2026-07-28 18:20:49.561] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:20:49.563] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-98-E0-98-1E-30-66-C0] u16be=[152,57496,7728,26304] u16le=[38912,39136,12318,49254] guesses=[digits=0;u32be0=10018968;u32be1=506488512]
+[2026-07-28 18:20:50.579] chunk bytes=4 pending=4 ascii=[....] hex=[00-98-E0-98]
+[2026-07-28 18:20:50.583] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:20:50.584] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-98-E0-98-1E-30-66-C0] u16be=[152,57496,7728,26304] u16le=[38912,39136,12318,49254] guesses=[digits=0;u32be0=10018968;u32be1=506488512]
+[2026-07-28 18:20:55.038] chunk bytes=4 pending=4 ascii=[....] hex=[00-18-C3-98]
+[2026-07-28 18:20:55.041] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:20:55.042] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-18-C3-98-1E-30-66-C0] u16be=[24,50072,7728,26304] u16le=[6144,39107,12318,49254] guesses=[digits=0;u32be0=1622936;u32be1=506488512]
+[2026-07-28 18:20:55.818] chunk bytes=4 pending=4 ascii=[....] hex=[00-18-C3-98]
+[2026-07-28 18:20:55.822] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:20:55.824] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-18-C3-98-1E-30-66-C0] u16be=[24,50072,7728,26304] u16le=[6144,39107,12318,49254] guesses=[digits=0;u32be0=1622936;u32be1=506488512]
+[2026-07-28 18:20:56.728] chunk bytes=4 pending=4 ascii=[....] hex=[00-18-C3-98]
+[2026-07-28 18:20:56.732] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:20:56.734] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-18-C3-98-1E-30-66-C0] u16be=[24,50072,7728,26304] u16le=[6144,39107,12318,49254] guesses=[digits=0;u32be0=1622936;u32be1=506488512]
+[2026-07-28 18:21:02.686] chunk bytes=4 pending=4 ascii=[....] hex=[00-18-F0-98]
+[2026-07-28 18:21:02.689] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:21:02.690] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-18-F0-98-1E-30-66-C0] u16be=[24,61592,7728,26304] u16le=[6144,39152,12318,49254] guesses=[digits=0;u32be0=1634456;u32be1=506488512]
+[2026-07-28 18:21:03.469] chunk bytes=4 pending=4 ascii=[....] hex=[00-18-F0-98]
+[2026-07-28 18:21:03.473] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:21:03.475] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-18-F0-98-1E-30-66-C0] u16be=[24,61592,7728,26304] u16le=[6144,39152,12318,49254] guesses=[digits=0;u32be0=1634456;u32be1=506488512]
+[2026-07-28 18:21:04.409] chunk bytes=4 pending=4 ascii=[....] hex=[00-18-F0-98]
+[2026-07-28 18:21:04.412] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:21:04.414] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-18-F0-98-1E-30-66-C0] u16be=[24,61592,7728,26304] u16le=[6144,39152,12318,49254] guesses=[digits=0;u32be0=1634456;u32be1=506488512]
+[2026-07-28 18:21:11.196] chunk bytes=4 pending=4 ascii=[....] hex=[00-98-F8-98]
+[2026-07-28 18:21:11.199] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:21:11.200] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-98-F8-98-1E-30-66-C0] u16be=[152,63640,7728,26304] u16le=[38912,39160,12318,49254] guesses=[digits=0;u32be0=10025112;u32be1=506488512]
+[2026-07-28 18:21:12.216] chunk bytes=4 pending=4 ascii=[....] hex=[00-98-F8-98]
+[2026-07-28 18:21:12.219] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:21:12.220] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-98-F8-98-1E-30-66-C0] u16be=[152,63640,7728,26304] u16le=[38912,39160,12318,49254] guesses=[digits=0;u32be0=10025112;u32be1=506488512]
+[2026-07-28 18:21:12.970] chunk bytes=4 pending=4 ascii=[....] hex=[00-98-F8-98]
+[2026-07-28 18:21:12.972] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:21:12.977] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-98-F8-98-1E-30-66-C0] u16be=[152,63640,7728,26304] u16le=[38912,39160,12318,49254] guesses=[digits=0;u32be0=10025112;u32be1=506488512]
+[2026-07-28 18:22:48.227] monitor_stop
+[2026-07-28 18:23:04.170] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-07-28 18:23:04.212] connected
+[2026-07-28 18:23:23.307] chunk bytes=4 pending=4 ascii=[....] hex=[00-98-E0-98]
+[2026-07-28 18:23:23.308] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:23:23.310] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-98-E0-98-1E-30-66-C0] u16be=[152,57496,7728,26304] u16le=[38912,39136,12318,49254] guesses=[decoded=1;digits=0;u32be0=10018968;u32be1=506488512]
+[2026-07-28 18:23:28.456] chunk bytes=4 pending=4 ascii=[....] hex=[00-18-C3-98]
+[2026-07-28 18:23:28.459] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:23:28.460] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-18-C3-98-1E-30-66-C0] u16be=[24,50072,7728,26304] u16le=[6144,39107,12318,49254] guesses=[decoded=2;digits=0;u32be0=1622936;u32be1=506488512]
+[2026-07-28 18:23:33.475] chunk bytes=4 pending=4 ascii=[....] hex=[00-18-F0-98]
+[2026-07-28 18:23:33.479] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:23:33.480] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-18-F0-98-1E-30-66-C0] u16be=[24,61592,7728,26304] u16le=[6144,39152,12318,49254] guesses=[decoded=8;digits=0;u32be0=1634456;u32be1=506488512]
+[2026-07-28 18:23:37.885] chunk bytes=4 pending=4 ascii=[....] hex=[00-98-F8-98]
+[2026-07-28 18:23:37.888] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:23:37.889] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-98-F8-98-1E-30-66-C0] u16be=[152,63640,7728,26304] u16le=[38912,39160,12318,49254] guesses=[decoded=9;digits=0;u32be0=10025112;u32be1=506488512]
+[2026-07-28 18:23:43.325] chunk bytes=4 pending=4 ascii=[..x.] hex=[00-98-78-CC]
+[2026-07-28 18:23:43.329] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:23:43.330] frame bytes=8 pendingAfter=0 ascii=[..x..0f.] hex=[00-98-78-CC-1E-30-66-C0] u16be=[152,30924,7728,26304] u16le=[38912,52344,12318,49254] guesses=[decoded=unknown(sig=00-98-78-CC);digits=0;u32be0=9992396;u32be1=506488512]
+[2026-07-28 18:23:47.466] chunk bytes=4 pending=4 ascii=[....] hex=[00-18-CC-98]
+[2026-07-28 18:23:47.470] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:23:47.471] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-18-CC-98-1E-30-66-C0] u16be=[24,52376,7728,26304] u16le=[6144,39116,12318,49254] guesses=[decoded=unknown(sig=00-18-CC-98);digits=0;u32be0=1625240;u32be1=506488512]
+[2026-07-28 18:26:56.788] monitor_stop
+[2026-07-28 18:29:20.824] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-07-28 18:29:20.873] connected
+[2026-07-28 18:29:33.468] chunk bytes=4 pending=4 ascii=[....] hex=[00-18-CC-98]
+[2026-07-28 18:29:33.470] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:29:33.472] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-18-CC-98-1E-30-66-C0] u16be=[24,52376,7728,26304] u16le=[6144,39116,12318,49254] guesses=[decoded=4;digits=0;u32be0=1625240;u32be1=506488512]
+[2026-07-28 18:29:39.845] chunk bytes=4 pending=4 ascii=[....] hex=[00-18-F0-98]
+[2026-07-28 18:29:39.848] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:29:39.849] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-18-F0-98-1E-30-66-C0] u16be=[24,61592,7728,26304] u16le=[6144,39152,12318,49254] guesses=[decoded=8;digits=0;u32be0=1634456;u32be1=506488512]
+[2026-07-28 18:32:33.677] monitor_stop
+[2026-07-28 18:32:48.319] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-07-28 18:32:48.368] connected
+[2026-07-28 18:33:00.978] chunk bytes=4 pending=4 ascii=[....] hex=[00-18-F0-98]
+[2026-07-28 18:33:00.979] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:33:00.981] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-18-F0-98-1E-30-66-C0] u16be=[24,61592,7728,26304] u16le=[6144,39152,12318,49254] guesses=[decoded=8;digits=0;u32be0=1634456;u32be1=506488512]
+[2026-07-28 18:34:44.882] monitor_stop
+[2026-07-28 18:35:01.411] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-07-28 18:35:01.463] connected
+[2026-07-28 18:35:15.064] chunk bytes=4 pending=4 ascii=[....] hex=[00-18-F0-98]
+[2026-07-28 18:35:15.066] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:35:15.068] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-18-F0-98-1E-30-66-C0] u16be=[24,61592,7728,26304] u16le=[6144,39152,12318,49254] guesses=[decoded=8;digits=0;u32be0=1634456;u32be1=506488512]
+[2026-07-28 18:35:40.633] chunk bytes=4 pending=4 ascii=[....] hex=[00-18-F0-98]
+[2026-07-28 18:35:40.634] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
+[2026-07-28 18:35:40.635] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-18-F0-98-1E-30-66-C0] u16be=[24,61592,7728,26304] u16le=[6144,39152,12318,49254] guesses=[decoded=8;digits=0;u32be0=1634456;u32be1=506488512]

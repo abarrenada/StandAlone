@@ -19,8 +19,11 @@ public class AppSettings
 
     public int PlcBaudRate { get; set; } = 9600;
 
-    /// <summary>"NiceLabel Xml", "SerialPort", or "HttpPost"</summary>
+    /// <summary>"NiceLabel Xml", "NetworkPrinter", "SerialPort", or "HttpPost"</summary>
     public string LabelOutputType { get; set; } = "NiceLabel Xml";
+
+    /// <summary>Thermal language type for direct printer output.</summary>
+    public string ThermalPrinterType { get; set; } = "SATO";
 
     /// <summary>For HttpPost: target URL. For SerialPort: COM port + baud.</summary>
     public string LabelOutputAddress { get; set; } = string.Empty;
