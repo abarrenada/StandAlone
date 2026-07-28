@@ -1,0 +1,11 @@
+LineId,StackNum,IRef,PlcMsg,Shade,Size,ErrMsg
+1," 1",615229,"(65 chars message placeholder......................)",555,"L",""
+1," 2",42,"(65 chars message placeholder......................)",100,"M",""
+1," 3",100,"(65 chars message placeholder......................)",200,"L","*OK"
+
+1, 1,615229,"TEST ITEM WITH PADDING                                    ",555,L,""
+1, 2,615229,"TEST ITEM WITH PADDING                                    ",555,L,""
+1, 3,615229," 3                               FL9036MOD1P4                    ",555,L,""
+1, 1,615229, 1                               FL9036MOD1P4                    ,555,L,
+1, 2,615229, 2                               FL9036MOD1P4                    ,555,L,
+1, 3,615229, 3                               FL9036MOD1P4                    ,555,L,
