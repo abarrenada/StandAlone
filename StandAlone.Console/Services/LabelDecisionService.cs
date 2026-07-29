@@ -23,10 +23,13 @@ public class LabelDecisionService : ILabelDecisionService
     {
         return labelTypeCode switch
         {
-            1 => "SLAB_LABEL",
-            2 => "PALLET_LABEL",
-            3 => "FINISHED_GOOD_LABEL",
-            4 => "WIP_LABEL",
+            0 => "DALTILE",
+            1 => "TYPE1_PENDING",
+            2 => "LOWES",
+            3 => "HOME_DEPOT",
+            4 => "TYPE4_PENDING",
+            5 => "TYPE5_PENDING",
+            6 => "TYPE6_PENDING",
             _ => "UNKNOWN"
         };
     }

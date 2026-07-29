@@ -965,7 +965,7 @@ public class MainForm : Form
             if (string.Equals(outputType, "NetworkPrinter", StringComparison.OrdinalIgnoreCase))
             {
                 var payload = BuildThermalPayload(
-                    labelFormat: ResolveThermalLabelFormat(itemDetail),
+                    labelFormat: ResolveThermalLabelFormat(itemDetail, stacker?.Size ?? _labelSize),
                     labelTypeCode: itemDetail?.LabelTypeCode ?? 0,
                     palletId: string.Empty,
                     itemNumber: itemDetail?.ItemNumber ?? itemDisplay,
@@ -1021,7 +1021,7 @@ public class MainForm : Form
         if (string.Equals(outputType, "NetworkPrinter", StringComparison.OrdinalIgnoreCase))
         {
             var payload = BuildThermalPayload(
-                labelFormat: ResolveThermalLabelFormat(itemDetail),
+                labelFormat: ResolveThermalLabelFormat(itemDetail, job.LabelSize),
                 labelTypeCode: itemDetail.LabelTypeCode,
                 palletId: string.Empty,
                 itemNumber: job.ItemNumber,
@@ -1116,20 +1116,49 @@ public class MainForm : Form
         };
     }
 
-    private static string ResolveThermalLabelFormat(ItemDetail? itemDetail)
+    private static string ResolveThermalLabelFormat(ItemDetail? itemDetail, string? labelSize)
     {
-        if (itemDetail is null)
-            return "CARTON_LABEL";
+        if (LooksLikeSlabProcess(itemDetail, labelSize))
+            return "SLAB_LABEL";
 
-        // Progress-style behavior: label format is derived from item label type code.
-        return itemDetail.LabelTypeCode switch
-        {
-            1 => "SLAB_LABEL",
-            2 => "PALLET_LABEL",
-            3 => "FINISHED_GOOD_LABEL",
-            4 => "WIP_LABEL",
-            _ => "CARTON_LABEL",
-        };
+        return IsPalletLabelSize(labelSize)
+            ? "PALLET_LABEL"
+            : "CARTON_LABEL";
+    }
+
+    private static bool IsPalletLabelSize(string? labelSize)
+    {
+        if (string.IsNullOrWhiteSpace(labelSize))
+            return false;
+
+        var normalized = new string(labelSize
+            .Where(char.IsLetterOrDigit)
+            .Select(char.ToUpperInvariant)
+            .ToArray());
+
+        // Business rule provided by operations: pallet labels are 6x4.
+        return normalized.Contains("6X4", StringComparison.Ordinal);
+    }
+
+    private static bool LooksLikeSlabProcess(ItemDetail? itemDetail, string? labelSize)
+    {
+        if (!string.IsNullOrWhiteSpace(labelSize) &&
+            labelSize.Contains("SLAB", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (itemDetail is null)
+            return false;
+
+        return ContainsSlab(itemDetail.ProductType) ||
+               ContainsSlab(itemDetail.TypeOfTile) ||
+               ContainsSlab(itemDetail.SeriesDesc) ||
+               ContainsSlab(itemDetail.LISDescription);
+    }
+
+    private static bool ContainsSlab(string? value)
+    {
+        return !string.IsNullOrWhiteSpace(value) &&
+               value.Contains("SLAB", StringComparison.OrdinalIgnoreCase);
     }
 
     // F6 — View stop reason

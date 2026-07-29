@@ -282,21 +282,14 @@ internal static class ThermalPrinterCommandBuilder
         var bc128 = $"%20{yddd}{Math.Clamp(p.IRef, 0, 999999):000000}{bcShade}01{Math.Clamp(p.Shift, 0, 9)}{bcLine}{bcPlant}{ctnQty}";
         var descLine = BuildDescriptionLine(p);
 
-        var title = p.LabelFormat switch
-        {
-            "SLAB_LABEL" => "DALTILE SLAB LABEL",
-            "FINISHED_GOOD_LABEL" => "DALTILE FINISHED GOOD",
-            "WIP_LABEL" => "DALTILE WIP LABEL",
-            _ => "DALTILE CARTON LABEL",
-        };
+        var businessTypeName = ResolveBusinessLabelTypeName(p.LabelTypeCode);
+        var title = string.Equals(p.LabelFormat, "SLAB_LABEL", StringComparison.OrdinalIgnoreCase)
+            ? "SLAB LABEL"
+            : $"{businessTypeName} CARTON LABEL";
 
-        var barcodeCaption = p.LabelFormat switch
-        {
-            "SLAB_LABEL" => "SLAB 128:",
-            "FINISHED_GOOD_LABEL" => "FG 128:",
-            "WIP_LABEL" => "WIP 128:",
-            _ => "128:",
-        };
+        var barcodeCaption = string.Equals(p.LabelFormat, "SLAB_LABEL", StringComparison.OrdinalIgnoreCase)
+            ? "SLAB 128:"
+            : "128:";
 
         var sb = new StringBuilder();
         sb.Append(stx);
@@ -322,7 +315,7 @@ internal static class ThermalPrinterCommandBuilder
         sb.Append(esc).Append("H0180").Append(esc).Append("V0415").Append(esc)
             .Append("XM").Append(ClipAscii($"DATE: {yddd}:{hhmm}  IREF: {p.IRef:000000}  PLANT: {bcPlant}", 48)).AppendLine();
         sb.Append(esc).Append("H0180").Append(esc).Append("V0450").Append(esc)
-            .Append("XM").Append(ClipAscii($"LTYPE: {p.LabelTypeCode:00}  FORMAT: {p.LabelFormat}", 48)).AppendLine();
+            .Append("XM").Append(ClipAscii($"LTYPE: {p.LabelTypeCode:00} {businessTypeName}  FORMAT: {p.LabelFormat}", 48)).AppendLine();
 
         var upcBarcode = string.IsNullOrWhiteSpace(p.CartonUpc) ? p.ItemNumber : p.CartonUpc;
         sb.Append(esc).Append("H0180").Append(esc).Append("V0470").Append(esc)
@@ -353,6 +346,8 @@ internal static class ThermalPrinterCommandBuilder
             : p.PalletId;
         var upcBarcode = string.IsNullOrWhiteSpace(p.CartonUpc) ? p.ItemNumber : p.CartonUpc;
 
+        var businessTypeName = ResolveBusinessLabelTypeName(p.LabelTypeCode);
+
         var sb = new StringBuilder();
         sb.Append(stx);
         sb.Append(esc).Append("A").AppendLine();
@@ -360,7 +355,7 @@ internal static class ThermalPrinterCommandBuilder
         sb.Append(esc).Append("Q").Append(Math.Clamp(p.Quantity, 1, 999)).AppendLine();
 
         sb.Append(esc).Append("H0180").Append(esc).Append("V0080").Append(esc)
-            .Append("L0202").Append(esc).Append("XM").Append("DALTILE PALLET LABEL").AppendLine();
+            .Append("L0202").Append(esc).Append("XM").Append(ClipAscii($"{businessTypeName} PALLET LABEL", 32)).AppendLine();
         sb.Append(esc).Append("H0180").Append(esc).Append("V0145").Append(esc)
             .Append("XM").Append(ClipAscii($"PALLET ID: {palletId}", 44)).AppendLine();
         sb.Append(esc).Append("H0180").Append(esc).Append("V0190").Append(esc)
@@ -386,10 +381,12 @@ internal static class ThermalPrinterCommandBuilder
 
     private static string BuildIpl(ThermalLabelPayload p)
     {
+        var businessTypeName = ResolveBusinessLabelTypeName(p.LabelTypeCode);
         var sb = new StringBuilder();
         sb.AppendLine("<STX><ESC>P");
         sb.AppendLine("q400");
         sb.AppendLine("Q120,24");
+        sb.AppendLine($"A20,2,0,3,1,1,N,\"LTYPE {p.LabelTypeCode:00} {ClipAscii(businessTypeName, 18)}\"");
         sb.AppendLine($"A20,20,0,4,1,1,N,\"ITEM {ClipAscii(p.ItemNumber, 24)}\"");
         sb.AppendLine($"A20,50,0,3,1,1,N,\"{ClipAscii(p.PartDescription, 40)}\"");
         sb.AppendLine($"A20,80,0,3,1,1,N,\"SHADE {ClipAscii(p.Shade, 8)} SIZE {ClipAscii(p.Size, 8)}\"");
@@ -405,12 +402,14 @@ internal static class ThermalPrinterCommandBuilder
     private static string BuildZpl(ThermalLabelPayload p)
     {
         var barcode = string.IsNullOrWhiteSpace(p.CartonUpc) ? p.ItemNumber : p.CartonUpc;
+        var businessTypeName = ResolveBusinessLabelTypeName(p.LabelTypeCode);
 
         var sb = new StringBuilder();
         sb.AppendLine("^XA");
         sb.AppendLine("^PW812");
         sb.AppendLine("^LL406");
         sb.AppendLine("^CF0,36");
+        sb.AppendLine($"^FO40,5^A0N,20,20^FDLTYPE {p.LabelTypeCode:00} {ClipAscii(businessTypeName, 18)}^FS");
         sb.AppendLine($"^FO40,30^FDITEM {ClipAscii(p.ItemNumber, 24)}^FS");
         sb.AppendLine($"^FO40,80^A0N,28,28^FD{ClipAscii(p.PartDescription, 46)}^FS");
         sb.AppendLine($"^FO40,120^A0N,28,28^FDSHADE {ClipAscii(p.Shade, 8)}  SIZE {ClipAscii(p.Size, 8)}^FS");
@@ -487,5 +486,20 @@ internal static class ThermalPrinterCommandBuilder
             return fallback;
 
         return digits.Length <= maxLen ? digits.PadLeft(maxLen, '0') : digits[^maxLen..];
+    }
+
+    private static string ResolveBusinessLabelTypeName(int labelTypeCode)
+    {
+        return labelTypeCode switch
+        {
+            0 => "DALTILE",
+            1 => "TYPE1_PENDING",
+            2 => "LOWES",
+            3 => "HOME DEPOT",
+            4 => "TYPE4_PENDING",
+            5 => "TYPE5_PENDING",
+            6 => "TYPE6_PENDING",
+            _ => $"TYPE{labelTypeCode:00}",
+        };
     }
 }

@@ -109,3 +109,6 @@
 [2026-07-28 18:35:40.633] chunk bytes=4 pending=4 ascii=[....] hex=[00-18-F0-98]
 [2026-07-28 18:35:40.634] chunk bytes=4 pending=8 ascii=[.0f.] hex=[1E-30-66-C0]
 [2026-07-28 18:35:40.635] frame bytes=8 pendingAfter=0 ascii=[.....0f.] hex=[00-18-F0-98-1E-30-66-C0] u16be=[24,61592,7728,26304] u16le=[6144,39152,12318,49254] guesses=[decoded=8;digits=0;u32be0=1634456;u32be1=506488512]
+[2026-07-28 21:17:38.716] disconnected
+[2026-07-28 21:17:40.771] connected
+[2026-07-29 09:56:47.643] monitor_stop
