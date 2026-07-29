@@ -9,9 +9,9 @@ public class LabelDecisionServiceTests
     {
         var service = new LabelDecisionService();
 
-        var decision = service.ResolveLabelType(1);
+        var decision = service.ResolveLabelType(0);
 
-        Assert.Equal("SLAB_LABEL", decision);
+        Assert.Equal("DALTILE", decision);
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public class LabelDecisionServiceTests
             var rows = service.ReadInputCsv(tempFile);
 
             Assert.Single(rows.Where(r => r.ItemNumber == "ABC123"));
-            Assert.Equal("PALLET_LABEL", rows.First(r => r.ItemNumber == "ABC123").LabelFormat);
+            Assert.Equal("LOWES", rows.First(r => r.ItemNumber == "ABC123").LabelFormat);
             Assert.Equal("UNKNOWN", rows.First(r => r.ItemNumber == "XYZ999").LabelFormat);
         }
         finally

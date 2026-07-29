@@ -74,7 +74,7 @@ public class FileLabelPrinter : ILabelPrinter
         var escapedItem = System.Security.SecurityElement.Escape(itemNumber);
         var escapedSerial = System.Security.SecurityElement.Escape(serialNumber ?? string.Empty);
 
-        if (string.Equals(labelFormat, "PALLET_LABEL", StringComparison.OrdinalIgnoreCase))
+        if (labelFormat.StartsWith("PALLET_LABEL", StringComparison.OrdinalIgnoreCase))
         {
             var palletId = string.IsNullOrWhiteSpace(escapedSerial)
                 ? $"PALLET-{plant}-{printedAt:yyyyMMddHHmmss}"

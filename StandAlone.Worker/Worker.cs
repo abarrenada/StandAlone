@@ -153,16 +153,13 @@ public class Worker : BackgroundService
             {
                 ItemNumber = matchingItem.ItemNumber,
                 Plant = matchingItem.Plant,
-                LabelTypeCode = 2,
-                LabelFormat = "PALLET_LABEL"
+                LabelTypeCode = 0,
+                LabelFormat = "DALTILE"
             };
 
-        if (!string.Equals(decision.LabelFormat, "PALLET_LABEL", StringComparison.OrdinalIgnoreCase))
-        {
-            _logger.LogWarning("Running item {item} mapped to label format {format} but pallet scan expects PALLET_LABEL.", matchingItem.ItemNumber, decision.LabelFormat);
-        }
+        var palletFormat = BuildPalletFormat(decision.LabelFormat);
 
-        var output = await _printer.PrintAsync(matchingItem.ItemNumber, matchingItem.Plant, decision.LabelFormat, cancellationToken, matchingItem.SerialNumber);
+        var output = await _printer.PrintAsync(matchingItem.ItemNumber, matchingItem.Plant, palletFormat, cancellationToken, matchingItem.SerialNumber);
         if (output.Success)
         {
             _logger.LogInformation("Pallet label generated for serial {serial}, item {item}", matchingItem.SerialNumber, matchingItem.ItemNumber);
@@ -170,7 +167,7 @@ public class Worker : BackgroundService
         else
         {
             _logger.LogError("Pallet label generation failed: {error}", output.ErrorMessage);
-            QueueFailedPalletLabel(matchingItem.ItemNumber, matchingItem.Plant, decision.LabelFormat, matchingItem.SerialNumber, output.ErrorMessage);
+            QueueFailedPalletLabel(matchingItem.ItemNumber, matchingItem.Plant, palletFormat, matchingItem.SerialNumber, output.ErrorMessage);
         }
     }
 
@@ -328,5 +325,17 @@ public class Worker : BackgroundService
         public int RetryCount { get; set; }
         public DateTimeOffset QueuedAt { get; set; }
         public DateTimeOffset? LastTriedAt { get; set; }
+    }
+
+    private static string BuildPalletFormat(string? labelVariant)
+    {
+        if (string.IsNullOrWhiteSpace(labelVariant))
+            return "PALLET_LABEL";
+
+        var normalized = labelVariant.Trim().Replace(' ', '_').ToUpperInvariant();
+        if (normalized.StartsWith("PALLET_LABEL", StringComparison.Ordinal))
+            return normalized;
+
+        return $"PALLET_LABEL_{normalized}";
     }
 }
