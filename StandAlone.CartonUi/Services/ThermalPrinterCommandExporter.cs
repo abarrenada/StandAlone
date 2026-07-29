@@ -267,6 +267,7 @@ internal static class ThermalPrinterCommandBuilder
 
     private static string BuildSatoCarton(ThermalLabelPayload p)
     {
+        //tony comment for test
         // Progress-style framing used in legacy SATO flows: STX + ESC A ... ESC Z + ETX.
         const char stx = (char)0x02;
         const char etx = (char)0x03;
