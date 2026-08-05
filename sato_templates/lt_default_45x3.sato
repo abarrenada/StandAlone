@@ -1,0 +1,37 @@
+# symbolic SATO template
+# source include: dtlbl060b.i
+# branch: default / 4.5x3
+
+<STX>
+\x1bA
+\x1bCS2
+\x1bQ{Quantity}
+\x1bA3H000V000
+\x1bH040\x1bV075\x1bL0001\x1bXSColor/Couleur:
+\x1bH280\x1bV075\x1bL0001\x1bXSShape/Forme:
+\x1bH700\x1bV075\x1bL0001\x1bXS{CreatedAtUtc}
+\x1bH050\x1bV125\x1bL0101\x1bWL0{ItemNumber}
+\x1bH280\x1bV125\x1bL0101\x1bWL0{PartDescription}
+\x1bH790\x1bV125\x1bL0001\x1bXS{Inspector}
+\x1bH070\x1bV170\x1bBG03080>H{UccBarcode}
+\x1bH073\x1bV265\x1bFW03H730
+\x1bH095\x1bV283\x1bL0001\x1bXS{UccBarcode}
+\x1bH050\x1bV310\x1bL0001\x1bXS{ColorDesc}
+\x1bH050\x1bV338\x1bL0001\x1bXS{Size}
+\x1bH050\x1bV366\x1bL0001\x1bXS{ShapeDesc}
+\x1bH050\x1bV394\x1bL0001\x1bXS{SeriesDesc}
+\x1bH050\x1bV422\x1bL0001\x1bXS{LabelSize}
+\x1bH050\x1bV450\x1bL0001\x1bXM{PartDescription}
+\x1bH140\x1bV505\x1bL0001\x1bXL0{Plant}
+\x1bH620\x1bV283\x1bL0001\x1bXSShade/Teinte
+\x1bH620\x1bV323\x1bL0101\x1bXS{Shade}
+\x1bH620\x1bV351\x1bL0001\x1bXSQual/Cal: {StackNumber}
+\x1bH620\x1bV379\x1bL0001\x1bXSLoc: {LineNumber}
+\x1bH620\x1bV407\x1bL0001\x1bXS{IRef}:{Plant}
+\x1bH620\x1bV435\x1bL0001\x1bXS{SalesQty} {SalesUom}
+\x1bH620\x1bV463\x1bL0001\x1bXS{PackageWeight}
+\x1bH620\x1bV491\x1bL0001\x1bXS{Quantity} UNITS
+\x1bH550\x1bV510\x1bD3020700{CartonUpc}
+\x1bH553\x1bV515\x1bFW03H180
+\x1bZ
+<ETX>

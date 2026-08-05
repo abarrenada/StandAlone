@@ -1,0 +1,21 @@
+# symbolic SATO template
+# source include: t0sz45x3-co-aut-toplast.i
+# branch: label-type=6 / crossover / 4.5x3 / ref-first
+
+<STX>
+\x1bA
+\x1bCS2
+\x1bQ1
+\x1bH0180\x1bV0080\x1bL0202\x1bXMDALTILE CARTON LABEL
+\x1bH0180\x1bV0145\x1bXMITEM: {ItemNumber}
+\x1bH0180\x1bV0190\x1bXMSHADE: {Shade} SIZE: {Size}
+\x1bH0180\x1bV0235\x1bXM {PartDescription} |  {Size} X  {Shade} X  {Quantity} IN | FINISH LINE
+\x1bH0180\x1bV0280\x1bXMQTY/CTN: {Quantity} SALES: {SalesQty} {SalesUom}
+\x1bH0180\x1bV0325\x1bXMWT: {PackageWeight} LINE: {LineNumber} SHIFT: {Shift}
+\x1bH0180\x1bV0370\x1bXMINSP: {Inspector} STACK: {StackNumber} SIZECD: {Size}
+\x1bH0180\x1bV0415\x1bXMDATE: {CreatedAtUtc} IREF: {IRef} PLANT: {Plant}
+\x1bH0180\x1bV0470\x1bXMUPC:
+\x1bH0180\x1bV0510\x1bB103100\x1bD {CartonUpc}
+\x1bH0680\x1bV0470\x1bXM128:
+\x1bH0680\x1bV0510\x1bB103080\x1bD {UccBarcode}
+\x1bZ

@@ -2,6 +2,7 @@ using StandAlone.CartonUi.Models;
 using StandAlone.Integration.Services;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace StandAlone.CartonUi.Services;
 
@@ -64,7 +65,7 @@ public sealed class ThermalPrinterCommandExporter
 
     private string ResolveCommandText(ThermalLabelPayload payload)
     {
-        var type = NormalizeType(_thermalPrinterType);
+        var type = NormalizePrinterType(_thermalPrinterType);
         if (type == "SATO")
         {
             var templateName = SatoTemplateResolver.ResolveTemplateFileName(payload);
@@ -75,12 +76,48 @@ public sealed class ThermalPrinterCommandExporter
                 if (File.Exists(templatePath))
                 {
                     var template = File.ReadAllText(templatePath);
-                    return SatoTemplateRenderer.RenderTemplate(template, payload);
+                    var rendered = SatoTemplateRenderer.RenderTemplate(template, payload);
+                    return DecodeSatoControlMarkers(rendered);
                 }
             }
         }
 
         return ThermalPrinterCommandBuilder.Build(_thermalPrinterType, payload);
+    }
+
+    private static string NormalizePrinterType(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return "SATO";
+
+        return value.Trim().ToLowerInvariant() switch
+        {
+            "sato" => "SATO",
+            "ipl" => "IPL",
+            "zpl" => "ZPL",
+            "fingerprint" => "Fingerprint",
+            _ => "SATO",
+        };
+    }
+
+    private static string DecodeSatoControlMarkers(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return string.Empty;
+
+        // Convert symbolic control markers used in repository templates to
+        // raw SBPL control bytes expected by SATO printers.
+        var decoded = text
+            .Replace("<STX>", ((char)0x02).ToString(), StringComparison.OrdinalIgnoreCase)
+            .Replace("<ETX>", ((char)0x03).ToString(), StringComparison.OrdinalIgnoreCase)
+            .Replace("<ESC>", ((char)0x1B).ToString(), StringComparison.OrdinalIgnoreCase)
+            .Replace("\\x1b", ((char)0x1B).ToString(), StringComparison.OrdinalIgnoreCase)
+            .Replace("\\x1B", ((char)0x1B).ToString(), StringComparison.Ordinal);
+
+        return Regex.Replace(
+            decoded,
+            "\\\\x(?<hex>[0-9A-Fa-f]{2})",
+            match => ((char)Convert.ToByte(match.Groups["hex"].Value, 16)).ToString());
     }
 
     private async Task<string> DispatchToTargetAsync(string target, string commandText, CancellationToken ct)

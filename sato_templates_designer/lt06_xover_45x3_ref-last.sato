@@ -1,0 +1,20 @@
+# symbolic SATO template
+# source include: t0sz45x3-co-aut-topfirst.i
+# branch: label-type=6 / crossover / 4.5x3 / ref-last
+
+<ESC>A
+<ESC>CS2
+<ESC>Q1
+<ESC>H0180<ESC>V0080<ESC>L0202<ESC>XMDALTILE CARTON LABEL
+<ESC>H0180<ESC>V0145<ESC>XMITEM: {ItemNumber}
+<ESC>H0180<ESC>V0190<ESC>XMSHADE: {Shade} SIZE: {Size}
+<ESC>H0180<ESC>V0235<ESC>XM {PartDescription} |  {Size} X  {Shade} X  {Quantity} IN | FINISH LINE
+<ESC>H0180<ESC>V0280<ESC>XMQTY/CTN: {Quantity} SALES: {SalesQty} {SalesUom}
+<ESC>H0180<ESC>V0325<ESC>XMWT: {PackageWeight} LINE: {LineNumber} SHIFT: {Shift}
+<ESC>H0180<ESC>V0370<ESC>XMINSP: {Inspector} STACK: {StackNumber} SIZECD: {Size}
+<ESC>H0180<ESC>V0415<ESC>XMDATE: {CreatedAtUtc} IREF: {IRef} PLANT: {Plant}
+<ESC>H0180<ESC>V0470<ESC>XMUPC:
+<ESC>H0180<ESC>V0510<ESC>B103100<ESC>D {CartonUpc}
+<ESC>H0680<ESC>V0470<ESC>XM128:
+<ESC>H0680<ESC>V0510<ESC>B103080<ESC>D {UccBarcode}
+<ESC>Z
