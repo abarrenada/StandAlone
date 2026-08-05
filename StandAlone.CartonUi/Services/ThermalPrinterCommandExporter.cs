@@ -1,4 +1,5 @@
 using StandAlone.CartonUi.Models;
+using StandAlone.Integration.Services;
 using System.Net.Sockets;
 using System.Text;
 
@@ -24,7 +25,7 @@ public sealed class ThermalPrinterCommandExporter
     {
         try
         {
-            var commandText = ThermalPrinterCommandBuilder.Build(_thermalPrinterType, payload);
+            var commandText = ResolveCommandText(payload);
             var archivePath = ResolveArchivePath(payload.CreatedAtUtc);
 
             var dir = Path.GetDirectoryName(archivePath);
@@ -59,6 +60,27 @@ public sealed class ThermalPrinterCommandExporter
         {
             return new ThermalExportResult(false, string.Empty, null, false, string.Empty, ex.Message);
         }
+    }
+
+    private string ResolveCommandText(ThermalLabelPayload payload)
+    {
+        var type = NormalizeType(_thermalPrinterType);
+        if (type == "SATO")
+        {
+            var templateName = SatoTemplateResolver.ResolveTemplateFileName(payload);
+            if (!string.IsNullOrWhiteSpace(templateName))
+            {
+                var templatesDirectory = SatoTemplateResolver.FindTemplateDirectory();
+                var templatePath = Path.Combine(templatesDirectory, templateName);
+                if (File.Exists(templatePath))
+                {
+                    var template = File.ReadAllText(templatePath);
+                    return SatoTemplateRenderer.RenderTemplate(template, payload);
+                }
+            }
+        }
+
+        return ThermalPrinterCommandBuilder.Build(_thermalPrinterType, payload);
     }
 
     private async Task<string> DispatchToTargetAsync(string target, string commandText, CancellationToken ct)
@@ -212,35 +234,6 @@ public sealed record ThermalExportResult(
     bool Dispatched,
     string CommandText,
     string? ErrorMessage);
-
-public sealed class ThermalLabelPayload
-{
-    public string LabelFormat { get; init; } = "CARTON_LABEL";
-    public int LabelTypeCode { get; init; }
-    public string PalletId { get; init; } = string.Empty;
-    public string ItemNumber { get; init; } = string.Empty;
-    public int IRef { get; init; }
-    public int Plant { get; init; }
-    public string PartDescription { get; init; } = string.Empty;
-    public string ColorDesc { get; init; } = string.Empty;
-    public string ShapeDesc { get; init; } = string.Empty;
-    public string SeriesDesc { get; init; } = string.Empty;
-    public string LabelSize { get; init; } = string.Empty;
-    public string StackNumber { get; init; } = string.Empty;
-    public string Shade { get; init; } = string.Empty;
-    public string Size { get; init; } = string.Empty;
-    public int BoxesPerPallet { get; init; }
-    public decimal SalesQty { get; init; }
-    public string SalesUom { get; init; } = string.Empty;
-    public decimal PackageWeight { get; init; }
-    public string Inspector { get; init; } = string.Empty;
-    public int Shift { get; init; }
-    public int LineNumber { get; init; }
-    public int Quantity { get; init; } = 1;
-    public string UccBarcode { get; init; } = string.Empty;
-    public string CartonUpc { get; init; } = string.Empty;
-    public DateTime CreatedAtUtc { get; init; } = DateTime.UtcNow;
-}
 
 internal static class ThermalPrinterCommandBuilder
 {
