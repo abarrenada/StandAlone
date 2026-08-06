@@ -49,6 +49,7 @@ public class MainForm : Form
     private ComboBox _labelSizeCombo = null!;
     private TextBox? _primaryItemInput;
     private Label? _primaryItemDescLabel;  // ← Description display below Primary Item
+    private ItemDetail? _primaryItemDetail;
     private TextBox? _secondaryItemInput;
     private NumericUpDown? _manualQtyInput;
     private Button _btnBegin = null!;
@@ -118,29 +119,6 @@ public class MainForm : Form
             BackColor = Color.DarkSlateBlue,
             Padding = new Padding(8, 4, 8, 4),
         });
-
-        // ── Settings button (top-right) ───────────────────────────────────────
-        var btnSettings = new Button
-        {
-            Text = "⚙ Settings",
-            Location = new Point(990, 8), Size = new Size(110, 36),
-            BackColor = Color.DarkSlateGray, ForeColor = Color.LightGray,
-            FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 9f),
-        };
-        btnSettings.Click += (_, _) =>
-        {
-            using var dlg = new SettingsForm();
-            dlg.ShowDialog(this);
-
-            StopPlcIpMonitor();
-            _settings = SettingsManager.Load();
-            StartPlcIpMonitorIfConfigured();
-            Controls.Remove(_startupPanel);
-            _startupPanel.Dispose();
-            BuildStartupPanel();
-            ShowStartup();
-        };
-        _startupPanel.Controls.Add(btnSettings);
 
         // ── Shift  y=120 ──────────────────────────────────────────────────────
         _startupPanel.Controls.Add(MakeLabel("Shift:", new Point(labelX, 124), labelW));
@@ -312,7 +290,7 @@ public class MainForm : Form
     // ─────────────────────────────────────────────────────────────────────────
     //  Startup submit handler
     // ─────────────────────────────────────────────────────────────────────────
-    private void BtnBegin_Click(object? sender, EventArgs e)
+    private async void BtnBegin_Click(object? sender, EventArgs e)
     {
         _shift = (int)_shiftInput.Value;
 
@@ -340,6 +318,44 @@ public class MainForm : Form
             MessageBox.Show("Valid Label Size Only.", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             _labelSizeCombo.Focus();
             return;
+        }
+
+        // Validate primary item: must have open qty and a current/future schedule date
+        if (_config.DoesManStk && !_config.DoesMexico && _primaryItemInput != null)
+        {
+            var itemNumber = _primaryItemInput.Text.Trim();
+            if (!string.IsNullOrEmpty(itemNumber))
+            {
+                var item = (_primaryItemDetail?.ItemNumber.Trim().Equals(itemNumber, StringComparison.OrdinalIgnoreCase) == true)
+                    ? _primaryItemDetail
+                    : await _boxRepo.GetItemDetailByNumberAsync(itemNumber, searchMexicoAlso: true, CancellationToken.None);
+
+                if (item == null)
+                {
+                    MessageBox.Show($"Item '{itemNumber}' not found in item master.", "Cannot Proceed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    _primaryItemInput.Focus();
+                    return;
+                }
+
+                if (item.OpenQty <= 0)
+                {
+                    MessageBox.Show(
+                        $"Item '{itemNumber}' has no open quantity on schedule.\nCannot proceed until open quantity is available.",
+                        "Cannot Proceed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    _primaryItemInput.Focus();
+                    return;
+                }
+
+                if (!DateTime.TryParse(item.ScheduleDate, out var schedDate) || schedDate.Date < DateTime.Today)
+                {
+                    var dateDisplay = string.IsNullOrEmpty(item.ScheduleDate) ? "(not set)" : item.ScheduleDate;
+                    MessageBox.Show(
+                        $"Item '{itemNumber}' schedule date ({dateDisplay}) must be today or a future date.\nCannot proceed until schedule date criteria is met.",
+                        "Cannot Proceed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    _primaryItemInput.Focus();
+                    return;
+                }
+            }
         }
 
         // Save primary and secondary items for next session
@@ -803,6 +819,7 @@ public class MainForm : Form
         var itemNumber = _primaryItemInput.Text.Trim();
         if (itemNumber.Length == 0)
         {
+            _primaryItemDetail = null;
             _primaryItemDescLabel.Text = "(Enter item number to see description)";
             _primaryItemDescLabel.ForeColor = Color.LightCyan;
             return;
@@ -816,6 +833,7 @@ public class MainForm : Form
 
             if (itemDetail != null)
             {
+                _primaryItemDetail = itemDetail;
                 // Display format: "ColorDesc | ShapeDesc | SeriesDesc"
                 var description = itemDetail.GetPrimaryItemDescription();
                 _primaryItemDescLabel.Text = description;
@@ -823,6 +841,7 @@ public class MainForm : Form
             }
             else
             {
+                _primaryItemDetail = null;
                 // Item not found
                 _primaryItemDescLabel.Text = $"⚠ Item '{itemNumber}' not found in item master";
                 _primaryItemDescLabel.ForeColor = Color.Salmon;
@@ -830,6 +849,7 @@ public class MainForm : Form
         }
         catch (Exception ex)
         {
+            _primaryItemDetail = null;
             _primaryItemDescLabel.Text = $"Error loading description: {ex.Message}";
             _primaryItemDescLabel.ForeColor = Color.Salmon;
         }

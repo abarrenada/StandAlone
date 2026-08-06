@@ -1,4 +1,5 @@
 using StandAlone.CartonUi;
+using StandAlone.CartonUi.Forms;
 using StandAlone.CartonUi.Services;
 using System.Windows.Forms;
 
@@ -20,4 +21,8 @@ SettingsManager.Initialize(baseDir);
 Application.SetHighDpiMode(HighDpiMode.DpiUnaware);
 Application.EnableVisualStyles();
 Application.SetCompatibleTextRenderingDefault(false);
-Application.Run(new MainForm(baseDir));
+
+if (args.Contains("--settings"))
+    Application.Run(new SettingsForm());
+else
+    Application.Run(new MainForm(baseDir));
