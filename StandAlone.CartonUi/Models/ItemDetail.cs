@@ -141,7 +141,16 @@ public class ItemDetail
     
     /// <summary>Label type (0-99)</summary>
     public int LabelTypeCode { get; set; }
-    
+
+    /// <summary>Most recent schedule order number</summary>
+    public string LastScheduleOrder { get; set; } = string.Empty;
+
+    /// <summary>Open quantity remaining on the schedule</summary>
+    public decimal OpenQty { get; set; }
+
+    /// <summary>Schedule date (YYYY-MM-DD)</summary>
+    public string ScheduleDate { get; set; } = string.Empty;
+
     // ===== Helper methods =====
     
     /// <summary>

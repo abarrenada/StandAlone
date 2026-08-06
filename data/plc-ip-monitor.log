@@ -222,3 +222,5 @@
 [2026-08-05 15:09:05.584] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
 [2026-08-05 15:09:28.632] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
 [2026-08-05 15:09:51.683] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-06 16:53:23.786] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-08-06 16:53:29.392] monitor_stop

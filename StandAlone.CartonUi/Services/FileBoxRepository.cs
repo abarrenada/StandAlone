@@ -296,6 +296,12 @@ public class FileBoxRepository : IBoxRepository
             detail.UpdateDate = parts[42].Trim();
         if (parts.Length >= 44)
             detail.LabelTypeCode = int.TryParse(parts[43].Trim(), out var ltc) ? ltc : 0;
+        if (parts.Length >= 45)
+            detail.LastScheduleOrder = parts[44].Trim();
+        if (parts.Length >= 46)
+            detail.OpenQty = decimal.TryParse(parts[45].Trim(), out var oq) ? oq : 0;
+        if (parts.Length >= 47)
+            detail.ScheduleDate = parts[46].Trim();
 
         return detail;
     }
