@@ -1,9 +1,43 @@
 using StandAlone.Console.Services;
+using StandAlone.Integration.Services;
 
 namespace StandAlone.Tests;
 
 public class LabelDecisionServiceTests
 {
+    [Fact]
+    public void SatoTemplateResolver_ChoosesCrossOverTemplate_ForLabelTypeSix()
+    {
+        var payload = new ThermalLabelPayload
+        {
+            LabelTypeCode = 6,
+            LabelSize = "2x6",
+            LabelFormat = "CARTON_LABEL"
+        };
+
+        var fileName = SatoTemplateResolver.ResolveTemplateFileName(payload);
+
+        Assert.Equal("lt06_xover_2x6_ref-first.sato", fileName);
+    }
+
+    [Fact]
+    public void SatoTemplateRenderer_ReplacesPlaceholders_WithCurrentValues()
+    {
+        const string template = "ITEM: {ItemNumber}\nFORMAT: {LabelFormat}\nPLANT: {Plant}";
+        var payload = new ThermalLabelPayload
+        {
+            ItemNumber = "ABC123",
+            Plant = 99,
+            LabelFormat = "CARTON_LABEL"
+        };
+
+        var rendered = SatoTemplateRenderer.RenderTemplate(template, payload);
+
+        Assert.Contains("ITEM: ABC123", rendered);
+        Assert.Contains("FORMAT: CARTON_LABEL", rendered);
+        Assert.Contains("PLANT: 99", rendered);
+    }
+
     [Fact]
     public void ResolveLabelType_ReturnsExpectedFormat_ForKnownCode()
     {

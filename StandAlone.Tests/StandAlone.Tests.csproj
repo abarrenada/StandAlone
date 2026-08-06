@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\StandAlone.Console\StandAlone.Console.csproj" />
+    <ProjectReference Include="..\StandAlone.Integration\StandAlone.Integration.csproj" />
   </ItemGroup>
 
 </Project>
