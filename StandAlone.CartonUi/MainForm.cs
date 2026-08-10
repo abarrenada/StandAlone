@@ -52,7 +52,35 @@ public class MainForm : Form
     private ItemDetail? _primaryItemDetail;
     private TextBox? _secondaryItemInput;
     private NumericUpDown? _manualQtyInput;
+    private TextBox? _shopOrderInput;
+    private TextBox? _shadeManualInput;
+    private TextBox? _caliberInput;
+    private Label? _manualStatusLabel;
     private Button _btnBegin = null!;
+    private Button? _btnPrintCarton;
+    private Button? _btnPrintPallet;
+    // Read-only display TextBoxes for Manual Qty mode
+    private TextBox? _lisQtyDisplay;
+    private TextBox? _cartonQtyDisplay;
+    private TextBox? _palletQtyDisplay;
+    private TextBox? _lineDisplay;
+
+    // ── Pallet query panel controls ───────────────────────────────────────────
+    private Panel? _palletQueryPanel;
+    private TextBox? _serialNoInput;
+    private TextBox? _palletItemNoDisplay;
+    private Label? _palletDescLabel;
+    private TextBox? _palletShopOrderDisplay;
+    private TextBox? _palletLisQtyDisplay;
+    private TextBox? _palletCartonQtyDisplay;
+    private TextBox? _palletPalletQtyDisplay;
+    private TextBox? _palletShadeDisplay;
+    private TextBox? _palletCaliberDisplay;
+    private TextBox? _palletShiftDisplay;
+    private TextBox? _palletLineDisplay;
+    private Label? _palletStatusLabel;
+    private Button? _btnPalletPrint;
+    private ItemDetail? _palletQueryItemDetail;
 
     // ── Browse panel controls ─────────────────────────────────────────────────
     private Panel _browsePanel = null!;
@@ -92,6 +120,9 @@ public class MainForm : Form
         BuildBrowsePanel();
         ShowStartup();
 
+        // Pre-fill item description, shade, and shop order from saved item number
+        Load += async (_, _) => await RefreshPrimaryItemDescriptionAsync();
+
         StartPlcIpMonitorIfConfigured();
         FormClosing += (_, _) => StopPlcIpMonitor();
     }
@@ -104,9 +135,30 @@ public class MainForm : Form
         _startupPanel = new Panel { Dock = DockStyle.Fill, BackColor = Color.MidnightBlue };
 
         const int labelX = 40;
-        const int labelW = 200;
         const int inputX = 250;
         const int inputW = 240;
+
+        bool isManualQtyMode = string.Equals(_settings.CartonPrintMode, "Manual Qty", StringComparison.OrdinalIgnoreCase);
+        if (isManualQtyMode)
+            ClientSize = new Size(1120, 720);
+
+        // ── Corner info labels ────────────────────────────────────────────────
+        _startupPanel.Controls.Add(new Label
+        {
+            Text = $"User: {Environment.UserName}",
+            Location = new Point(8, 8), AutoSize = true,
+            Font = new Font("Segoe UI", 8f), ForeColor = Color.LightCyan,
+        });
+        var printerInfo = string.IsNullOrWhiteSpace(_settings.LabelOutputAddress)
+            ? "(printer not configured)"
+            : $"{_settings.ThermalPrinterType}  {_settings.LabelOutputAddress}";
+        _startupPanel.Controls.Add(new Label
+        {
+            Text = printerInfo,
+            Location = new Point(580, 8), Size = new Size(532, 18),
+            TextAlign = ContentAlignment.MiddleRight,
+            Font = new Font("Segoe UI", 8f), ForeColor = Color.LightCyan,
+        });
 
         // ── Title ──────────────────────────────────────────────────────────────
         _startupPanel.Controls.Add(new Label
@@ -120,58 +172,78 @@ public class MainForm : Form
             Padding = new Padding(8, 4, 8, 4),
         });
 
-        // ── Shift  y=120 ──────────────────────────────────────────────────────
-        _startupPanel.Controls.Add(MakeLabel("Shift:", new Point(labelX, 124), labelW));
-        _shiftInput = new NumericUpDown
+        // ── Right-aligned label helper — colon lands at x=245, field starts at x=250 ──
+        Label MakeRL(string text, int y, int w = 90) => new Label
         {
-            Location = new Point(inputX, 120), Size = new Size(80, 30),
-            Minimum = 1, Maximum = 9, Value = 1,
-            Font = new Font("Segoe UI", 11f),
+            Text = text, Location = new Point(inputX - 5 - w, y), Size = new Size(w, 26),
+            TextAlign = ContentAlignment.MiddleRight,
+            ForeColor = Color.White, Font = new Font("Segoe UI", 10f),
         };
-        _startupPanel.Controls.Add(_shiftInput);
 
-        // ── Inspector  y=180 ──────────────────────────────────────────────────
-        _startupPanel.Controls.Add(MakeLabel("Inspector:", new Point(labelX, 184), labelW));
+        // ── Top fields — flow layout starting at y=120 ────────────────────────
+        // Shift is shown here only in PLC mode; Manual mode places it below with the job fields.
+        int topY = 120;
+
+        if (!isManualQtyMode)
+        {
+            _startupPanel.Controls.Add(MakeRL("Shift:", topY + 5));
+            _shiftInput = new NumericUpDown
+            {
+                Location = new Point(inputX, topY), Size = new Size(80, 30),
+                Minimum = 1, Maximum = 9, Value = 1,
+                Font = new Font("Segoe UI", 11f),
+                BackColor = Color.White, ForeColor = Color.Black,
+            };
+            _startupPanel.Controls.Add(_shiftInput);
+            topY += 60;
+        }
+
+        _startupPanel.Controls.Add(MakeRL("Inspector:", topY + 5));
         _inspectorInput = new TextBox
         {
-            Location = new Point(inputX, 180), Size = new Size(inputW, 30),
+            Location = new Point(inputX, topY), Size = new Size(inputW, 30),
             MaxLength = 20, Font = new Font("Segoe UI", 11f),
+            BackColor = Color.White, ForeColor = Color.Black,
         };
         _startupPanel.Controls.Add(_inspectorInput);
+        topY += 60;
 
-        // ── Label Size  y=240 ─────────────────────────────────────────────────
-        _startupPanel.Controls.Add(MakeLabel("Label Size:", new Point(labelX, 244), labelW));
+        _startupPanel.Controls.Add(MakeRL("Label Size:", topY + 5));
         _labelSizeCombo = new ComboBox
         {
-            Location = new Point(inputX, 240), Size = new Size(inputW, 30),
+            Location = new Point(inputX, topY), Size = new Size(inputW, 30),
             DropDownStyle = ComboBoxStyle.DropDownList,
             Font = new Font("Segoe UI", 11f),
         };
         PopulateLabelSizes();
         _startupPanel.Controls.Add(_labelSizeCombo);
+        topY += 40;
 
-        // Optional size reference list (below combo, 276-336)
         var sizeListText = BuildLabelSizeListText();
         if (!string.IsNullOrEmpty(sizeListText))
         {
             _startupPanel.Controls.Add(new Label
             {
-                Location = new Point(inputX, 276), Size = new Size(600, 60),
+                Location = new Point(inputX, topY), Size = new Size(600, 60),
                 ForeColor = Color.LightCyan, Font = new Font("Courier New", 8f),
                 Text = sizeListText,
             });
+            topY += 65;
         }
 
-        // ── Primary Item  y=350 ───────────────────────────────────────────────
-        int nextY = 350;
-        if (_config.DoesManStk && !_config.DoesMexico)
+        // ── Dynamic fields ─────────────────────────────────────────────────────
+        int nextY = topY + 20;
+
+        // Item Number — always visible in Manual Qty mode; conditional on DoesManStk in PLC mode
+        if (isManualQtyMode || (_config.DoesManStk && !_config.DoesMexico))
         {
-            _startupPanel.Controls.Add(MakeLabel("Primary Item:", new Point(labelX, nextY + 4), labelW));
+            _startupPanel.Controls.Add(MakeRL("Primary Item:", nextY + 5, 105));
             _primaryItemInput = new TextBox
             {
                 Location = new Point(inputX, nextY), Size = new Size(inputW, 30),
                 MaxLength = 15, Font = new Font("Segoe UI", 11f),
                 Text = _settings.CurrentPrimaryItem,
+                BackColor = Color.White, ForeColor = Color.Black,
             };
             _primaryItemInput.Leave += (_, _) => _ = RefreshPrimaryItemDescriptionAsync();
             _primaryItemInput.KeyDown += (_, e) =>
@@ -197,56 +269,169 @@ public class MainForm : Form
             nextY += 40;
         }
 
-        // ── 2nd Primary Item ──────────────────────────────────────────────────
-        if (_config.DoesTwoPrims && _config.DoesManStk && !_config.DoesMexico)
+        // 2nd Primary Item — PLC Signal mode only
+        if (!isManualQtyMode && _config.DoesTwoPrims && _config.DoesManStk && !_config.DoesMexico)
         {
-            _startupPanel.Controls.Add(MakeLabel("2nd Primary Item:", new Point(labelX, nextY + 4), labelW));
+            _startupPanel.Controls.Add(MakeRL("2nd Primary Item:", nextY + 5, 130));
             _secondaryItemInput = new TextBox
             {
                 Location = new Point(inputX, nextY), Size = new Size(inputW, 30),
                 MaxLength = 15, Font = new Font("Segoe UI", 11f),
                 Text = _settings.CurrentSecondaryItem,
+                BackColor = Color.White, ForeColor = Color.Black,
             };
             _startupPanel.Controls.Add(_secondaryItemInput);
             nextY += 50;
         }
 
-        if (string.Equals(_settings.CartonPrintMode, "Manual Qty", StringComparison.OrdinalIgnoreCase))
+        if (isManualQtyMode)
         {
-            _startupPanel.Controls.Add(MakeLabel("Carton Qty:", new Point(labelX, nextY + 4), labelW));
+            TextBox MakeRO(int x, int y, int w) => new TextBox
+            {
+                Location = new Point(x, y), Size = new Size(w, 28),
+                ReadOnly = true, BackColor = Color.White,
+                ForeColor = Color.Black, Font = new Font("Segoe UI", 10f),
+            };
+
+            // Shop Order
+            _startupPanel.Controls.Add(MakeRL("Shop Order:", nextY + 5));
+            _shopOrderInput = new TextBox
+            {
+                Location = new Point(inputX, nextY), Size = new Size(inputW, 30),
+                MaxLength = 30, Font = new Font("Segoe UI", 11f),
+                BackColor = Color.White, ForeColor = Color.Black,
+            };
+            _startupPanel.Controls.Add(_shopOrderInput);
+            nextY += 48;
+
+            // LIS Qty | Carton Qty | Pallet Qty — read-only info on one row
+            _startupPanel.Controls.Add(MakeLabel("LIS Qty:", new Point(labelX, nextY + 5), 75));
+            _lisQtyDisplay = MakeRO(labelX + 80, nextY, 65);
+            _startupPanel.Controls.Add(_lisQtyDisplay);
+
+            _startupPanel.Controls.Add(MakeLabel("Carton Qty:", new Point(labelX + 158, nextY + 5), 90));
+            _cartonQtyDisplay = MakeRO(labelX + 253, nextY, 85);
+            _startupPanel.Controls.Add(_cartonQtyDisplay);
+
+            _startupPanel.Controls.Add(MakeLabel("Pallet Qty:", new Point(labelX + 352, nextY + 5), 85));
+            _palletQtyDisplay = MakeRO(labelX + 442, nextY, 60);
+            _startupPanel.Controls.Add(_palletQtyDisplay);
+            nextY += 44;
+
+            // Shade + Caliber — Shade colon aligns with first-column labels (x=245)
+            _startupPanel.Controls.Add(MakeRL("Shade:", nextY + 5));
+            _shadeManualInput = new TextBox
+            {
+                Location = new Point(inputX, nextY), Size = new Size(100, 30),
+                MaxLength = 10, Font = new Font("Segoe UI", 11f),
+                BackColor = Color.White, ForeColor = Color.Black,
+            };
+            _startupPanel.Controls.Add(_shadeManualInput);
+
+            _startupPanel.Controls.Add(MakeLabel("Caliber:", new Point(inputX + 116, nextY + 4), 80));
+            _caliberInput = new TextBox
+            {
+                Location = new Point(inputX + 200, nextY), Size = new Size(80, 30),
+                MaxLength = 10, Font = new Font("Segoe UI", 11f),
+                BackColor = Color.White, ForeColor = Color.Black,
+            };
+            _startupPanel.Controls.Add(_caliberInput);
+            nextY += 48;
+
+            // Shift (editable, replaces top shift field in manual mode) + Line
+            _startupPanel.Controls.Add(MakeRL("Shift:", nextY + 5));
+            _shiftInput = new NumericUpDown
+            {
+                Location = new Point(inputX, nextY), Size = new Size(80, 30),
+                Minimum = 1, Maximum = 9, Value = 1,
+                Font = new Font("Segoe UI", 11f),
+                BackColor = Color.White, ForeColor = Color.Black,
+            };
+            _startupPanel.Controls.Add(_shiftInput);
+
+            _startupPanel.Controls.Add(MakeLabel("Line:", new Point(inputX + 96, nextY + 5), 50));
+            _lineDisplay = MakeRO(inputX + 150, nextY, 50);
+            _lineDisplay.Text = _config.LineNumber.ToString("00");
+            _startupPanel.Controls.Add(_lineDisplay);
+            nextY += 44;
+
+            // Labels to Print
+            _startupPanel.Controls.Add(MakeRL("Labels to Print:", nextY + 5, 125));
             _manualQtyInput = new NumericUpDown
             {
                 Location = new Point(inputX, nextY), Size = new Size(120, 30),
                 Minimum = 1, Maximum = 999, Value = 1,
                 Font = new Font("Segoe UI", 11f),
+                BackColor = Color.White, ForeColor = Color.Black,
             };
             _startupPanel.Controls.Add(_manualQtyInput);
-            nextY += 50;
+            nextY += 46;
+
+            // Status feedback label
+            _manualStatusLabel = new Label
+            {
+                Location = new Point(inputX, nextY), Size = new Size(inputW + 200, 24),
+                ForeColor = Color.LightGreen, Font = new Font("Segoe UI", 9f),
+                AutoSize = false,
+            };
+            _startupPanel.Controls.Add(_manualStatusLabel);
+            nextY += 28;
         }
 
-        // ── Begin / Exit buttons ──────────────────────────────────────────────
-        int btnY = nextY + 30;
+        // ── Buttons ───────────────────────────────────────────────────────────
+        int btnY = nextY + 10;
+
         _btnBegin = new Button
         {
             Text = "Begin  [Enter]",
-            Size = new Size(160, 44), Location = new Point(inputX, btnY),
-            BackColor = Color.DarkGreen, ForeColor = Color.White,
+            Size = new Size(150, 44), Location = new Point(inputX, btnY),
+            BackColor = isManualQtyMode ? Color.DimGray : Color.DarkGreen,
+            ForeColor = isManualQtyMode ? Color.DarkGray : Color.White,
             FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+            Enabled = !isManualQtyMode,
         };
-        _btnBegin.Click += BtnBegin_Click;
+        if (!isManualQtyMode)
+            _btnBegin.Click += BtnBegin_Click;
         _startupPanel.Controls.Add(_btnBegin);
+
+        int nextBtnX = inputX + 156;
+
+        if (isManualQtyMode)
+        {
+            _btnPrintCarton = new Button
+            {
+                Text = "Print Carton",
+                Size = new Size(150, 44), Location = new Point(nextBtnX, btnY),
+                BackColor = Color.DarkGreen, ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+            };
+            _btnPrintCarton.Click += (_, _) => _ = PrintManualAsync(isPallet: false);
+            _startupPanel.Controls.Add(_btnPrintCarton);
+            nextBtnX += 156;
+
+            _btnPrintPallet = new Button
+            {
+                Text = "Print Pallet",
+                Size = new Size(150, 44), Location = new Point(nextBtnX, btnY),
+                BackColor = Color.DarkSlateBlue, ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+            };
+            _btnPrintPallet.Click += (_, _) => ShowPalletQuery();
+            _startupPanel.Controls.Add(_btnPrintPallet);
+            nextBtnX += 156;
+        }
 
         var btnExit = new Button
         {
             Text = "Exit  [F4]",
-            Size = new Size(130, 44), Location = new Point(inputX + 176, btnY),
+            Size = new Size(130, 44), Location = new Point(nextBtnX, btnY),
             BackColor = Color.DarkRed, ForeColor = Color.White,
             FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 11f),
         };
         btnExit.Click += (_, _) => Application.Exit();
         _startupPanel.Controls.Add(btnExit);
 
-        AcceptButton = _btnBegin;
+        AcceptButton = isManualQtyMode ? null : _btnBegin;
         Controls.Add(_startupPanel);
     }
 
@@ -427,15 +612,16 @@ public class MainForm : Form
                 string plcMsg = stackNum + new string(' ', 31) + itemDetail.ItemNumber.PadRight(30);
                 if (plcMsg.Length < 65) plcMsg = plcMsg.PadRight(65);
 
-                // Create box record (CSV: RecId, LineId, MakeTime, StackNum, PlcMsg, ErrMsg, PrintNum)
-                // Don't quote fields - just use raw values
+                // Create box record (CSV: RecId, LineId, MakeTime, StackNum, PlcMsg, ErrMsg, PrintNum, BarcodeSerial)
                 int nextRecId = existingStacks.Count + 1;
                 var now = DateTime.Now;
-                string boxRecord = $"{nextRecId},{_config.LineNumber},{now:yyyy-MM-dd HH:mm:ss},{stackNum},{plcMsg},,1";
+                int shade = itemDetail.Shade;
+                string size = "L"; // Default size/caliber for simulated cartons
+                var barcodeSerial = ThermalPrinterCommandBuilder.ComputeCartonBarcodeSerial(
+                    now, itemDetail.IRef, shade, size, _shift, _config.LineNumber, itemDetail.Plant, itemDetail.LisQty);
+                string boxRecord = $"{nextRecId},{_config.LineNumber},{now:yyyy-MM-dd HH:mm:ss},{stackNum},{plcMsg},,1,{barcodeSerial}";
 
                 // Create stacker record with item details (CSV: LineId, StackNum, IRef, PlcMsg, Shade, Size, ErrMsg)
-                int shade = itemDetail.Shade;
-                string size = "L"; // Default size
                 string stackerRecord = $"{_config.LineNumber},{stackNum},{itemDetail.IRef},{plcMsg},{shade},{size},";
 
                 // Append to CSV files
@@ -475,88 +661,120 @@ public class MainForm : Form
         });
     }
 
-    private async Task<bool> SendManualCartonPrintAsync()
+    private async Task PrintManualAsync(bool isPallet)
     {
-        if (_primaryItemInput is null || _manualQtyInput is null)
+        var itemNumber = _primaryItemInput?.Text.Trim() ?? string.Empty;
+        if (string.IsNullOrEmpty(itemNumber))
+        {
+            MessageBox.Show("Enter an item number before printing.", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            _primaryItemInput?.Focus();
+            return;
+        }
+
+        var shift     = (int)_shiftInput.Value;
+        var inspector = _inspectorInput.Text.Trim();
+        if (inspector.Length == 0)
+        {
+            MessageBox.Show("Inspector must be entered.", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            _inspectorInput.Focus();
+            return;
+        }
+        while (inspector.Length < 2) inspector += " ";
+
+        if (_labelSizeCombo.SelectedItem is not LabelSizeOption selectedSize)
+        {
+            MessageBox.Show("Please select a valid label size.", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            _labelSizeCombo.Focus();
+            return;
+        }
+
+        var quantity = _manualQtyInput is not null ? (int)_manualQtyInput.Value : 1;
+
+        var item = (_primaryItemDetail?.ItemNumber.Trim().Equals(itemNumber, StringComparison.OrdinalIgnoreCase) == true)
+            ? _primaryItemDetail
+            : await _boxRepo.GetItemDetailByNumberAsync(itemNumber, searchMexicoAlso: true, CancellationToken.None);
+
+        if (item is null)
+        {
+            MessageBox.Show($"Item '{itemNumber}' not found in item master.", "Cannot Print", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            _primaryItemInput?.Focus();
+            return;
+        }
+
+        if (item.OpenQty <= 0)
         {
             MessageBox.Show(
-                "Manual Qty mode is enabled, but startup controls are unavailable.\r\n" +
-                "Check your startup flags/configuration and try again.",
-                "Manual Print Unavailable",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Warning);
-            return false;
+                $"Item '{itemNumber}' has no open quantity on schedule.\nCannot proceed until open quantity is available.",
+                "Cannot Print", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            _primaryItemInput?.Focus();
+            return;
         }
 
-        var itemNumber = _primaryItemInput.Text.Trim();
-        if (string.IsNullOrWhiteSpace(itemNumber))
+        if (!DateTime.TryParse(item.ScheduleDate, out var schedDate) || schedDate.Date < DateTime.Today)
         {
-            MessageBox.Show("Enter a primary item before manual printing.", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            _primaryItemInput.Focus();
-            return false;
-        }
-
-        var quantity = (int)_manualQtyInput.Value;
-        if (quantity < 1 || quantity > 999)
-        {
-            MessageBox.Show("Carton quantity must be between 1 and 999.", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            _manualQtyInput.Focus();
-            return false;
-        }
-
-        try
-        {
-            var itemDetail = await _boxRepo.GetItemDetailByNumberAsync(itemNumber, _config.DoesMexico, CancellationToken.None);
-            if (itemDetail is null)
-            {
-                MessageBox.Show($"Cannot find item '{itemNumber}' in item master.", "Item Not Found", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return false;
-            }
-
-            if (string.IsNullOrWhiteSpace(_settings.LabelOutputAddress))
-            {
-                MessageBox.Show(
-                    "Label Output Address is empty. Configure it in Settings before manual printing.",
-                    "Output Address Required",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
-                return false;
-            }
-
-            var job = new ManualCartonPrintJob(
-                itemDetail.ItemNumber,
-                quantity,
-                _inspector,
-                _shift,
-                _labelSize,
-                itemDetail.GetPrimaryItemDescription(),
-                Environment.UserName,
-                DateTime.Now);
-
-            var success = await ExportManualLabelAsync(itemDetail, job, CancellationToken.None);
-            if (success)
-            {
-                SetStatus($"Manual carton print sent for {itemDetail.ItemNumber} x{quantity}.");
-                return true;
-            }
-            else
-            {
-                MessageBox.Show(
-                    "Failed to send manual carton print job.",
-                    "Manual Print Failed",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
-                return false;
-            }
-        }
-        catch (Exception ex)
-        {
+            var dateDisplay = string.IsNullOrEmpty(item.ScheduleDate) ? "(not set)" : item.ScheduleDate;
             MessageBox.Show(
-                $"Manual print error:\r\n{ex.Message}",
-                "Manual Print Error",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Error);
-            return false;
+                $"Item '{itemNumber}' schedule date ({dateDisplay}) must be today or a future date.",
+                "Cannot Print", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            _primaryItemInput?.Focus();
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_settings.LabelOutputAddress))
+        {
+            MessageBox.Show("Label Output Address is not configured. Go to Settings.", "Cannot Print", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        var shopOrder     = _shopOrderInput?.Text.Trim() ?? string.Empty;
+        var shadeOverride = _shadeManualInput?.Text.Trim() ?? string.Empty;
+        var caliber       = _caliberInput?.Text.Trim() ?? string.Empty;
+        var labelFormat   = isPallet ? "PALLET_LABEL" : "CARTON_LABEL";
+
+        // Snapshot session fields so the print job uses current UI values
+        _shift     = shift;
+        _inspector = inspector;
+        _labelSize = selectedSize.SizeCode;
+
+        var job = new ManualCartonPrintJob(
+            item.ItemNumber,
+            quantity,
+            inspector,
+            shift,
+            selectedSize.SizeCode,
+            item.GetPrimaryItemDescription(),
+            Environment.UserName,
+            DateTime.Now,
+            shopOrder,
+            shadeOverride,
+            caliber,
+            labelFormat);
+
+        _settings.CurrentPrimaryItem = itemNumber;
+        SettingsManager.Save(_settings);
+
+        var labelKind = isPallet ? "Pallet" : "Carton";
+        var success = await ExportManualLabelAsync(item, job, CancellationToken.None);
+
+        if (success)
+        {
+            var msg = $"{labelKind} label sent: {item.ItemNumber} ×{quantity}" +
+                      (string.IsNullOrEmpty(shopOrder) ? string.Empty : $"  |  Order: {shopOrder}");
+            if (_manualStatusLabel is not null)
+            {
+                _manualStatusLabel.Text = msg;
+                _manualStatusLabel.ForeColor = Color.LightGreen;
+            }
+        }
+        else
+        {
+            var errMsg = $"Failed to send {labelKind.ToLower()} label.";
+            if (_manualStatusLabel is not null)
+            {
+                _manualStatusLabel.Text = errMsg;
+                _manualStatusLabel.ForeColor = Color.Salmon;
+            }
+            MessageBox.Show(errMsg, "Print Failed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
     }
 
@@ -572,6 +790,319 @@ public class MainForm : Form
             File.AppendAllText(filePath, Environment.NewLine + record);
         else
             File.WriteAllText(filePath, record);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  PALLET QUERY PANEL
+    // ═══════════════════════════════════════════════════════════════════════════
+    private void BuildPalletQueryPanel()
+    {
+        const int inputX = 250;
+        const int inputW = 240;
+        const int labelX = 40;
+
+        _palletQueryPanel = new Panel { Dock = DockStyle.Fill, BackColor = Color.MidnightBlue, Visible = false };
+
+        Label MakeRL(string text, int y, int w = 90) => new Label
+        {
+            Text = text, Location = new Point(inputX - 5 - w, y), Size = new Size(w, 26),
+            TextAlign = ContentAlignment.MiddleRight,
+            ForeColor = Color.White, Font = new Font("Segoe UI", 10f),
+        };
+        TextBox MakeRO(int x, int y, int w) => new TextBox
+        {
+            Location = new Point(x, y), Size = new Size(w, 28),
+            ReadOnly = true, BackColor = Color.White,
+            ForeColor = Color.Black, Font = new Font("Segoe UI", 10f),
+        };
+
+        _palletQueryPanel.Controls.Add(new Label
+        {
+            Text = $"User: {Environment.UserName}",
+            Location = new Point(8, 8), AutoSize = true,
+            Font = new Font("Segoe UI", 8f), ForeColor = Color.LightCyan,
+        });
+        var printerInfo = string.IsNullOrWhiteSpace(_settings.LabelOutputAddress)
+            ? "(printer not configured)"
+            : $"{_settings.ThermalPrinterType}  {_settings.LabelOutputAddress}";
+        _palletQueryPanel.Controls.Add(new Label
+        {
+            Text = printerInfo,
+            Location = new Point(580, 8), Size = new Size(532, 18),
+            TextAlign = ContentAlignment.MiddleRight,
+            Font = new Font("Segoe UI", 8f), ForeColor = Color.LightCyan,
+        });
+
+        _palletQueryPanel.Controls.Add(new Label
+        {
+            Text = $" Print Pallet Label — Line {_config.LineNumber:00} ",
+            Location = new Point(40, 40), AutoSize = true,
+            Font = new Font("Segoe UI", 13f, FontStyle.Bold),
+            ForeColor = Color.LightYellow, BackColor = Color.DarkSlateBlue,
+            Padding = new Padding(8, 4, 8, 4),
+        });
+
+        int nextY = 100;
+
+        _palletQueryPanel.Controls.Add(MakeRL("Carton Label Serial No:", nextY + 6, 160));
+        _serialNoInput = new TextBox
+        {
+            Location = new Point(inputX, nextY), Size = new Size(320, 34),
+            Font = new Font("Segoe UI", 13f), MaxLength = 50,
+            BackColor = Color.White, ForeColor = Color.Black,
+        };
+        _serialNoInput.KeyDown += (_, e) =>
+        {
+            if (e.KeyCode == Keys.Return)
+            {
+                e.SuppressKeyPress = true;
+                _ = LookupCartonSerialAsync();
+            }
+        };
+        _serialNoInput.Leave += (_, _) =>
+        {
+            if (!string.IsNullOrWhiteSpace(_serialNoInput.Text))
+                _ = LookupCartonSerialAsync();
+        };
+        _palletQueryPanel.Controls.Add(_serialNoInput);
+        nextY += 58;
+
+        _palletQueryPanel.Controls.Add(MakeRL("Item Number:", nextY + 5, 105));
+        _palletItemNoDisplay = MakeRO(inputX, nextY, 200);
+        _palletQueryPanel.Controls.Add(_palletItemNoDisplay);
+        nextY += 46;
+
+        _palletQueryPanel.Controls.Add(MakeRL("Description:", nextY + 5, 105));
+        _palletDescLabel = new Label
+        {
+            Location = new Point(inputX, nextY + 4), Size = new Size(550, 22),
+            ForeColor = Color.LightCyan, Font = new Font("Segoe UI", 9f),
+            AutoSize = false, TextAlign = ContentAlignment.MiddleLeft,
+        };
+        _palletQueryPanel.Controls.Add(_palletDescLabel);
+        nextY += 46;
+
+        _palletQueryPanel.Controls.Add(MakeRL("Shop Order:", nextY + 5));
+        _palletShopOrderDisplay = MakeRO(inputX, nextY, inputW);
+        _palletQueryPanel.Controls.Add(_palletShopOrderDisplay);
+        nextY += 46;
+
+        _palletQueryPanel.Controls.Add(MakeLabel("LIS Qty:", new Point(labelX, nextY + 5), 75));
+        _palletLisQtyDisplay = MakeRO(labelX + 80, nextY, 65);
+        _palletQueryPanel.Controls.Add(_palletLisQtyDisplay);
+        _palletQueryPanel.Controls.Add(MakeLabel("Carton Qty:", new Point(labelX + 158, nextY + 5), 90));
+        _palletCartonQtyDisplay = MakeRO(labelX + 253, nextY, 85);
+        _palletQueryPanel.Controls.Add(_palletCartonQtyDisplay);
+        _palletQueryPanel.Controls.Add(MakeLabel("Pallet Qty:", new Point(labelX + 352, nextY + 5), 85));
+        _palletPalletQtyDisplay = MakeRO(labelX + 442, nextY, 60);
+        _palletQueryPanel.Controls.Add(_palletPalletQtyDisplay);
+        nextY += 44;
+
+        _palletQueryPanel.Controls.Add(MakeRL("Shade:", nextY + 5));
+        _palletShadeDisplay = MakeRO(inputX, nextY, 100);
+        _palletQueryPanel.Controls.Add(_palletShadeDisplay);
+        _palletQueryPanel.Controls.Add(MakeLabel("Caliber:", new Point(inputX + 116, nextY + 4), 80));
+        _palletCaliberDisplay = MakeRO(inputX + 200, nextY, 80);
+        _palletQueryPanel.Controls.Add(_palletCaliberDisplay);
+        nextY += 44;
+
+        _palletQueryPanel.Controls.Add(MakeRL("Shift:", nextY + 5));
+        _palletShiftDisplay = MakeRO(inputX, nextY, 48);
+        _palletQueryPanel.Controls.Add(_palletShiftDisplay);
+        _palletQueryPanel.Controls.Add(MakeLabel("Line:", new Point(inputX + 64, nextY + 4), 50));
+        _palletLineDisplay = MakeRO(inputX + 118, nextY, 50);
+        _palletLineDisplay.Text = _config.LineNumber.ToString("00");
+        _palletQueryPanel.Controls.Add(_palletLineDisplay);
+        nextY += 50;
+
+        _palletStatusLabel = new Label
+        {
+            Location = new Point(inputX, nextY), Size = new Size(640, 22),
+            ForeColor = Color.LightGreen, Font = new Font("Segoe UI", 9f), AutoSize = false,
+        };
+        _palletQueryPanel.Controls.Add(_palletStatusLabel);
+        nextY += 38;
+
+        _btnPalletPrint = new Button
+        {
+            Text = "Print Pallet Label",
+            Size = new Size(200, 44), Location = new Point(inputX, nextY),
+            BackColor = Color.DarkSlateBlue, ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+            Enabled = false,
+        };
+        _btnPalletPrint.Click += (_, _) => _ = PrintPalletLabelAsync();
+        _palletQueryPanel.Controls.Add(_btnPalletPrint);
+
+        var btnBack = new Button
+        {
+            Text = "Back",
+            Size = new Size(120, 44), Location = new Point(inputX + 210, nextY),
+            BackColor = Color.DarkRed, ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 11f),
+        };
+        btnBack.Click += (_, _) =>
+        {
+            _palletQueryPanel!.Visible = false;
+            _startupPanel.Visible = true;
+            ClientSize = new Size(1120, 720);
+        };
+        _palletQueryPanel.Controls.Add(btnBack);
+
+        Controls.Add(_palletQueryPanel);
+    }
+
+    private void ShowPalletQuery()
+    {
+        var inspector = _inspectorInput.Text.Trim();
+        if (inspector.Length == 0)
+        {
+            MessageBox.Show("Inspector must be entered before printing.", "Input Error",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            _inspectorInput.Focus();
+            return;
+        }
+        if (_labelSizeCombo.SelectedItem is not LabelSizeOption)
+        {
+            MessageBox.Show("Please select a valid label size.", "Input Error",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            _labelSizeCombo.Focus();
+            return;
+        }
+
+        if (_palletQueryPanel == null)
+            BuildPalletQueryPanel();
+
+        _palletQueryItemDetail = null;
+        _serialNoInput!.Clear();
+        _palletItemNoDisplay!.Text = string.Empty;
+        if (_palletDescLabel != null) _palletDescLabel.Text = string.Empty;
+        _palletShopOrderDisplay!.Text = string.Empty;
+        _palletLisQtyDisplay!.Text = string.Empty;
+        _palletCartonQtyDisplay!.Text = string.Empty;
+        _palletPalletQtyDisplay!.Text = string.Empty;
+        _palletShadeDisplay!.Text = string.Empty;
+        _palletCaliberDisplay!.Text = string.Empty;
+        _palletShiftDisplay!.Text = _shiftInput!.Value.ToString();
+        if (_palletStatusLabel != null) _palletStatusLabel.Text = string.Empty;
+        _btnPalletPrint!.Enabled = false;
+
+        _startupPanel.Visible = false;
+        _palletQueryPanel!.Visible = true;
+        ClientSize = new Size(1120, 560);
+        _serialNoInput.Focus();
+    }
+
+    private async Task LookupCartonSerialAsync()
+    {
+        var serialNo = _serialNoInput?.Text.Trim() ?? string.Empty;
+        if (string.IsNullOrEmpty(serialNo)) return;
+
+        if (_palletStatusLabel != null)
+        {
+            _palletStatusLabel.Text = "Searching...";
+            _palletStatusLabel.ForeColor = Color.LightCyan;
+        }
+        _btnPalletPrint!.Enabled = false;
+
+        var itemDetail = await _boxRepo.GetItemDetailByNumberAsync(serialNo, searchMexicoAlso: true, CancellationToken.None);
+        string? shadeText = null;
+
+        if (itemDetail == null)
+        {
+            var stacker = await _boxRepo.GetStackerAsync(_config.LineNumber, serialNo, CancellationToken.None);
+            if (stacker != null && stacker.IRef > 0)
+            {
+                itemDetail = await _boxRepo.GetItemDetailByIRefAsync(stacker.IRef, stacker.IsMexicoItem, CancellationToken.None);
+                if (itemDetail != null && stacker.Shade > 0)
+                    shadeText = stacker.Shade.ToString();
+            }
+        }
+
+        if (itemDetail != null)
+        {
+            _palletQueryItemDetail = itemDetail;
+            if (_palletItemNoDisplay != null)    _palletItemNoDisplay.Text    = itemDetail.ItemNumber;
+            if (_palletDescLabel != null)        _palletDescLabel.Text        = itemDetail.GetPrimaryItemDescription();
+            if (_palletShopOrderDisplay != null) _palletShopOrderDisplay.Text = itemDetail.LastScheduleOrder;
+            if (_palletLisQtyDisplay != null)    _palletLisQtyDisplay.Text    = itemDetail.LisQty.ToString();
+            if (_palletCartonQtyDisplay != null)
+                _palletCartonQtyDisplay.Text = itemDetail.SalesQty == 0
+                    ? string.Empty
+                    : $"{itemDetail.SalesQty:G} {itemDetail.SalesUOM}".Trim();
+            if (_palletPalletQtyDisplay != null) _palletPalletQtyDisplay.Text = itemDetail.BoxesPerPallet.ToString();
+            if (_palletShadeDisplay != null)     _palletShadeDisplay.Text     = shadeText ?? itemDetail.Shade.ToString();
+            if (_palletCaliberDisplay != null)   _palletCaliberDisplay.Text   = string.Empty;
+            if (_palletShiftDisplay != null)     _palletShiftDisplay.Text     = _shiftInput!.Value.ToString();
+
+            if (_palletStatusLabel != null)
+            {
+                _palletStatusLabel.Text = $"Item found: {itemDetail.ItemNumber}";
+                _palletStatusLabel.ForeColor = Color.LightGreen;
+            }
+            _btnPalletPrint!.Enabled = true;
+        }
+        else
+        {
+            _palletQueryItemDetail = null;
+            if (_palletItemNoDisplay != null)    _palletItemNoDisplay.Text    = string.Empty;
+            if (_palletDescLabel != null)        _palletDescLabel.Text        = string.Empty;
+            if (_palletShopOrderDisplay != null) _palletShopOrderDisplay.Text = string.Empty;
+            if (_palletLisQtyDisplay != null)    _palletLisQtyDisplay.Text    = string.Empty;
+            if (_palletCartonQtyDisplay != null) _palletCartonQtyDisplay.Text = string.Empty;
+            if (_palletPalletQtyDisplay != null) _palletPalletQtyDisplay.Text = string.Empty;
+            if (_palletShadeDisplay != null)     _palletShadeDisplay.Text     = string.Empty;
+            if (_palletCaliberDisplay != null)   _palletCaliberDisplay.Text   = string.Empty;
+
+            if (_palletStatusLabel != null)
+            {
+                _palletStatusLabel.Text = $"'{serialNo}' not found as item number or stack number";
+                _palletStatusLabel.ForeColor = Color.Salmon;
+            }
+        }
+    }
+
+    private async Task PrintPalletLabelAsync()
+    {
+        var itemDetail = _palletQueryItemDetail;
+        if (itemDetail == null) return;
+
+        if (string.IsNullOrWhiteSpace(_settings.LabelOutputAddress))
+        {
+            MessageBox.Show("Label Output Address is not configured. Go to Settings.",
+                "Cannot Print", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        var inspector = _inspectorInput.Text.Trim();
+        var labelSize = (_labelSizeCombo.SelectedItem as LabelSizeOption)?.SizeCode ?? string.Empty;
+        var shade = _palletShadeDisplay?.Text ?? itemDetail.Shade.ToString();
+
+        var job = new ManualCartonPrintJob(
+            itemDetail.ItemNumber,
+            Quantity: 1,
+            inspector,
+            Shift: (int)_shiftInput!.Value,
+            labelSize,
+            itemDetail.GetPrimaryItemDescription(),
+            Environment.UserName,
+            DateTime.Now,
+            ShopOrder: itemDetail.LastScheduleOrder,
+            ShadeOverride: shade,
+            Caliber: string.Empty,
+            LabelFormat: "PALLET_LABEL");
+
+        _btnPalletPrint!.Enabled = false;
+        var success = await ExportManualLabelAsync(itemDetail, job, CancellationToken.None);
+        _btnPalletPrint.Enabled = true;
+
+        if (_palletStatusLabel != null)
+        {
+            _palletStatusLabel.Text = success
+                ? $"Pallet label sent for {itemDetail.ItemNumber}  ·  {DateTime.Now:HH:mm:ss}"
+                : "Failed to send pallet label.";
+            _palletStatusLabel.ForeColor = success ? Color.LightGreen : Color.Salmon;
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -838,13 +1369,31 @@ public class MainForm : Form
                 var description = itemDetail.GetPrimaryItemDescription();
                 _primaryItemDescLabel.Text = description;
                 _primaryItemDescLabel.ForeColor = Color.LightGreen;
+
+                // Update read-only item info displays (always refresh on lookup)
+                if (_lisQtyDisplay != null)
+                    _lisQtyDisplay.Text = itemDetail.LisQty.ToString();
+                if (_cartonQtyDisplay != null)
+                    _cartonQtyDisplay.Text = itemDetail.SalesQty == 0
+                        ? string.Empty
+                        : $"{itemDetail.SalesQty:G} {itemDetail.SalesUOM}".Trim();
+                if (_palletQtyDisplay != null)
+                    _palletQtyDisplay.Text = itemDetail.BoxesPerPallet.ToString();
+
+                // Pre-fill editable fields from item master if empty
+                if (_shadeManualInput != null && string.IsNullOrEmpty(_shadeManualInput.Text))
+                    _shadeManualInput.Text = itemDetail.Shade.ToString();
+                if (_shopOrderInput != null && string.IsNullOrEmpty(_shopOrderInput.Text))
+                    _shopOrderInput.Text = itemDetail.LastScheduleOrder;
             }
             else
             {
                 _primaryItemDetail = null;
-                // Item not found
                 _primaryItemDescLabel.Text = $"⚠ Item '{itemNumber}' not found in item master";
                 _primaryItemDescLabel.ForeColor = Color.Salmon;
+                if (_lisQtyDisplay != null) _lisQtyDisplay.Text = string.Empty;
+                if (_cartonQtyDisplay != null) _cartonQtyDisplay.Text = string.Empty;
+                if (_palletQtyDisplay != null) _palletQtyDisplay.Text = string.Empty;
             }
         }
         catch (Exception ex)
@@ -1006,7 +1555,8 @@ public class MainForm : Form
                     packageWeight: itemDetail?.PkgWeight ?? 0m,
                     quantity: Math.Max(1, box.PrintNum),
                     uccBarcode: itemDetail?.GetUCC() ?? string.Empty,
-                    cartonUpc: itemDetail?.GetCartonUPC() ?? string.Empty);
+                    cartonUpc: itemDetail?.GetCartonUPC() ?? string.Empty,
+                    lisQty: itemDetail?.LisQty ?? 0);
 
                 var thermalExporter = new ThermalPrinterCommandExporter(
                     _settings.LabelOutputAddress,
@@ -1041,8 +1591,16 @@ public class MainForm : Form
 
         if (string.Equals(outputType, "NetworkPrinter", StringComparison.OrdinalIgnoreCase))
         {
+            var resolvedFormat = string.IsNullOrEmpty(job.LabelFormat)
+                ? ResolveThermalLabelFormat(itemDetail, job.LabelSize)
+                : job.LabelFormat;
+            var resolvedShade = string.IsNullOrEmpty(job.ShadeOverride)
+                ? itemDetail.Shade.ToString()
+                : job.ShadeOverride;
+            var resolvedStack = string.IsNullOrEmpty(job.ShopOrder) ? "MANUAL" : job.ShopOrder;
+
             var payload = BuildThermalPayload(
-                labelFormat: ResolveThermalLabelFormat(itemDetail, job.LabelSize),
+                labelFormat: resolvedFormat,
                 labelTypeCode: itemDetail.LabelTypeCode,
                 palletId: string.Empty,
                 itemNumber: job.ItemNumber,
@@ -1053,8 +1611,8 @@ public class MainForm : Form
                 shapeDesc: itemDetail.ShapeDesc,
                 seriesDesc: itemDetail.SeriesDesc,
                 labelSize: job.LabelSize,
-                stackNumber: "MANUAL",
-                shade: itemDetail.Shade.ToString(),
+                stackNumber: resolvedStack,
+                shade: resolvedShade,
                 size: itemDetail.SizeShape,
                 boxesPerPallet: itemDetail.BoxesPerPallet,
                 salesQty: itemDetail.SalesQty,
@@ -1062,7 +1620,10 @@ public class MainForm : Form
                 packageWeight: itemDetail.PkgWeight,
                 quantity: job.Quantity,
                 uccBarcode: itemDetail.GetUCC(),
-                cartonUpc: itemDetail.GetCartonUPC());
+                cartonUpc: itemDetail.GetCartonUPC(),
+                shopOrder: job.ShopOrder,
+                caliber: job.Caliber,
+                lisQty: itemDetail.LisQty);
 
             var thermalExporter = new ThermalPrinterCommandExporter(
                 _settings.LabelOutputAddress,
@@ -1105,7 +1666,10 @@ public class MainForm : Form
         decimal packageWeight,
         int quantity,
         string uccBarcode,
-        string cartonUpc)
+        string cartonUpc,
+        string shopOrder = "",
+        string caliber = "",
+        int lisQty = 0)
     {
         return new ThermalLabelPayload
         {
@@ -1131,8 +1695,11 @@ public class MainForm : Form
             Shift = _shift,
             LineNumber = _config.LineNumber,
             Quantity = Math.Clamp(quantity, 1, 999),
+            LisQty = lisQty,
             UccBarcode = uccBarcode,
             CartonUpc = cartonUpc,
+            ShopOrder = shopOrder,
+            Caliber = caliber,
             CreatedAtUtc = DateTime.UtcNow,
         };
     }
@@ -1376,7 +1943,10 @@ public class MainForm : Form
             if (plcMsg.Length < 65) plcMsg = plcMsg.PadRight(65);
 
             var now = DateTime.Now;
-            var boxRecord = $"{nextRecId},{_config.LineNumber},{now:yyyy-MM-dd HH:mm:ss},{stackNum},{plcMsg},,1";
+            var sizeCode = string.IsNullOrWhiteSpace(itemDetail.SizeShape) ? "0" : itemDetail.SizeShape.Trim()[..1];
+            var barcodeSerial = ThermalPrinterCommandBuilder.ComputeCartonBarcodeSerial(
+                now, itemDetail.IRef, itemDetail.Shade, sizeCode, _shift, _config.LineNumber, itemDetail.Plant, itemDetail.LisQty);
+            var boxRecord = $"{nextRecId},{_config.LineNumber},{now:yyyy-MM-dd HH:mm:ss},{stackNum},{plcMsg},,1,{barcodeSerial}";
             var stackerRecord = $"{_config.LineNumber},{stackNum},{itemDetail.IRef},{plcMsg},{itemDetail.Shade},{itemDetail.SizeShape},";
 
             AppendToFile(boxFile, boxRecord);

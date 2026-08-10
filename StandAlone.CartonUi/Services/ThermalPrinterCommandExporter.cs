@@ -303,13 +303,10 @@ internal static class ThermalPrinterCommandBuilder
         const char esc = (char)0x1B;
 
         var localTime = p.CreatedAtUtc.ToLocalTime();
-        var yddd = localTime.ToString("yy") + localTime.DayOfYear.ToString("000");
         var hhmm = localTime.ToString("HHmm");
-        var ctnQty = Math.Clamp(p.Quantity, 1, 9999).ToString("0000");
-        var bcShade = DigitsOnly(p.Shade, 4, "0000");
-        var bcLine = Math.Clamp(p.LineNumber, 0, 99).ToString("00");
-        var bcPlant = Math.Clamp(p.Plant, 0, 999).ToString("000");
-        var bc128 = $"%20{yddd}{Math.Clamp(p.IRef, 0, 999999):000000}{bcShade}01{Math.Clamp(p.Shift, 0, 9)}{bcLine}{bcPlant}{ctnQty}";
+        var shadeInt = int.TryParse(DigitsOnly(p.Shade, 10, "0"), out var sv) ? sv : 0;
+        var sizeCode = string.IsNullOrWhiteSpace(p.Caliber) ? p.Size : p.Caliber;
+        var bc128 = ComputeCartonBarcodeSerial(localTime, p.IRef, shadeInt, sizeCode, p.Shift, p.LineNumber, p.Plant, p.LisQty);
         var descLine = BuildDescriptionLine(p);
 
         var businessTypeName = ResolveBusinessLabelTypeName(p.LabelTypeCode);
@@ -337,13 +334,13 @@ internal static class ThermalPrinterCommandBuilder
             .Append("XM").Append(ClipAscii(descLine, 48)).AppendLine();
 
         sb.Append(esc).Append("H0180").Append(esc).Append("V0280").Append(esc)
-            .Append("XM").Append(ClipAscii($"QTY/CTN: {ctnQty}   SALES: {p.SalesQty:0.##} {p.SalesUom}", 48)).AppendLine();
+            .Append("XM").Append(ClipAscii($"QTY/CTN: {p.LisQty:00000}   SALES: {p.SalesQty:0.##} {p.SalesUom}", 48)).AppendLine();
         sb.Append(esc).Append("H0180").Append(esc).Append("V0325").Append(esc)
             .Append("XM").Append(ClipAscii($"WT: {p.PackageWeight:0.#} LB   LINE: {p.LineNumber:00} SHIFT: {p.Shift}", 48)).AppendLine();
         sb.Append(esc).Append("H0180").Append(esc).Append("V0370").Append(esc)
             .Append("XM").Append(ClipAscii($"INSP: {p.Inspector}  STACK: {p.StackNumber}  SIZECD: {p.LabelSize}", 48)).AppendLine();
         sb.Append(esc).Append("H0180").Append(esc).Append("V0415").Append(esc)
-            .Append("XM").Append(ClipAscii($"DATE: {yddd}:{hhmm}  IREF: {p.IRef:000000}  PLANT: {bcPlant}", 48)).AppendLine();
+            .Append("XM").Append(ClipAscii($"DATE: {localTime.Year:0000}{localTime.DayOfYear:000}:{hhmm}  IREF: {p.IRef:000000}  PLANT: {p.Plant:000}", 48)).AppendLine();
         sb.Append(esc).Append("H0180").Append(esc).Append("V0450").Append(esc)
             .Append("XM").Append(ClipAscii($"LTYPE: {p.LabelTypeCode:00} {businessTypeName}  FORMAT: {p.LabelFormat}", 48)).AppendLine();
 
@@ -467,6 +464,21 @@ internal static class ThermalPrinterCommandBuilder
         sb.AppendLine($"BAR 20,180:{Quote(ClipAscii(barcode, 20))}");
         sb.AppendLine("PRINTFEED 1");
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Builds the 30-character carton barcode serial — identical to the Progress dtlbl060b.i formula.
+    /// Format: % + year(4) + julday(3) + iref(6) + shade2(4) + sizeCode(1) + shift(1) + lineId(2) + plant(3) + lisQty(5)
+    /// shade2: if shade &lt; 1000 (3-digit shade), multiply by 10; otherwise use as-is.
+    /// </summary>
+    internal static string ComputeCartonBarcodeSerial(
+        DateTime localTime, int iRef, int shade, string sizeCode, int shift, int lineId, int plant, int lisQty)
+    {
+        var year4  = localTime.Year.ToString("0000");
+        var julday = localTime.DayOfYear.ToString("000");
+        var shade2 = shade < 1000 ? shade * 10 : shade;
+        var szCode = string.IsNullOrWhiteSpace(sizeCode) ? "0" : sizeCode.Trim()[..1];
+        return $"%{year4}{julday}{Math.Clamp(iRef, 0, 999999):000000}{shade2:0000}{szCode}{Math.Clamp(shift, 0, 9)}{Math.Clamp(lineId, 0, 99):00}{Math.Clamp(plant, 0, 999):000}{Math.Clamp(lisQty, 0, 99999):00000}";
     }
 
     private static string NormalizeType(string? value)

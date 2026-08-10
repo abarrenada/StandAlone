@@ -7,7 +7,7 @@ namespace StandAlone.CartonUi.Services;
 /// Reads CSV files written by the sorter PLC process.
 ///
 /// Expected file formats (in <c>dataDirectory</c>):
-///   boxes{NN}.csv   — RecId,LineId,MakeTime,StackNum,PlcMsg,ErrMsg,PrintNum
+///   boxes{NN}.csv   — RecId,LineId,MakeTime,StackNum,PlcMsg,ErrMsg,PrintNum[,BarcodeSerial]
 ///   stackers{NN}.csv — LineId,StackNum,IRef,PlcMsg,Shade,Size,ErrMsg
 ///   itemdet.csv     — 43-column format with all itemdet + itemhdr fields (see ItemDetail.cs)
 ///   mitemdet.csv    — 43-column format for Mexico items (same structure as itemdet.csv)
@@ -41,13 +41,14 @@ public class FileBoxRepository : IBoxRepository
 
             result.Add(new BoxRecord
             {
-                RecId    = int.TryParse(parts[0].Trim(), out var rid) ? rid : 0,
-                LineId   = int.TryParse(parts[1].Trim(), out var lid) ? lid : lineId,
-                MakeTime = DateTime.TryParse(parts[2].Trim(), out var mt) ? mt : DateTime.MinValue,
-                StackNum = parts[3].Trim(),
-                PlcMsg   = parts[4].Trim(),
-                ErrMsg   = parts[5].Trim(),
-                PrintNum = int.TryParse(parts[6].Trim(), out var pn) ? pn : 0,
+                RecId         = int.TryParse(parts[0].Trim(), out var rid) ? rid : 0,
+                LineId        = int.TryParse(parts[1].Trim(), out var lid) ? lid : lineId,
+                MakeTime      = DateTime.TryParse(parts[2].Trim(), out var mt) ? mt : DateTime.MinValue,
+                StackNum      = parts[3].Trim(),
+                PlcMsg        = parts[4].Trim(),
+                ErrMsg        = parts[5].Trim(),
+                PrintNum      = int.TryParse(parts[6].Trim(), out var pn) ? pn : 0,
+                BarcodeSerial = parts.Length >= 8 ? parts[7].Trim() : string.Empty,
             });
             if (result.Count >= count) break;
         }

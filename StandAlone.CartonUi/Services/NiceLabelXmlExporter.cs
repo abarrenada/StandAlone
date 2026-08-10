@@ -148,4 +148,8 @@ public sealed record ManualCartonPrintJob(
     string LabelSize,
     string PartDescription,
     string RequestedBy,
-    DateTime RequestedAt);
+    DateTime RequestedAt,
+    string ShopOrder = "",
+    string ShadeOverride = "",
+    string Caliber = "",
+    string LabelFormat = "");

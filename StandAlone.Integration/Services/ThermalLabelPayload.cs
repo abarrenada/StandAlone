@@ -24,8 +24,11 @@ public sealed class ThermalLabelPayload
     public int Shift { get; init; }
     public int LineNumber { get; init; }
     public int Quantity { get; init; } = 1;
+    public int LisQty { get; init; }
     public string UccBarcode { get; init; } = string.Empty;
     public string CartonUpc { get; init; } = string.Empty;
+    public string ShopOrder { get; init; } = string.Empty;
+    public string Caliber { get; init; } = string.Empty;
     public string TemplateOrientation { get; init; } = "ref-first";
     public bool IsMexicoItem { get; init; }
     public DateTime CreatedAtUtc { get; init; } = DateTime.UtcNow;

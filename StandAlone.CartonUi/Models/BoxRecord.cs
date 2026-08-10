@@ -16,6 +16,8 @@ public class BoxRecord
     public string PlcMsg { get; set; } = string.Empty;
     public string ErrMsg { get; set; } = string.Empty;
     public int PrintNum { get; set; }
+    /// <summary>30-character barcode serial computed at box-creation time (Progress prt-barcode format).</summary>
+    public string BarcodeSerial { get; set; } = string.Empty;
 
     // ── Display helpers ──────────────────────────────────────────────────────
 
