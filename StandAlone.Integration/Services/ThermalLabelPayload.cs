@@ -32,4 +32,9 @@ public sealed class ThermalLabelPayload
     public string TemplateOrientation { get; init; } = "ref-first";
     public bool IsMexicoItem { get; init; }
     public DateTime CreatedAtUtc { get; init; } = DateTime.UtcNow;
+
+    // ── Pallet-label fields ──────────────────────────────────────────────────
+    public int Grade { get; init; }
+    public string Location { get; init; } = string.Empty;
+    public string PlantName { get; init; } = string.Empty;
 }

@@ -55,6 +55,17 @@ public class FileBoxRepository : IBoxRepository
         return Task.FromResult(result);
     }
 
+    public Task<int> AllocatePalletSerialAsync(int plant, CancellationToken ct)
+    {
+        var filePath = Path.Combine(_dataDirectory, $"pallet-serial-{plant:000}.txt");
+        int serial = 0;
+        if (File.Exists(filePath) && int.TryParse(File.ReadAllText(filePath).Trim(), out var prev))
+            serial = prev;
+        serial = serial >= 999_999_999 ? 1 : serial + 1;
+        File.WriteAllText(filePath, serial.ToString());
+        return Task.FromResult(serial);
+    }
+
     public Task<BoxRecord?> GetBoxByBarcodeSerialAsync(int lineId, string barcodeSerial, CancellationToken ct)
     {
         var filePath = Path.Combine(_dataDirectory, $"boxes{lineId:00}.csv");

@@ -49,4 +49,10 @@ public class AppSettings
 
     /// <summary>Last entered secondary item (persisted across sessions).</summary>
     public string CurrentSecondaryItem { get; set; } = string.Empty;
+
+    /// <summary>Plant name printed on pallet labels (e.g., "El Paso", "Dallas").</summary>
+    public string PlantName { get; set; } = string.Empty;
+
+    /// <summary>Warehouse location code printed on pallet labels (e.g., "SHRWRAP").</summary>
+    public string PalletLocation { get; set; } = "SHRWRAP";
 }

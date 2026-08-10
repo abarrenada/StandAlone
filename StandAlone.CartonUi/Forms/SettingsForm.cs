@@ -137,7 +137,7 @@ public class SettingsForm : Form
         {
             Dock = DockStyle.Fill,
             ColumnCount = 2,
-            RowCount = 12,
+            RowCount = 15,
             AutoScroll = true,
             BackColor = Color.MidnightBlue,
         };
@@ -201,6 +201,11 @@ public class SettingsForm : Form
             ? _settings.CartonPrintMode
             : "PLC Signal";
         AddRow(scroll, row++, "Carton Mode:", cartonModeCombo);
+
+        // Pallet label settings
+        AddLabel(scroll, row++, 0, "━━ Pallet Label ━━", true);
+        AddRow(scroll, row++, "Plant Name:", new TextBox { Name = "PlantName", Text = _settings.PlantName });
+        AddRow(scroll, row++, "Pallet Location:", new TextBox { Name = "PalletLocation", Text = _settings.PalletLocation });
 
         // Save/Cancel buttons (always visible footer)
         var panel = new Panel
@@ -328,5 +333,8 @@ public class SettingsForm : Form
         _settings.LabelOutputType = GetComboValue("LabelOutputType", "NiceLabel Xml");
         _settings.ThermalPrinterType = GetComboValue("ThermalPrinterType", "SATO");
         _settings.CartonPrintMode = GetComboValue("CartonPrintMode", "PLC Signal");
+
+        _settings.PlantName = GetText("PlantName");
+        _settings.PalletLocation = GetText("PalletLocation");
     }
 }

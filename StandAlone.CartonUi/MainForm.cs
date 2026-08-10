@@ -419,6 +419,17 @@ public class MainForm : Form
             _btnPrintPallet.Click += (_, _) => ShowPalletQuery();
             _startupPanel.Controls.Add(_btnPrintPallet);
             nextBtnX += 156;
+
+            var btnPalletScan = new Button
+            {
+                Text = "Pallet Scan",
+                Size = new Size(150, 44), Location = new Point(nextBtnX, btnY),
+                BackColor = Color.DarkGreen, ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+            };
+            btnPalletScan.Click += (_, _) => OpenPalletScanForm();
+            _startupPanel.Controls.Add(btnPalletScan);
+            nextBtnX += 156;
         }
 
         var btnExit = new Button
@@ -952,6 +963,12 @@ public class MainForm : Form
         Controls.Add(_palletQueryPanel);
     }
 
+    private void OpenPalletScanForm()
+    {
+        var form = new PalletScanForm(_settings, _config, _boxRepo, _shift, _inspector);
+        form.Show(this);
+    }
+
     private void ShowPalletQuery()
     {
         var inspector = _inspectorInput.Text.Trim();
@@ -1118,6 +1135,10 @@ public class MainForm : Form
         var labelSize = (_labelSizeCombo.SelectedItem as LabelSizeOption)?.SizeCode ?? string.Empty;
         var shade = _palletShadeDisplay?.Text ?? itemDetail.Shade.ToString();
 
+        // Allocate the next pallet serial for this plant — format "PPP-SSSSSSSSS" matching Progress prt-tag-nbr
+        var palletSerial = await _boxRepo.AllocatePalletSerialAsync(itemDetail.Plant, CancellationToken.None);
+        var palletId = $"{itemDetail.Plant:000}-{palletSerial:000000000}";
+
         var job = new ManualCartonPrintJob(
             itemDetail.ItemNumber,
             Quantity: 1,
@@ -1133,7 +1154,7 @@ public class MainForm : Form
             LabelFormat: "PALLET_LABEL");
 
         _btnPalletPrint!.Enabled = false;
-        var success = await ExportManualLabelAsync(itemDetail, job, CancellationToken.None);
+        var success = await ExportManualLabelAsync(itemDetail, job, CancellationToken.None, palletId: palletId);
         _btnPalletPrint.Enabled = true;
 
         if (_palletStatusLabel != null)
@@ -1596,7 +1617,10 @@ public class MainForm : Form
                     quantity: Math.Max(1, box.PrintNum),
                     uccBarcode: itemDetail?.GetUCC() ?? string.Empty,
                     cartonUpc: itemDetail?.GetCartonUPC() ?? string.Empty,
-                    lisQty: itemDetail?.LisQty ?? 0);
+                    lisQty: itemDetail?.LisQty ?? 0,
+                    grade: itemDetail?.Grade ?? 0,
+                    location: _settings.PalletLocation,
+                    plantName: _settings.PlantName);
 
                 var thermalExporter = new ThermalPrinterCommandExporter(
                     _settings.LabelOutputAddress,
@@ -1619,7 +1643,7 @@ public class MainForm : Form
         }
     }
 
-    private async Task<bool> ExportManualLabelAsync(ItemDetail itemDetail, ManualCartonPrintJob job, CancellationToken ct)
+    private async Task<bool> ExportManualLabelAsync(ItemDetail itemDetail, ManualCartonPrintJob job, CancellationToken ct, string palletId = "")
     {
         var outputType = _settings.LabelOutputType?.Replace(" ", string.Empty, StringComparison.OrdinalIgnoreCase);
 
@@ -1642,7 +1666,7 @@ public class MainForm : Form
             var payload = BuildThermalPayload(
                 labelFormat: resolvedFormat,
                 labelTypeCode: itemDetail.LabelTypeCode,
-                palletId: string.Empty,
+                palletId: palletId,
                 itemNumber: job.ItemNumber,
                 iRef: itemDetail.IRef,
                 plant: itemDetail.Plant,
@@ -1663,7 +1687,10 @@ public class MainForm : Form
                 cartonUpc: itemDetail.GetCartonUPC(),
                 shopOrder: job.ShopOrder,
                 caliber: job.Caliber,
-                lisQty: itemDetail.LisQty);
+                lisQty: itemDetail.LisQty,
+                grade: itemDetail.Grade,
+                location: _settings.PalletLocation,
+                plantName: _settings.PlantName);
 
             var thermalExporter = new ThermalPrinterCommandExporter(
                 _settings.LabelOutputAddress,
@@ -1709,7 +1736,10 @@ public class MainForm : Form
         string cartonUpc,
         string shopOrder = "",
         string caliber = "",
-        int lisQty = 0)
+        int lisQty = 0,
+        int grade = 0,
+        string location = "",
+        string plantName = "")
     {
         return new ThermalLabelPayload
         {
@@ -1740,6 +1770,9 @@ public class MainForm : Form
             CartonUpc = cartonUpc,
             ShopOrder = shopOrder,
             Caliber = caliber,
+            Grade = grade,
+            Location = location,
+            PlantName = plantName,
             CreatedAtUtc = DateTime.UtcNow,
         };
     }

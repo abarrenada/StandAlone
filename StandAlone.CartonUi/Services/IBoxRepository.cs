@@ -42,4 +42,11 @@ public interface IBoxRepository
     /// for the given line, or null if not found.
     /// </summary>
     Task<BoxRecord?> GetBoxByBarcodeSerialAsync(int lineId, string barcodeSerial, CancellationToken ct);
+
+    /// <summary>
+    /// Atomically increments and returns the next pallet serial number for the given plant.
+    /// Persisted in <c>pallet-serial-{plant:000}.txt</c> in the data directory.
+    /// Wraps from 999,999,999 back to 1.
+    /// </summary>
+    Task<int> AllocatePalletSerialAsync(int plant, CancellationToken ct);
 }

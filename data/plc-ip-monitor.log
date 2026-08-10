@@ -4106,3 +4106,7 @@
 [2026-08-10 14:58:01.953] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
 [2026-08-10 14:58:24.993] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
 [2026-08-10 14:58:40.528] monitor_stop
+[2026-08-10 16:05:53.960] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-08-10 16:06:04.918] monitor_stop
+[2026-08-10 16:08:33.952] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-08-10 16:08:35.713] monitor_stop
