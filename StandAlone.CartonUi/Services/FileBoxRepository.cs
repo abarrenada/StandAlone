@@ -55,6 +55,35 @@ public class FileBoxRepository : IBoxRepository
         return Task.FromResult(result);
     }
 
+    public Task<BoxRecord?> GetBoxByBarcodeSerialAsync(int lineId, string barcodeSerial, CancellationToken ct)
+    {
+        var filePath = Path.Combine(_dataDirectory, $"boxes{lineId:00}.csv");
+        if (!File.Exists(filePath) || string.IsNullOrWhiteSpace(barcodeSerial))
+            return Task.FromResult<BoxRecord?>(null);
+
+        var needle = barcodeSerial.Trim();
+        foreach (var line in File.ReadAllLines(filePath).Reverse())
+        {
+            if (string.IsNullOrWhiteSpace(line) || line.StartsWith('#')) continue;
+            var parts = line.Split(',');
+            if (parts.Length < 8) continue;
+            if (!string.Equals(parts[7].Trim(), needle, StringComparison.OrdinalIgnoreCase)) continue;
+
+            return Task.FromResult<BoxRecord?>(new BoxRecord
+            {
+                RecId         = int.TryParse(parts[0].Trim(), out var rid) ? rid : 0,
+                LineId        = int.TryParse(parts[1].Trim(), out var lid) ? lid : lineId,
+                MakeTime      = DateTime.TryParse(parts[2].Trim(), out var mt) ? mt : DateTime.MinValue,
+                StackNum      = parts[3].Trim(),
+                PlcMsg        = parts[4].Trim(),
+                ErrMsg        = parts[5].Trim(),
+                PrintNum      = int.TryParse(parts[6].Trim(), out var pn) ? pn : 0,
+                BarcodeSerial = parts[7].Trim(),
+            });
+        }
+        return Task.FromResult<BoxRecord?>(null);
+    }
+
     public Task<StackerRecord?> GetStackerAsync(int lineId, string stackNum, CancellationToken ct)
     {
         var filePath = Path.Combine(_dataDirectory, $"stackers{lineId:00}.csv");

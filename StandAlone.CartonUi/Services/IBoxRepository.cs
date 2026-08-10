@@ -36,4 +36,10 @@ public interface IBoxRepository
     /// </summary>
     Task<ItemDetail?> GetItemDetailByNumberAsync(string itemNumber, bool searchMexicoAlso,
         CancellationToken ct);
+
+    /// <summary>
+    /// Returns the first box record whose BarcodeSerial matches <paramref name="barcodeSerial"/>
+    /// for the given line, or null if not found.
+    /// </summary>
+    Task<BoxRecord?> GetBoxByBarcodeSerialAsync(int lineId, string barcodeSerial, CancellationToken ct);
 }

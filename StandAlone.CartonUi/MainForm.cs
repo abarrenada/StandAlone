@@ -1005,17 +1005,57 @@ public class MainForm : Form
         }
         _btnPalletPrint!.Enabled = false;
 
-        var itemDetail = await _boxRepo.GetItemDetailByNumberAsync(serialNo, searchMexicoAlso: true, CancellationToken.None);
+        ItemDetail? itemDetail = null;
         string? shadeText = null;
+        string statusFound = string.Empty;
 
+        // 1. Try as a barcode serial — validates the carton was actually produced on this line.
+        var matchedBox = await _boxRepo.GetBoxByBarcodeSerialAsync(_config.LineNumber, serialNo, CancellationToken.None);
+        if (matchedBox != null)
+        {
+            if (matchedBox.PrintNum <= 0)
+            {
+                if (_palletStatusLabel != null)
+                {
+                    _palletStatusLabel.Text = $"Carton serial found but was never printed (Rec {matchedBox.RecId})";
+                    _palletStatusLabel.ForeColor = Color.Salmon;
+                }
+                return;
+            }
+
+            var stacker = await _boxRepo.GetStackerAsync(_config.LineNumber, matchedBox.StackNum, CancellationToken.None);
+            var iRef = stacker?.IRef ?? 0;
+            var isMexico = stacker?.IsMexicoItem ?? false;
+            if (iRef > 0)
+                itemDetail = await _boxRepo.GetItemDetailByIRefAsync(iRef, isMexico, CancellationToken.None);
+
+            if (itemDetail != null)
+            {
+                if (stacker?.Shade > 0) shadeText = stacker.Shade.ToString();
+                statusFound = $"Carton verified — box #{matchedBox.RecId}, stack {matchedBox.StackNum.Trim()}, {matchedBox.MakeTime:HH:mm:ss}";
+            }
+        }
+
+        // 2. Try as an item number (fallback: user typed item# directly).
+        if (itemDetail == null)
+        {
+            itemDetail = await _boxRepo.GetItemDetailByNumberAsync(serialNo, searchMexicoAlso: true, CancellationToken.None);
+            if (itemDetail != null)
+                statusFound = $"Item found: {itemDetail.ItemNumber}";
+        }
+
+        // 3. Try as a stack number (fallback: user typed stack# directly).
         if (itemDetail == null)
         {
             var stacker = await _boxRepo.GetStackerAsync(_config.LineNumber, serialNo, CancellationToken.None);
             if (stacker != null && stacker.IRef > 0)
             {
                 itemDetail = await _boxRepo.GetItemDetailByIRefAsync(stacker.IRef, stacker.IsMexicoItem, CancellationToken.None);
-                if (itemDetail != null && stacker.Shade > 0)
-                    shadeText = stacker.Shade.ToString();
+                if (itemDetail != null)
+                {
+                    if (stacker.Shade > 0) shadeText = stacker.Shade.ToString();
+                    statusFound = $"Stack found: {serialNo} → {itemDetail.ItemNumber}";
+                }
             }
         }
 
@@ -1037,7 +1077,7 @@ public class MainForm : Form
 
             if (_palletStatusLabel != null)
             {
-                _palletStatusLabel.Text = $"Item found: {itemDetail.ItemNumber}";
+                _palletStatusLabel.Text = statusFound;
                 _palletStatusLabel.ForeColor = Color.LightGreen;
             }
             _btnPalletPrint!.Enabled = true;
@@ -1056,7 +1096,7 @@ public class MainForm : Form
 
             if (_palletStatusLabel != null)
             {
-                _palletStatusLabel.Text = $"'{serialNo}' not found as item number or stack number";
+                _palletStatusLabel.Text = $"'{serialNo}' not found as barcode serial, item number, or stack number";
                 _palletStatusLabel.ForeColor = Color.Salmon;
             }
         }
