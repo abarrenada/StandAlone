@@ -6,6 +6,16 @@ public static class SatoTemplateResolver
 {
     public static string? ResolveTemplateFileName(ThermalLabelPayload payload)
     {
+        // Pallet labels have no dedicated .sato template (only carton-sized ones exist
+        // in sato_templates/), and the pallet-print screen shares its size combo with
+        // the carton screen. Returning null here forces the caller to fall back to
+        // ThermalPrinterCommandBuilder.Build(), which renders the correct hand-built
+        // pallet layout instead of coincidentally matching a carton template by size.
+        if (string.Equals(payload.LabelFormat, "PALLET_LABEL", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
         var sizeToken = NormalizeSizeToken(payload.LabelSize);
         var referenceToken = payload.TemplateOrientation switch
         {

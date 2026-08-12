@@ -115,6 +115,7 @@ public class SettingsForm : Form
             DialogResult = DialogResult.Cancel,
             Font = new Font("Segoe UI", 10f),
         };
+        btnCancel.Click += (_, _) => Close();
 
         BackColor = Color.MidnightBlue;
         ForeColor = Color.White;
@@ -254,6 +255,7 @@ public class SettingsForm : Form
             Margin = new Padding(12, 0, 0, 0),
             Font = new Font("Segoe UI", 10f),
         };
+        btnCancel.Click += (_, _) => Close();
 
         buttonRow.Controls.Add(btnCancel);
         buttonRow.Controls.Add(btnSave);

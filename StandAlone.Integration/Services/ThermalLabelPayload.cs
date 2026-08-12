@@ -45,4 +45,21 @@ public sealed class ThermalLabelPayload
     public int Grade { get; init; }
     public string Location { get; init; } = string.Empty;
     public string PlantName { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 30-char barcode of the carton that was scanned to look up this pallet's item
+    /// (Progress prt-barcode). Embedded as a secondary reference barcode on the WMS
+    /// pallet label. Left empty when the pallet was looked up by item/stack number
+    /// instead of an actual carton scan.
+    /// </summary>
+    public string CartonReferenceBarcode { get; init; } = string.Empty;
+
+    /// <summary>Login/operator id printed on the pallet label footer (Progress p-userid).</summary>
+    public string UserId { get; init; } = string.Empty;
+
+    /// <summary>Short printer/terminal identifier for the pallet label footer (Progress w-trk-term).</summary>
+    public string PrinterTermId { get; init; } = string.Empty;
+
+    /// <summary>itemhdr.ih-wms-uom. When "CT", pkgconfig and total pieces use boxes-per-pallet directly.</summary>
+    public string WmsUom { get; init; } = string.Empty;
 }

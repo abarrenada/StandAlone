@@ -81,6 +81,7 @@ public class MainForm : Form
     private Label? _palletStatusLabel;
     private Button? _btnPalletPrint;
     private ItemDetail? _palletQueryItemDetail;
+    private string _palletQueryCartonBarcode = string.Empty;
 
     // ── Browse panel controls ─────────────────────────────────────────────────
     private Panel _browsePanel = null!;
@@ -771,10 +772,22 @@ public class MainForm : Form
         SettingsManager.SaveField(s => s.CurrentPrimaryItem = itemNumber);
 
         var labelKind = isPallet ? "Pallet" : "Carton";
-        var success = await ExportManualLabelAsync(item, job, CancellationToken.None);
+        var (success, barcodeSerial) = await ExportManualLabelAsync(item, job, CancellationToken.None);
 
         if (success)
         {
+            if (!isPallet && !string.IsNullOrEmpty(barcodeSerial))
+            {
+                // Register a box record so this carton can later be found by barcode serial
+                // (pallet-scan lookup) - manual prints otherwise never appear in boxes*.csv.
+                var boxFile = Path.Combine(_config.DataDirectory, $"boxes{_config.LineNumber:00}.csv");
+                var existingCount = File.Exists(boxFile)
+                    ? File.ReadAllLines(boxFile).Count(l => !string.IsNullOrWhiteSpace(l) && !l.StartsWith('#'))
+                    : 0;
+                var stackNumber = (existingCount % 99) + 1;
+                AppendCartonBoxRecord(item, stackNumber, barcodeSerial, DateTime.Now);
+            }
+
             var msg = $"{labelKind} label sent: {item.ItemNumber} ×{quantity}" +
                       (string.IsNullOrEmpty(shopOrder) ? string.Empty : $"  |  Order: {shopOrder}");
             if (_manualStatusLabel is not null)
@@ -807,6 +820,41 @@ public class MainForm : Form
             File.AppendAllText(filePath, Environment.NewLine + record);
         else
             File.WriteAllText(filePath, record);
+    }
+
+    /// <summary>
+    /// Appends a box + stacker record so a printed carton can later be found by barcode serial
+    /// (pallet-scan lookup) or stack number. barcodeSerial should match what was actually printed
+    /// on the label (see ThermalPrinterCommandBuilder.ComputeCartonBarcodeSerial).
+    /// </summary>
+    private void AppendCartonBoxRecord(ItemDetail itemDetail, int stackNumber, string barcodeSerial, DateTime timestamp)
+    {
+        var boxFile = Path.Combine(_config.DataDirectory, $"boxes{_config.LineNumber:00}.csv");
+        var stackerFile = Path.Combine(_config.DataDirectory, $"stackers{_config.LineNumber:00}.csv");
+
+        int nextRecId = 1;
+        if (File.Exists(boxFile))
+        {
+            foreach (var line in File.ReadAllLines(boxFile))
+            {
+                if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#") || line.StartsWith("RecId", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var parts = line.Split(',');
+                if (parts.Length >= 1 && int.TryParse(parts[0].Trim().Trim('"'), out var recId))
+                    nextRecId = Math.Max(nextRecId, recId + 1);
+            }
+        }
+
+        var stackNum = $" {stackNumber}";
+        var plcMsg = stackNum + new string(' ', 31) + itemDetail.ItemNumber.PadRight(30);
+        if (plcMsg.Length < 65) plcMsg = plcMsg.PadRight(65);
+
+        var boxRecord = $"{nextRecId},{_config.LineNumber},{timestamp:yyyy-MM-dd HH:mm:ss},{stackNum},{plcMsg},,1,{barcodeSerial}";
+        var stackerRecord = $"{_config.LineNumber},{stackNum},{itemDetail.IRef},{plcMsg},{itemDetail.Shade},{itemDetail.SizeShape},";
+
+        AppendToFile(boxFile, boxRecord);
+        AppendToFile(stackerFile, stackerRecord);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -997,6 +1045,7 @@ public class MainForm : Form
             BuildPalletQueryPanel();
 
         _palletQueryItemDetail = null;
+        _palletQueryCartonBarcode = string.Empty;
         _serialNoInput!.Clear();
         _palletItemNoDisplay!.Text = string.Empty;
         if (_palletDescLabel != null) _palletDescLabel.Text = string.Empty;
@@ -1031,6 +1080,7 @@ public class MainForm : Form
         ItemDetail? itemDetail = null;
         string? shadeText = null;
         string statusFound = string.Empty;
+        _palletQueryCartonBarcode = string.Empty;
 
         // 1. Try as a barcode serial — validates the carton was actually produced on this line.
         var matchedBox = await _boxRepo.GetBoxByBarcodeSerialAsync(_config.LineNumber, serialNo, CancellationToken.None);
@@ -1056,6 +1106,7 @@ public class MainForm : Form
             {
                 if (stacker?.Shade > 0) shadeText = stacker.Shade.ToString();
                 statusFound = $"Carton verified — box #{matchedBox.RecId}, stack {matchedBox.StackNum.Trim()}, {matchedBox.MakeTime:HH:mm:ss}";
+                _palletQueryCartonBarcode = matchedBox.BarcodeSerial;
             }
         }
 
@@ -1160,7 +1211,8 @@ public class MainForm : Form
             LabelFormat: "PALLET_LABEL");
 
         _btnPalletPrint!.Enabled = false;
-        var success = await ExportManualLabelAsync(itemDetail, job, CancellationToken.None, palletId: palletId);
+        var (success, _) = await ExportManualLabelAsync(itemDetail, job, CancellationToken.None,
+            palletId: palletId, cartonReferenceBarcode: _palletQueryCartonBarcode);
         _btnPalletPrint.Enabled = true;
 
         if (_palletStatusLabel != null)
@@ -1649,14 +1701,14 @@ public class MainForm : Form
         }
     }
 
-    private async Task<bool> ExportManualLabelAsync(ItemDetail itemDetail, ManualCartonPrintJob job, CancellationToken ct, string palletId = "")
+    private async Task<(bool Success, string BarcodeSerial)> ExportManualLabelAsync(ItemDetail itemDetail, ManualCartonPrintJob job, CancellationToken ct, string palletId = "", string cartonReferenceBarcode = "")
     {
         var outputType = _settings.LabelOutputType?.Replace(" ", string.Empty, StringComparison.OrdinalIgnoreCase);
 
         if (string.Equals(outputType, "NiceLabelXml", StringComparison.OrdinalIgnoreCase))
         {
             var xmlExporter = new NiceLabelXmlExporter(_settings.LabelOutputAddress);
-            return await xmlExporter.ExportManualCartonAsync(job, ct);
+            return (await xmlExporter.ExportManualCartonAsync(job, ct), string.Empty);
         }
 
         if (string.Equals(outputType, "NetworkPrinter", StringComparison.OrdinalIgnoreCase))
@@ -1700,7 +1752,15 @@ public class MainForm : Form
                 lisQty: itemDetail.LisQty,
                 grade: itemDetail.Grade,
                 location: _settings.PalletLocation,
-                plantName: _settings.PlantName);
+                plantName: _settings.PlantName,
+                cartonReferenceBarcode: cartonReferenceBarcode,
+                userId: job.RequestedBy,
+                printerTermId: DerivePrinterTermId(_settings.LabelOutputAddress),
+                wmsUom: itemDetail.WmsUOM);
+
+            // Compute up front so the returned serial is populated regardless of which
+            // branch inside ExportAsync actually renders the label (e.g. non-SATO types).
+            payload.CartonBarcodeSerial = ThermalPrinterCommandBuilder.ComputeCartonBarcodeSerial(payload);
 
             var thermalExporter = new ThermalPrinterCommandExporter(
                 _settings.LabelOutputAddress,
@@ -1711,15 +1771,15 @@ public class MainForm : Form
             if (thermalResult.Success)
             {
                 SetStatus($"{_settings.ThermalPrinterType} sent to '{thermalResult.DispatchTarget ?? "(no target)"}' and archived at {thermalResult.ArchivePath}");
-                return true;
+                return (true, payload.CartonBarcodeSerial);
             }
 
             SetStatus($"Thermal export error: {thermalResult.ErrorMessage} (archive: {thermalResult.ArchivePath})");
-            return false;
+            return (false, payload.CartonBarcodeSerial);
         }
 
         SetStatus($"Output type '{_settings.LabelOutputType}' is not supported in manual mode.");
-        return false;
+        return (false, string.Empty);
     }
 
     private ThermalLabelPayload BuildThermalPayload(
@@ -1753,7 +1813,11 @@ public class MainForm : Form
         int lisQty = 0,
         int grade = 0,
         string location = "",
-        string plantName = "")
+        string plantName = "",
+        string cartonReferenceBarcode = "",
+        string userId = "",
+        string printerTermId = "",
+        string wmsUom = "")
     {
         return new ThermalLabelPayload
         {
@@ -1791,8 +1855,23 @@ public class MainForm : Form
             Grade = grade,
             Location = location,
             PlantName = plantName,
+            CartonReferenceBarcode = cartonReferenceBarcode,
+            UserId = userId,
+            PrinterTermId = printerTermId,
+            WmsUom = wmsUom,
             CreatedAtUtc = DateTime.UtcNow,
         };
+    }
+
+    /// <summary>Short terminal identifier for the pallet label footer (Progress w-trk-term), derived
+    /// from the configured output address (analogous to trimming the unix tty/device path).</summary>
+    private static string DerivePrinterTermId(string? outputAddress)
+    {
+        if (string.IsNullOrWhiteSpace(outputAddress))
+            return string.Empty;
+
+        var trimmed = outputAddress.Trim();
+        return trimmed.Length <= 5 ? trimmed : trimmed[^5..];
     }
 
     private static string ResolveThermalLabelFormat(ItemDetail? itemDetail, string? labelSize)
@@ -2011,37 +2090,12 @@ public class MainForm : Form
             if (itemDetail is null)
                 return;
 
-            var boxFile = Path.Combine(_config.DataDirectory, $"boxes{_config.LineNumber:00}.csv");
-            var stackerFile = Path.Combine(_config.DataDirectory, $"stackers{_config.LineNumber:00}.csv");
-
-            int nextRecId = 1;
-            if (File.Exists(boxFile))
-            {
-                foreach (var line in File.ReadAllLines(boxFile))
-                {
-                    if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#") || line.StartsWith("RecId", StringComparison.OrdinalIgnoreCase))
-                        continue;
-
-                    var parts = line.Split(',');
-                    if (parts.Length >= 1 && int.TryParse(parts[0].Trim().Trim('"'), out var recId))
-                        nextRecId = Math.Max(nextRecId, recId + 1);
-                }
-            }
-
             var stackNumber = Math.Clamp(decodedNumber, 1, 99);
-            var stackNum = $" {stackNumber}";
-            var plcMsg = stackNum + new string(' ', 31) + itemDetail.ItemNumber.PadRight(30);
-            if (plcMsg.Length < 65) plcMsg = plcMsg.PadRight(65);
-
             var now = DateTime.Now;
             var sizeCode = string.IsNullOrWhiteSpace(itemDetail.SizeShape) ? "0" : itemDetail.SizeShape.Trim()[..1];
             var barcodeSerial = ThermalPrinterCommandBuilder.ComputeCartonBarcodeSerial(
                 now, itemDetail.IRef, itemDetail.Shade, sizeCode, _shift, _config.LineNumber, itemDetail.Plant, itemDetail.LisQty);
-            var boxRecord = $"{nextRecId},{_config.LineNumber},{now:yyyy-MM-dd HH:mm:ss},{stackNum},{plcMsg},,1,{barcodeSerial}";
-            var stackerRecord = $"{_config.LineNumber},{stackNum},{itemDetail.IRef},{plcMsg},{itemDetail.Shade},{itemDetail.SizeShape},";
-
-            AppendToFile(boxFile, boxRecord);
-            AppendToFile(stackerFile, stackerRecord);
+            AppendCartonBoxRecord(itemDetail, stackNumber, barcodeSerial, now);
 
             await RefreshBrowseAsync();
         }
@@ -2097,7 +2151,7 @@ public class MainForm : Form
                 Environment.UserName,
                 DateTime.Now);
 
-            var success = await ExportManualLabelAsync(itemDetail, job, CancellationToken.None);
+            var (success, _) = await ExportManualLabelAsync(itemDetail, job, CancellationToken.None);
             if (success)
                 SetStatus($"PLC 8 auto-print sent for {itemDetail.ItemNumber}.");
             else

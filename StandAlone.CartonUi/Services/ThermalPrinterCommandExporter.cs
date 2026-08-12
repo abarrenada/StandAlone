@@ -364,10 +364,13 @@ internal static class ThermalPrinterCommandBuilder
 
     private static string BuildSatoPallet(ThermalLabelPayload p)
     {
-        // Matches Progress dtlbl101b.i (WMS 4x6 pallet label) field-for-field.
+        // Faithful port of Progress dtlbl101b.i (WMS 4x6 pallet label), M8400RV/84Pro
+        // printer-model branch — field-for-field, coordinate-for-coordinate.
         const char stx = (char)0x02;
         const char etx = (char)0x03;
         const char esc = (char)0x1B;
+        const string tSpeed = "CS2";
+        const string tHeat = "#E2";
 
         var localTime = p.CreatedAtUtc.ToLocalTime();
 
@@ -383,81 +386,122 @@ internal static class ThermalPrinterCommandBuilder
             ? p.Caliber.Trim()[..Math.Min(1, p.Caliber.Trim().Length)]
             : (!string.IsNullOrWhiteSpace(p.Size) ? p.Size.Trim()[..Math.Min(1, p.Size.Trim().Length)] : "0");
 
-        // Total pallet pieces: LisQty × BoxesPerPallet  (Progress: prt-nbr-pc, displayed as ZZ,ZZ9)
-        var totalPcs = (long)p.LisQty * Math.Max(0, p.BoxesPerPallet);
+        // itemhdr.ih-wms-uom = "CT" overrides pkgconfig/total-pieces to use boxes-per-pallet
+        // directly instead of LisQty * BoxesPerPallet (Progress dtscn011.p ~line 661/1031).
+        var isCtUom = string.Equals(p.WmsUom, "CT", StringComparison.OrdinalIgnoreCase);
+
+        // prt-nbr-pc: LisQty × BoxesPerPallet, unless CT-uom (then just BoxesPerPallet).
+        var totalPcs = isCtUom
+            ? (long)Math.Max(0, p.BoxesPerPallet)
+            : (long)p.LisQty * Math.Max(0, p.BoxesPerPallet);
 
         // prt-yyyyjjj = YYYY + JJJ (7 chars)
         var mfgDate = $"{localTime.Year:0000}{localTime.DayOfYear:000}";
 
-        // prt-pkgconfig = "QQQQQP BBBBBBC"  (pieces-per-box "P " boxes-per-pallet "C")
-        var pkgConfig = $"{p.LisQty:00000}P {p.BoxesPerPallet:00000}C";
+        // prt-pkgconfig = trim(LisQty) + "P" + trim(BoxesPerPallet) + "C" (no zero-padding,
+        // no separating space), or "XXX" + BoxesPerPallet + "C" for CT-uom items.
+        var pkgConfig = isCtUom
+            ? $"XXX{Math.Max(0, p.BoxesPerPallet)}C"
+            : $"{p.LisQty}P{Math.Max(0, p.BoxesPerPallet)}C";
 
         // Plant name capped at 15 chars (substr(prt-plant-name,1,15))
         var plantName = string.IsNullOrWhiteSpace(p.PlantName)
             ? string.Empty
             : p.PlantName[..Math.Min(15, p.PlantName.Length)];
 
+        // SKU field format "XXXX XXXXXXXXXXX": first 4 chars + literal space + next 11 chars.
+        var skuField = FormatPalletSkuField(p.ItemNumber);
+
         var sb = new StringBuilder();
         sb.Append(stx);
-        sb.Append(esc).Append("A").AppendLine();
-        sb.Append(esc).Append("CS2").AppendLine();
-        sb.Append(esc).Append("Q").Append(Math.Clamp(p.Quantity, 1, 999)).AppendLine();
+        sb.Append(esc).Append("A");
+        sb.Append(esc).Append(tSpeed);
+        sb.Append(esc).Append(tHeat);
+        sb.Append(esc).Append("%3");
 
-        // ── Tag barcode: Code 128, wide, top of label ─────────────────────────
-        if (!string.IsNullOrWhiteSpace(tagBarcode))
+        // ── Tag barcode: overline / barcode / underline ───────────────────────
+        sb.Append(esc).Append("H0750").Append(esc).Append("V0175").Append(esc).Append("FW03H540");
+        sb.Append(esc).Append("H0750").Append(esc).Append("V0187").Append(esc).Append("BG05197>I").Append(tagBarcode);
+        sb.Append(esc).Append("H0553").Append(esc).Append("V0175").Append(esc).Append("FW03H540");
+
+        // ── QC-hold audit flag: no qc-holds equivalent in this system, always blank ──
+        sb.Append(esc).Append("H0730").Append(esc).Append("V0950").Append(esc).Append("L0404").Append(esc).Append("WL0");
+
+        // ── Machine/line/term, date/time, and user footer ─────────────────────
+        sb.Append(esc).Append("H0750").Append(esc).Append("V1040").Append(esc).Append("L0101").Append(esc).Append("S")
+            .Append(ClipAscii(Environment.MachineName, 4)).Append('-')
+            .Append(p.LineNumber.ToString("00")).Append('-')
+            .Append(ClipAscii(p.PrinterTermId, 5));
+        sb.Append(esc).Append("H0730").Append(esc).Append("V1040").Append(esc).Append("L0101").Append(esc).Append("S")
+            .Append(localTime.ToString("MM/dd/yy")).Append(':').Append(localTime.ToString("HHmm"));
+        sb.Append(esc).Append("H0710").Append(esc).Append("V1040").Append(esc).Append("L0101").Append(esc).Append("S")
+            .Append(ClipAscii(p.UserId, 8));
+
+        // ── Tag: ──────────────────────────────────────────────────────────────
+        sb.Append(esc).Append("H0540").Append(esc).Append("V0025").Append(esc).Append("L0101").Append(esc).Append("XB0").Append("Tag:");
+        sb.Append(esc).Append("H0540").Append(esc).Append("V0125").Append(esc).Append("L0201").Append(esc).Append("WL0").Append(tagDisplay);
+
+        // ── SKU: ──────────────────────────────────────────────────────────────
+        sb.Append(esc).Append("H0430").Append(esc).Append("V0025").Append(esc).Append("L0101").Append(esc).Append("XB0").Append("SKU:");
+        sb.Append(esc).Append("H0470").Append(esc).Append("V0125").Append(esc).Append("L0202").Append(esc).Append("WL0").Append(skuField);
+
+        // ── Shd: ──────────────────────────────────────────────────────────────
+        sb.Append(esc).Append("H0350").Append(esc).Append("V0025").Append(esc).Append("L0101").Append(esc).Append("XB0").Append("Shd:");
+        sb.Append(esc).Append("H0350").Append(esc).Append("V0125").Append(esc).Append("L0201").Append(esc).Append("WL0").Append(shade4).Append(sizeCode);
+        sb.Append(esc).Append("H0350").Append(esc).Append("V0450").Append(esc).Append("L0101").Append(esc).Append("XB0")
+            .Append("Plant: ").Append(p.Plant.ToString("000")).Append(" - ").Append(plantName);
+
+        // ── Qty: | Grade: | Shift: | Line: ────────────────────────────────────
+        sb.Append(esc).Append("H0290").Append(esc).Append("V0025").Append(esc).Append("L0101").Append(esc).Append("XB0")
+            .Append("Qty: ").Append(totalPcs.ToString("#,##0"));
+        sb.Append(esc).Append("H0290").Append(esc).Append("V0450").Append(esc).Append("L0101").Append(esc).Append("XB0")
+            .Append("Grade: ").Append(p.Grade);
+        sb.Append(esc).Append("H0290").Append(esc).Append("V0740").Append(esc).Append("L0101").Append(esc).Append("XB0")
+            .Append("Shift: ").Append(p.Shift);
+        sb.Append(esc).Append("H0290").Append(esc).Append("V0940").Append(esc).Append("L0101").Append(esc).Append("XB0")
+            .Append("Line: ").Append(p.LineNumber.ToString("00"));
+
+        // ── pkgconfig | Loc: | MfgDate: ────────────────────────────────────────
+        sb.Append(esc).Append("H0220").Append(esc).Append("V0025").Append(esc).Append("L0101").Append(esc).Append("XB0").Append(pkgConfig);
+        sb.Append(esc).Append("H0220").Append(esc).Append("V0450").Append(esc).Append("L0101").Append(esc).Append("XB0")
+            .Append("Loc: ").Append(p.Location);
+        sb.Append(esc).Append("H0220").Append(esc).Append("V0740").Append(esc).Append("L0101").Append(esc).Append("XB0")
+            .Append("MfgDate: ").Append(mfgDate);
+
+        // ── Carton reference barcode (last scanned carton, if this pallet came from a scan) ──
+        if (!string.IsNullOrWhiteSpace(p.CartonReferenceBarcode))
         {
-            sb.Append(esc).Append("H0080").Append(esc).Append("V0025").Append(esc)
-                .Append("B103120").Append(esc).Append("D").Append(ClipAscii(tagBarcode, 12)).AppendLine();
+            var cartonBc = p.CartonReferenceBarcode;
+            sb.Append(esc).Append("H0160").Append(esc).Append("V0097").Append(esc).Append("FW03H680");
+            sb.Append(esc).Append("H0160").Append(esc).Append("V0100").Append(esc).Append("BG03085>H")
+                .Append(cartonBc.Length >= 2 ? cartonBc[..2] : cartonBc).Append(">C")
+                .Append(cartonBc.Length > 2 ? cartonBc[2..] : string.Empty);
+            sb.Append(esc).Append("H0080").Append(esc).Append("V0097").Append(esc).Append("FW03H680");
+            sb.Append(esc).Append("H0070").Append(esc).Append("V0120").Append(esc).Append("L0101").Append(esc).Append("M").Append(cartonBc);
         }
 
-        // ── Tag: PPP-SSSSSSSSS ────────────────────────────────────────────────
-        sb.Append(esc).Append("H0220").Append(esc).Append("V0025").Append(esc)
-            .Append("L0101").Append(esc).Append("XB0").Append("Tag:").AppendLine();
-        sb.Append(esc).Append("H0220").Append(esc).Append("V0110").Append(esc)
-            .Append("L0201").Append(esc).Append("WL0").Append(ClipAscii(tagDisplay, 20)).AppendLine();
+        // ── Pallet-ID barcode (verbatim from dtlbl101b.i — literal "WMS" content) ─
+        sb.Append(esc).Append("H0160").Append(esc).Append("V0892").Append(esc).Append("FW03H210");
+        sb.Append(esc).Append("H0160").Append(esc).Append("V0900").Append(esc).Append("BC0310003WMS");
+        sb.Append(esc).Append("H0060").Append(esc).Append("V0892").Append(esc).Append("FW03H210");
 
-        // ── SKU ───────────────────────────────────────────────────────────────
-        sb.Append(esc).Append("H0320").Append(esc).Append("V0025").Append(esc)
-            .Append("L0101").Append(esc).Append("XB0").Append("SKU:").AppendLine();
-        sb.Append(esc).Append("H0320").Append(esc).Append("V0110").Append(esc)
-            .Append("L0202").Append(esc).Append("WL0").Append(ClipAscii(p.ItemNumber, 24)).AppendLine();
-
-        // ── Shd: (left) + Plant: (right) ─────────────────────────────────────
-        sb.Append(esc).Append("H0420").Append(esc).Append("V0025").Append(esc)
-            .Append("L0101").Append(esc).Append("XB0").Append("Shd:").AppendLine();
-        sb.Append(esc).Append("H0420").Append(esc).Append("V0110").Append(esc)
-            .Append("L0201").Append(esc).Append("WL0").Append(ClipAscii($"{shade4}{sizeCode}", 6)).AppendLine();
-        sb.Append(esc).Append("H0420").Append(esc).Append("V0380").Append(esc)
-            .Append("L0101").Append(esc).Append("XB0")
-            .Append(ClipAscii($"Plant: {p.Plant:000} - {plantName}", 28)).AppendLine();
-
-        // ── Qty: | Grade: | Shift: | Line: (same row) ─────────────────────────
-        sb.Append(esc).Append("H0500").Append(esc).Append("V0025").Append(esc)
-            .Append("L0101").Append(esc).Append("XB0")
-            .Append(ClipAscii($"Qty: {totalPcs:#,##0}", 14)).AppendLine();
-        sb.Append(esc).Append("H0500").Append(esc).Append("V0250").Append(esc)
-            .Append("L0101").Append(esc).Append("XB0")
-            .Append(ClipAscii($"Grade: {p.Grade}", 10)).AppendLine();
-        sb.Append(esc).Append("H0500").Append(esc).Append("V0390").Append(esc)
-            .Append("L0101").Append(esc).Append("XB0")
-            .Append(ClipAscii($"Shift: {p.Shift}", 10)).AppendLine();
-        sb.Append(esc).Append("H0500").Append(esc).Append("V0530").Append(esc)
-            .Append("L0101").Append(esc).Append("XB0")
-            .Append(ClipAscii($"Line: {p.LineNumber:00}", 10)).AppendLine();
-
-        // ── pkgconfig | Loc: | MfgDate: (same row) ────────────────────────────
-        sb.Append(esc).Append("H0580").Append(esc).Append("V0025").Append(esc)
-            .Append("L0101").Append(esc).Append("XB0").Append(ClipAscii(pkgConfig, 18)).AppendLine();
-        sb.Append(esc).Append("H0580").Append(esc).Append("V0250").Append(esc)
-            .Append("L0101").Append(esc).Append("XB0")
-            .Append(ClipAscii($"Loc: {p.Location}", 16)).AppendLine();
-        sb.Append(esc).Append("H0580").Append(esc).Append("V0430").Append(esc)
-            .Append("L0101").Append(esc).Append("XB0")
-            .Append(ClipAscii($"MfgDate: {mfgDate}", 18)).AppendLine();
-
+        // Progress prt-qty is never assigned in this flow, so ESC Q is always sent with no
+        // trailing digit — matching production behavior (the printer defaults to 1 label).
+        sb.Append(esc).Append("Q");
         sb.Append(esc).Append("Z");
         sb.Append(etx);
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Progress dtlbl101b.i SKU field format picture "XXXX XXXXXXXXXXX": first 4 source
+    /// characters, a literal space, then the next 11 source characters (16 chars total).
+    /// </summary>
+    private static string FormatPalletSkuField(string? itemNumber)
+    {
+        var padded = (itemNumber ?? string.Empty).PadRight(15);
+        var value = padded.Length > 15 ? padded[..15] : padded;
+        return $"{value[..4]} {value[4..15]}";
     }
 
     private static string BuildIpl(ThermalLabelPayload p)
