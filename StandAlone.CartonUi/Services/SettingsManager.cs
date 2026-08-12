@@ -51,6 +51,20 @@ public static class SettingsManager
         }
     }
 
+    /// <summary>
+    /// Reloads the settings file fresh, applies <paramref name="apply"/>, and saves the result.
+    /// Use this instead of Save(_settings) when only touching a couple of fields (e.g. "remember
+    /// last item"), so it doesn't clobber other fields a separate Settings session may have
+    /// changed since this process's in-memory settings were loaded.
+    /// </summary>
+    public static AppSettings SaveField(Action<AppSettings> apply)
+    {
+        var current = Load();
+        apply(current);
+        Save(current);
+        return current;
+    }
+
     private static AppSettings GetDefaults()
     {
         var dataDir = Path.Combine(AppContext.BaseDirectory, "data");

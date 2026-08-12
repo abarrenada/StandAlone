@@ -27,6 +27,14 @@ public sealed class ThermalLabelPayload
     public int LisQty { get; init; }
     public string UccBarcode { get; init; } = string.Empty;
     public string CartonUpc { get; init; } = string.Empty;
+    public string CartonUpcNumSys { get; init; } = string.Empty;
+    public string CartonUpcMfg { get; init; } = string.Empty;
+    public string CartonUpcProd { get; init; } = string.Empty;
+    public string CartonUpcChkdgt { get; init; } = string.Empty;
+    public string CartonBarcodeSerial { get; set; } = string.Empty;
+    public string MfgDateCode { get; set; } = string.Empty;
+    public string ItemNumberMasked { get; set; } = string.Empty;
+    public string PartDescriptionShort { get; set; } = string.Empty;
     public string ShopOrder { get; init; } = string.Empty;
     public string Caliber { get; init; } = string.Empty;
     public string TemplateOrientation { get; init; } = "ref-first";

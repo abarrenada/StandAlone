@@ -1,0 +1,19 @@
+Field,Type,C — Created By (source field),R — Read by label,U — Updated,On Label?,Notes
+ih-item-nbr,CHAR x(18),dtbat000.p ? inp-item-nbr,dtlbl007n.i WHERE key,dtbat000.p,No,Primary key. Dal-Tile item number.
+ih-color-desc,CHAR x(40),dtbat000.p ? inp-color-desc,dtlbl007n.i ? prt-color-desc,dtbat000.p,YES ?,PRINTS on label. NOT updated by SAP desc change — only Stibo updates this.
+ih-shape-desc,CHAR x(40),dtbat000.p ? inp-shape-desc,dtlbl007n.i ? prt-shape-desc,dtbat000.p,YES,Shape description. PRINTS on label.
+ih-series-desc,CHAR x(40),dtbat000.p ? inp-series-desc,dtlbl007n.i ? prt-series-desc,dtbat000.p,HD only,Series collection name. Prints on HD label only (ih-label-type=3).
+ih-label-type-code,INT 9,dtbat000.p ? inp-label-type (bcextinput pos 45),dtplc067.p — 4-factor label decision,dtbat000.p,No — controls format,? MOST CRITICAL. 0=Standard 4=F&D 6=CrossOver. NOT in SAP MATMAS.
+ih-brand,CHAR x(2),dtbat000.p ? inp-brand,dtlbl007n.i ? brand table ? prt-name,dtbat000.p,YES,Brand code ? brand desc e.g. DALTILE. Prints on label.
+ih-pei,INT 9,dtbat000.p ? inp-pei,dtlbl007n.i ? prt-pei ? LabelIcon[] ? GR007-010,dtbat000.p,HD icon,PEI wear rating 1-4. NOT in SAP. HD icon only (ih-label-type=3).
+ih-cof,INT 9,dtbat000.p ? inp-cof,dtlbl007n.i ? prt-cof ? GR004-006,dtbat000.p,HD icon,COF friction rating 1-3. NOT in SAP. HD icon only.
+ih-wa,DEC 9.99,dtbat000.p ? inp-wa,dtlbl007n.i ? prt-wa ? GR011-018,dtbat000.p,HD icon,Water absorption 0.5/3.0/3.5/5.0/7.0/16.0. NOT in SAP. HD icon only.
+ih-tone,CHAR x(1),dtbat000.p ? inp-tone,prt-tone ? GR003,dtbat000.p,HD icon,Tone match Y = GR003 icon. NOT in SAP. HD icon only.
+ih-sgl-num-sys,INT 9,dtbat000.p ? inp-sgl-num-sys-s,dtlbl007n.i ? prt-upc-num-sys,dtbat000.p,YES,Single-tile UPC-A number system digit. In UPC barcode.
+ih-sgl-mfg,INT 99999,dtbat000.p ? inp-sgl-mfg-s,dtlbl007n.i ? prt-upc-mfg,dtbat000.p,YES,Single-tile UPC-A manufacturer code 5 digits.
+ih-sgl-prd,INT 99999,dtbat000.p ? inp-sgl-prd-s,dtlbl007n.i ? prt-upc-prd,dtbat000.p,YES,Single-tile UPC-A product code 5 digits.
+ih-sgl-chkdgt,INT 9,dtbat000.p ? inp-sgl-chkdgt-s,dtlbl007n.i ? prt-upc-chk,dtbat000.p,YES,Single-tile UPC-A check digit. Wrong = barcode scan failure.
+ih-create-dte,DATE,dtbat000.p ? inp-hdr-cdate (Stibo),Audit inquiry only,dtbat000.p,No,Stibo creation date. Audit trail.
+ih-update-dte,DATE,dtbat000.p ? inp-hdr-udate (Stibo),Audit inquiry only,dtbat000.p on update,No,Stibo last update date. Refreshed on every bcextinput update.
+ih-plant,INT 999,dtbat000.p ? inp-plant,dtlbl007n.i WHERE clause filter,dtbat000.p,No,Plant number. Critical for multi-plant bcmstr3 filtering.
+,,,,,,

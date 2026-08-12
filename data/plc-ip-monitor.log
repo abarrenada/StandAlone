@@ -4110,3 +4110,375 @@
 [2026-08-10 16:06:04.918] monitor_stop
 [2026-08-10 16:08:33.952] monitor_start host=10.121.11.16 port=4001 frameLen=8
 [2026-08-10 16:08:35.713] monitor_stop
+[2026-08-11 11:54:22.183] monitor_stop
+[2026-08-11 11:54:42.851] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-08-11 11:54:42.896] connected
+[2026-08-11 13:15:22.879] monitor_stop
+[2026-08-11 13:15:54.971] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-08-11 13:15:55.020] connected
+[2026-08-11 13:28:16.765] monitor_stop
+[2026-08-11 13:28:29.956] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-08-11 13:28:30.012] connected
+[2026-08-11 13:28:59.516] monitor_stop
+[2026-08-11 13:29:09.640] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-08-11 13:29:09.696] connected
+[2026-08-11 13:42:12.705] monitor_stop
+[2026-08-11 13:42:25.508] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-08-11 13:42:25.551] connected
+[2026-08-11 13:57:20.737] monitor_stop
+[2026-08-11 14:00:19.132] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-08-11 14:00:19.183] connected
+[2026-08-11 14:13:45.161] monitor_stop
+[2026-08-11 14:14:46.963] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-08-11 14:14:47.024] connected
+[2026-08-11 14:21:31.132] disconnected
+[2026-08-11 14:21:33.161] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:21:35.194] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:21:37.227] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:21:39.253] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:21:41.269] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:21:43.289] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:21:45.305] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:21:47.318] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:21:49.333] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:21:51.350] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:21:53.357] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:21:55.369] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:21:57.385] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:21:59.400] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:01.412] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:03.420] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:05.434] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:07.442] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:09.452] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:11.473] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:13.487] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:15.508] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:17.520] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:19.546] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:21.555] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:23.567] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:25.581] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:27.586] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:29.601] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:31.613] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:33.618] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:35.627] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:37.645] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:39.658] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:41.664] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:43.684] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:45.700] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:47.712] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:49.736] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:51.744] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:53.760] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:55.777] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:57.792] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:22:59.803] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:23:01.811] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:23:03.829] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:23:05.844] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:23:07.863] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:23:09.877] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:23:11.889] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:23:13.904] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:23:15.916] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:23:17.941] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:23:19.957] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:23:21.974] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:23:23.985] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:23:25.993] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:23:28.010] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:23:30.016] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:23:32.030] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:23:34.032] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:23:36.047] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:23:38.058] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:23:40.071] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:23:42.075] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 14:23:44.128] connected
+[2026-08-11 15:08:28.519] monitor_stop
+[2026-08-11 15:13:43.186] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-08-11 15:13:43.246] connected
+[2026-08-11 15:13:54.304] monitor_stop
+[2026-08-11 15:44:31.175] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-08-11 15:44:31.239] connected
+[2026-08-11 15:46:09.051] monitor_stop
+[2026-08-11 15:46:31.285] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-08-11 15:46:31.348] connected
+[2026-08-11 16:51:19.837] disconnected
+[2026-08-11 16:51:21.850] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-11 16:51:23.856] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-11 16:51:25.874] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-11 16:51:27.882] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-11 16:51:29.901] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-11 16:51:31.911] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-11 16:51:33.918] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-11 16:51:35.921] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-11 16:51:37.934] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-11 16:51:39.950] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-11 16:51:41.956] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-11 16:51:43.974] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-11 16:51:45.982] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-11 16:51:47.986] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-11 16:51:49.994] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-11 16:51:52.013] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-11 16:51:54.019] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-11 16:51:56.030] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-11 16:51:58.039] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-11 16:52:00.054] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-11 16:52:02.060] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-11 16:52:04.072] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-11 16:52:06.086] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-11 16:52:08.151] connected
+[2026-08-11 17:02:55.499] monitor_stop
+[2026-08-11 17:03:12.608] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-08-11 17:03:12.649] connected
+[2026-08-11 18:38:35.980] disconnected
+[2026-08-11 18:38:38.005] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-11 18:38:40.038] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-12 09:13:48.603] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 09:13:51.751] connected
+[2026-08-12 09:15:17.066] disconnected
+[2026-08-12 09:15:19.101] connected
+[2026-08-12 09:24:21.547] monitor_stop
+[2026-08-12 09:28:35.855] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-08-12 09:28:35.912] connected
+[2026-08-12 09:36:59.773] monitor_stop
+[2026-08-12 09:37:10.741] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-08-12 09:37:10.790] connected
+[2026-08-12 09:43:12.102] monitor_stop
+[2026-08-12 09:43:25.787] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-08-12 09:43:25.846] connected
+[2026-08-12 09:51:31.320] monitor_stop
+[2026-08-12 09:51:50.217] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-08-12 09:51:50.275] connected
+[2026-08-12 10:01:46.906] monitor_stop
+[2026-08-12 10:02:06.356] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-08-12 10:02:06.415] connected
+[2026-08-12 10:06:02.222] disconnected
+[2026-08-12 10:06:04.409] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-12 10:06:06.503] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-12 10:06:08.535] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-12 10:06:10.619] connected
+[2026-08-12 10:08:53.552] disconnected
+[2026-08-12 10:08:55.732] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-12 10:08:57.764] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-12 10:08:59.790] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-12 10:09:01.817] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-12 10:09:03.835] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-12 10:09:05.850] error SocketException: A socket operation was attempted to an unreachable network.
+[2026-08-12 10:09:28.955] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:09:52.014] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:10:15.076] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:10:38.119] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:11:01.184] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:11:24.224] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:11:47.285] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:12:10.346] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:12:33.406] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:12:56.463] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:13:19.514] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:13:42.570] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:14:05.622] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:14:28.674] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:14:51.728] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:15:14.786] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:15:37.883] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:16:00.982] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:16:24.056] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:16:47.116] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:17:10.177] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:17:24.937] monitor_stop
+[2026-08-12 10:18:19.943] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-08-12 10:18:41.137] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:19:04.209] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:19:27.254] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:19:50.307] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:20:13.351] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:20:36.392] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:20:59.431] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:21:22.503] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:21:45.549] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:22:08.601] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:22:31.657] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:22:54.719] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:23:17.785] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:23:40.819] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:24:03.869] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:24:27.188] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:24:50.253] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:25:13.308] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:25:36.380] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:25:59.499] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:26:22.564] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:26:45.619] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:27:08.669] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:27:31.724] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:27:54.787] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:28:17.846] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:28:40.895] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:29:03.964] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:29:27.015] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:29:50.071] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:30:13.128] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:30:36.168] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:30:59.219] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:31:22.262] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:31:45.305] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:32:08.356] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:32:31.413] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:32:54.467] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:33:17.548] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:33:40.600] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:34:03.653] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:34:26.706] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:34:49.750] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:35:12.814] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:35:35.876] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:35:58.949] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:36:21.996] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:36:45.064] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:37:08.102] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:37:31.162] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:37:54.209] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:38:17.282] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:38:40.345] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:39:03.437] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:39:26.500] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:39:49.563] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:40:12.639] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:40:35.710] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:40:58.750] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:41:21.820] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:41:44.853] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:42:07.898] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:42:30.963] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:42:54.002] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:43:17.069] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:43:40.128] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:44:03.181] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:44:26.234] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:44:49.302] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:45:12.363] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:45:35.410] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:45:58.442] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:46:21.499] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:46:44.564] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:47:07.619] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:47:30.683] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:47:53.739] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:48:16.807] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:48:39.852] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:49:02.907] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:49:25.965] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:49:49.028] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:50:12.089] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:50:35.152] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:50:58.195] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:51:21.274] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:51:44.353] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:52:07.398] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:52:30.464] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:52:53.545] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:53:16.605] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:53:39.667] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:54:02.729] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:54:25.784] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:54:48.824] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:55:11.894] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:55:34.956] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:55:57.984] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:56:21.025] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:56:44.075] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:57:07.199] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:57:30.304] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:57:53.463] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:58:16.545] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:58:39.710] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:59:02.912] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:59:26.088] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 10:59:49.195] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:00:12.277] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:00:35.385] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:00:58.465] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:01:21.506] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:01:44.564] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:02:07.635] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:02:30.695] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:02:53.741] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:03:16.802] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:03:39.854] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:04:02.908] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:04:25.976] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:04:49.033] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:05:12.081] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:05:35.117] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:05:58.175] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:06:21.253] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:06:44.292] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:07:07.367] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:07:30.413] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:07:53.492] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:08:16.568] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:08:39.628] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:09:02.703] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:09:25.807] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:09:48.868] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:10:11.917] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:10:34.973] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:10:58.039] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:11:21.085] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:11:44.128] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:12:07.193] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:12:30.273] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:12:53.335] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:13:16.403] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:13:39.462] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:14:02.509] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:14:25.579] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:14:48.638] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:15:11.704] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:15:34.758] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:15:57.797] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:16:20.849] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:16:43.908] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:17:06.960] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:17:30.023] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:17:53.087] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:18:16.150] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:18:39.215] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:19:02.297] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:19:25.344] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:19:48.423] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:20:11.487] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:20:34.562] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:20:57.622] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:21:20.682] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:21:43.742] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:22:06.798] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:22:29.865] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:22:52.928] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:23:15.985] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:23:39.047] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:24:02.108] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:24:25.163] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:24:48.226] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:25:11.283] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:25:34.331] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:25:57.392] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:26:20.455] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:26:43.509] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:34:44.283] error SocketException: An established connection was aborted by the software in your host machine.
+[2026-08-12 11:35:07.506] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-12 11:35:09.527] connected
+[2026-08-12 12:07:13.483] monitor_stop
+[2026-08-12 12:07:27.793] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-08-12 12:07:27.839] connected
+[2026-08-12 12:15:58.208] monitor_stop
+[2026-08-12 12:16:10.628] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-08-12 12:16:10.675] connected
+[2026-08-12 14:12:58.302] monitor_stop
+[2026-08-12 14:13:11.556] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-08-12 14:13:11.600] connected

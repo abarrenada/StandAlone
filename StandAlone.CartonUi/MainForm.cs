@@ -460,6 +460,7 @@ public class MainForm : Form
         {
             // Default fallback when LabelSzPrmpt is absent
             _labelSizeCombo.Items.Add(new LabelSizeOption { SizeCode = "4.5x3", Prompt = "4.5x3 Standard",  IncludeUs = true });
+            _labelSizeCombo.Items.Add(new LabelSizeOption { SizeCode = "4x3",   Prompt = "4x3 Standard",    IncludeUs = true });
             _labelSizeCombo.Items.Add(new LabelSizeOption { SizeCode = "2x7",   Prompt = "2x7 Narrow",      IncludeUs = true });
         }
         if (_labelSizeCombo.Items.Count > 0)
@@ -554,12 +555,17 @@ public class MainForm : Form
             }
         }
 
-        // Save primary and secondary items for next session
-        if (_primaryItemInput is not null)
-            _settings.CurrentPrimaryItem = _primaryItemInput.Text.Trim();
-        if (_secondaryItemInput is not null)
-            _settings.CurrentSecondaryItem = _secondaryItemInput.Text.Trim();
-        SettingsManager.Save(_settings);
+        // Save primary and secondary items for next session (read-modify-write so this
+        // doesn't clobber other fields changed by a separate Settings session meanwhile)
+        var primaryItemToSave = _primaryItemInput?.Text.Trim();
+        var secondaryItemToSave = _secondaryItemInput?.Text.Trim();
+        if (primaryItemToSave is not null) _settings.CurrentPrimaryItem = primaryItemToSave;
+        if (secondaryItemToSave is not null) _settings.CurrentSecondaryItem = secondaryItemToSave;
+        SettingsManager.SaveField(s =>
+        {
+            if (primaryItemToSave is not null) s.CurrentPrimaryItem = primaryItemToSave;
+            if (secondaryItemToSave is not null) s.CurrentSecondaryItem = secondaryItemToSave;
+        });
 
         if (string.Equals(_settings.CartonPrintMode, "Manual Qty", StringComparison.OrdinalIgnoreCase))
         {
@@ -762,7 +768,7 @@ public class MainForm : Form
             labelFormat);
 
         _settings.CurrentPrimaryItem = itemNumber;
-        SettingsManager.Save(_settings);
+        SettingsManager.SaveField(s => s.CurrentPrimaryItem = itemNumber);
 
         var labelKind = isPallet ? "Pallet" : "Carton";
         var success = await ExportManualLabelAsync(item, job, CancellationToken.None);
@@ -1685,6 +1691,10 @@ public class MainForm : Form
                 quantity: job.Quantity,
                 uccBarcode: itemDetail.GetUCC(),
                 cartonUpc: itemDetail.GetCartonUPC(),
+                cartonUpcNumSys: itemDetail.CartonUPC_NumSys.ToString("0"),
+                cartonUpcMfg: itemDetail.CartonUPC_Mfg.ToString("00000"),
+                cartonUpcProd: itemDetail.CartonUPC_Prod.ToString("00000"),
+                cartonUpcChkdgt: itemDetail.CartonUPC_Chkdgt.ToString("0"),
                 shopOrder: job.ShopOrder,
                 caliber: job.Caliber,
                 lisQty: itemDetail.LisQty,
@@ -1734,6 +1744,10 @@ public class MainForm : Form
         int quantity,
         string uccBarcode,
         string cartonUpc,
+        string cartonUpcNumSys = "",
+        string cartonUpcMfg = "",
+        string cartonUpcProd = "",
+        string cartonUpcChkdgt = "",
         string shopOrder = "",
         string caliber = "",
         int lisQty = 0,
@@ -1768,6 +1782,10 @@ public class MainForm : Form
             LisQty = lisQty,
             UccBarcode = uccBarcode,
             CartonUpc = cartonUpc,
+            CartonUpcNumSys = cartonUpcNumSys,
+            CartonUpcMfg = cartonUpcMfg,
+            CartonUpcProd = cartonUpcProd,
+            CartonUpcChkdgt = cartonUpcChkdgt,
             ShopOrder = shopOrder,
             Caliber = caliber,
             Grade = grade,

@@ -1,0 +1,44 @@
+CRUD,Program,Action,Trigger
+C — Create,dtbat000.p,INSERT itemhdr from bcextinput flat file,New item in Stibo STEP
+C — Create,dtinv035.p,Manual CREATE via Barcode Admin screen,Admin manual entry
+R — Read,dtlbl007n.i (GenSingleLabel),FIND itemhdr at NS shift setup — builds LblVar[],Operator runs dtlbl067.p NS
+R — Read,dtplc067.p,ih-label-type-code used for 4-factor label decision,Every ND box drop (from cache)
+R — Read,dtmnt080.p,Display all ih- fields in inquiry screen,Barcode Admin inquiry
+U — Update,dtbat000.p,ASSIGN all ih- fields when record already exists,Stibo sends updated bcextinput
+D — Delete,dtbat001.p,DELETE when flagged for archive,IT batch archive process
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,

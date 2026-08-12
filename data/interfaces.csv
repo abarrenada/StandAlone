@@ -1,0 +1,10 @@
+Step,System / Program,Tables Written,Tables Read,Time
+1,Stibo STEP (MDM),SAP Z-fields (DT_BARCODE_ITEM etc.),—,Day 0
+2,SAP ECC — MATMAS IDoc,XML file to BizTalk share,SAP Material Master,Minutes
+3,BizTalk Server,mm_e1maram_trigger/maram/marcm/marmm (Oracle),IDoc XML file,Seconds
+4,dtbat1005-ora.p (cron 5-15 min),"SAPItemHdr, SAPItemPlt, SAPItemUOM",Oracle tables,5-15 min
+5,dtbat000.p (MDM batch),"itemhdr, itemdet, bc-cpn (CORP bcmstr3)",bcextinput flat file,Hours
+6,dtdbi023.p (IT — password protected),"itemhdr, itemdet (SITE bcmstr3)",CORP bcmstr3 .d files,Manual — IT runs
+7,BCCalendarCreate.p,shiftcal,Calendar input,Annual
+8,dtlbl067.p NS (Operator shift start),stacker,ALL 9 tables — builds LblVar[] in memory,Shift start
+9,dtplc067.p ND (PLC box drop),box (audit record),stacker (1 read only — rest from cache),0ms ? label in 3 sec

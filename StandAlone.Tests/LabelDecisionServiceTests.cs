@@ -39,6 +39,56 @@ public class LabelDecisionServiceTests
     }
 
     [Fact]
+    public void DefaultCartonTemplate_45x3_RendersLegacyRotationAndFieldLayout()
+    {
+        var templatesDirectory = SatoTemplateResolver.FindTemplateDirectory();
+        var templatePath = Path.Combine(templatesDirectory, "lt_default_45x3.sato");
+        Assert.True(File.Exists(templatePath), $"Template not found at {templatePath}");
+        var template = File.ReadAllText(templatePath);
+
+        var payload = new ThermalLabelPayload
+        {
+            LabelTypeCode = 0,
+            LabelFormat = "CARTON_LABEL",
+            ItemNumber = "FL9036MOD1P4",
+            PartDescription = "3 X 6 X 0.31 IN | FINISH LINE",
+            ColorDesc = "FL90-WHITE",
+            ShapeDesc = "3X6",
+            SeriesDesc = "FINISH LINE",
+            Shade = "555",
+            Size = "0",
+            Grade = 1,
+            Plant = 610,
+            Inspector = "tony",
+            StackNumber = "ORD-2026-1001",
+            SalesQty = 12.5m,
+            SalesUom = "SF",
+            PackageWeight = 37.5m,
+            LisQty = 1,
+            Quantity = 1,
+            UccBarcode = "20081516630981",
+            CartonUpc = "081516630981",
+            CartonUpcNumSys = "0",
+            CartonUpcMfg = "81516",
+            CartonUpcProd = "63098",
+            CartonUpcChkdgt = "1",
+            CartonBarcodeSerial = "%20262230615229555001016100001",
+            MfgDateCode = "6224:1441",
+            ItemNumberMasked = "FL90  36MOD1P4   ",
+        };
+
+        var rendered = SatoTemplateRenderer.RenderTemplate(template, payload);
+
+        Assert.Contains("\\x1b%2", rendered);
+        Assert.Contains("\\x1bL0203\\x1bS\\x1bWB1FL90  36MOD1P4", rendered);
+        Assert.Contains(payload.CartonBarcodeSerial, rendered);
+        Assert.Contains("SF", rendered);
+        Assert.Contains("\\x1bH335\\x1bV0038\\x1bS81516", rendered);
+        Assert.Contains("\\x1bH243\\x1bV0038\\x1bL0102\\x1bS63098", rendered);
+        Assert.DoesNotContain("{", rendered);
+    }
+
+    [Fact]
     public void ResolveLabelType_ReturnsExpectedFormat_ForKnownCode()
     {
         var service = new LabelDecisionService();

@@ -1,37 +1,63 @@
 # symbolic SATO template
-# source include: dtlbl060b.i
+# source include: dtplc067_prep.p GenSingleLabel, case "dtlbl060b.i" (default / label-type 0 path)
 # branch: default / 4.5x3
+#
+# Ported field-for-field from the legacy include. Print-head reference offset below is the
+# legacy right-hand engine family (S86RD/85R/85xrbd) value for genuine 4.5x3 stock, taken
+# verbatim from dtplc067_prep.p:8358 - there's no per-device model setting on this side to
+# pick 85L/S86LD instead.
+#
+# For narrower 4x3 stock, use lt_default_4x3.sato instead (separate file - the coordinate
+# math differs enough on-press that it needs its own tuning, not just an offset tweak here).
+#
+# Known, documented omissions vs. the legacy label (no data source / not applicable here):
+#   - machine/line/term tracking string next to the field labels
+#   - prt-apply-type suffix on the "Color/Couleur" label
+#   - French/Spanish color+shape repeat rows (no translated description data) - collapsed to
+#     one row showing PartDescription
+#   - prt-coverage text field
+#   - grade highlight reverse-video box
+#   - PEI/WA/COF/tone icon block and brand/customer-# highlight block - these only fire in the
+#     legacy code for label-type 1/2/3, not label-type 0 (DALTILE default), so they're correctly
+#     absent here rather than missing.
 
 <STX>
 \x1bA
-\x1bCS2
+\x1bCS4
+\x1b#E2
 \x1bQ{Quantity}
-\x1bA3H000V000
-\x1bH040\x1bV075\x1bL0001\x1bXSColor/Couleur:
-\x1bH280\x1bV075\x1bL0001\x1bXSShape/Forme:
-\x1bH700\x1bV075\x1bL0001\x1bXS{CreatedAtUtc}
-\x1bH050\x1bV125\x1bL0101\x1bWL0{ItemNumber}
-\x1bH280\x1bV125\x1bL0101\x1bWL0{PartDescription}
-\x1bH790\x1bV125\x1bL0001\x1bXS{Inspector}
-\x1bH070\x1bV170\x1bBG03080>H{UccBarcode}
-\x1bH073\x1bV265\x1bFW03H730
-\x1bH095\x1bV283\x1bL0001\x1bXS{UccBarcode}
-\x1bH050\x1bV310\x1bL0001\x1bXS{ColorDesc}
-\x1bH050\x1bV338\x1bL0001\x1bXS{Size}
-\x1bH050\x1bV366\x1bL0001\x1bXS{ShapeDesc}
-\x1bH050\x1bV394\x1bL0001\x1bXS{SeriesDesc}
-\x1bH050\x1bV422\x1bL0001\x1bXS{LabelSize}
-\x1bH050\x1bV450\x1bL0001\x1bXM{PartDescription}
-\x1bH140\x1bV505\x1bL0001\x1bXL0{Plant}
-\x1bH620\x1bV283\x1bL0001\x1bXSShade/Teinte
-\x1bH620\x1bV323\x1bL0101\x1bXS{Shade}
-\x1bH620\x1bV351\x1bL0001\x1bXSQual/Cal: {StackNumber}
-\x1bH620\x1bV379\x1bL0001\x1bXSLoc: {LineNumber}
-\x1bH620\x1bV407\x1bL0001\x1bXS{IRef}:{Plant}
-\x1bH620\x1bV435\x1bL0001\x1bXS{SalesQty} {SalesUom}
-\x1bH620\x1bV463\x1bL0001\x1bXS{PackageWeight}
-\x1bH620\x1bV491\x1bL0001\x1bXS{Quantity} UNITS
-\x1bH550\x1bV510\x1bD3020700{CartonUpc}
-\x1bH553\x1bV515\x1bFW03H180
+\x1bA3H-17V0005
+\x1b%2
+\x1bH890\x1bV0600\x1bL0101\x1bSColor/Couleur
+\x1bH640\x1bV0600\x1bSShape/Forme:
+\x1bH890\x1bV0583\x1bL0203\x1bS\x1bWB1{ItemNumberMasked}
+\x1bH220\x1bV0523\x1bL0101\x1bM{Inspector} {StackNumber}
+\x1bH885\x1bV0498\x1bBG03085>H{CartonBarcodeSerial}
+\x1bH888\x1bV0416\x1bFW03H675
+\x1bH865\x1bV0409\x1bL0101\x1bM{CartonBarcodeSerial}
+\x1bH905\x1bV0388\x1bL0102\x1bM{ColorDesc}
+\x1bH905\x1bV0348\x1bL0102\x1bM{ShapeDesc}
+\x1bH905\x1bV0303\x1bL0102\x1bM{PartDescription}
+\x1bH440\x1bV0193\x1bL0102\x1bS{SeriesDesc}
+\x1bH320\x1bV0408\x1bL0101\x1bSShade/Teinte/Tono
+\x1bH305\x1bV0393\x1bL0101\x1bWL1{Shade}
+\x1bH305\x1bV0338\x1bSQual/Cal:
+\x1bH210\x1bV0338\x1bL0101\x1bM{Grade}
+\x1bH305\x1bV0315\x1bSLoc:
+\x1bH260\x1bV0318\x1bL0101\x1bM{Plant}
+\x1bH305\x1bV0295\x1bL0101\x1bM{MfgDateCode}
+\x1bH305\x1bV0268\x1bL0101\x1bM{SalesQty} {SalesUom}
+\x1bH305\x1bV0243\x1bL0101\x1bM{PackageWeight} LB
+\x1bH305\x1bV0218\x1bL0101\x1bM{LisQty} UNITS
+\x1bH890\x1bV0133\x1bFW03H487
+\x1bH888\x1bV0133\x1bBD202075{UccBarcode}
+\x1bH890\x1bV0060\x1bFW03H487
+\x1bH815\x1bV0048\x1bL0102\x1bS{UccBarcode}
+\x1bH355\x1bV0148\x1bD3021100{CartonUpc}
+\x1bH357\x1bV0151\x1bFW03H194
+\x1bH378\x1bV0043\x1bL0102\x1bS{CartonUpcNumSys}
+\x1bH335\x1bV0038\x1bS{CartonUpcMfg}
+\x1bH243\x1bV0038\x1bL0102\x1bS{CartonUpcProd}
+\x1bH155\x1bV0043\x1bS{CartonUpcChkdgt}
 \x1bZ
 <ETX>

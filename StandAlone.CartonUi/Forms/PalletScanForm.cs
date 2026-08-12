@@ -375,6 +375,10 @@ public class PalletScanForm : Form
             Quantity      = 1,
             UccBarcode    = item.GetUCC(),
             CartonUpc     = item.GetCartonUPC(),
+            CartonUpcNumSys = item.CartonUPC_NumSys.ToString("0"),
+            CartonUpcMfg    = item.CartonUPC_Mfg.ToString("00000"),
+            CartonUpcProd   = item.CartonUPC_Prod.ToString("00000"),
+            CartonUpcChkdgt = item.CartonUPC_Chkdgt.ToString("0"),
             CreatedAtUtc  = DateTime.UtcNow,
         };
 

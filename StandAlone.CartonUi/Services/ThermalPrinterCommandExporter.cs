@@ -76,6 +76,10 @@ public sealed class ThermalPrinterCommandExporter
                 if (File.Exists(templatePath))
                 {
                     var template = File.ReadAllText(templatePath);
+                    payload.CartonBarcodeSerial = ThermalPrinterCommandBuilder.ComputeCartonBarcodeSerial(payload);
+                    payload.MfgDateCode = ThermalPrinterCommandBuilder.ComputeMfgDateCode(payload.CreatedAtUtc);
+                    payload.ItemNumberMasked = ThermalPrinterCommandBuilder.MaskItemNumber(payload.ItemNumber);
+                    payload.PartDescriptionShort = ThermalPrinterCommandBuilder.ClipField(payload.PartDescription, 36);
                     var rendered = SatoTemplateRenderer.RenderTemplate(template, payload);
                     return DecodeSatoControlMarkers(rendered);
                 }
@@ -304,9 +308,7 @@ internal static class ThermalPrinterCommandBuilder
 
         var localTime = p.CreatedAtUtc.ToLocalTime();
         var hhmm = localTime.ToString("HHmm");
-        var shadeInt = int.TryParse(DigitsOnly(p.Shade, 10, "0"), out var sv) ? sv : 0;
-        var sizeCode = string.IsNullOrWhiteSpace(p.Caliber) ? p.Size : p.Caliber;
-        var bc128 = ComputeCartonBarcodeSerial(localTime, p.IRef, shadeInt, sizeCode, p.Shift, p.LineNumber, p.Plant, p.LisQty);
+        var bc128 = ComputeCartonBarcodeSerial(p);
         var descLine = BuildDescriptionLine(p);
 
         var businessTypeName = ResolveBusinessLabelTypeName(p.LabelTypeCode);
@@ -532,6 +534,41 @@ internal static class ThermalPrinterCommandBuilder
         var szCode = string.IsNullOrWhiteSpace(sizeCode) ? "0" : sizeCode.Trim()[..1];
         return $"%{year4}{julday}{Math.Clamp(iRef, 0, 999999):000000}{shade2:0000}{szCode}{Math.Clamp(shift, 0, 9)}{Math.Clamp(lineId, 0, 99):00}{Math.Clamp(plant, 0, 999):000}{Math.Clamp(lisQty, 0, 99999):00000}";
     }
+
+    internal static string ComputeCartonBarcodeSerial(ThermalLabelPayload p)
+    {
+        var localTime = p.CreatedAtUtc.ToLocalTime();
+        var shadeInt = int.TryParse(DigitsOnly(p.Shade, 10, "0"), out var sv) ? sv : 0;
+        var sizeCode = string.IsNullOrWhiteSpace(p.Caliber) ? p.Size : p.Caliber;
+        return ComputeCartonBarcodeSerial(localTime, p.IRef, shadeInt, sizeCode, p.Shift, p.LineNumber, p.Plant, p.LisQty);
+    }
+
+    /// <summary>
+    /// Builds the "yjjj:hhmm" manufacture date/time code used on the Progress dtlbl060b.i label
+    /// (prt-yjjj = last digit of 2-digit year + 3-digit julian day, followed by 24h HHmm).
+    /// </summary>
+    internal static string ComputeMfgDateCode(DateTime createdAtUtc)
+    {
+        var localTime = createdAtUtc.ToLocalTime();
+        var yLastDigit = localTime.Year % 10;
+        var julian = localTime.DayOfYear.ToString("000");
+        return $"{yLastDigit}{julian}:{localTime:HHmm}";
+    }
+
+    /// <summary>
+    /// Applies the Progress dtplc067_prep.p item-number display mask, format picture
+    /// "xxxx  xxxxxxxxxxx" (first 4 characters, two literal spaces, next 11 characters -
+    /// space-padded/truncated to fit), e.g. seen at dtplc067_prep.p:6714 and :8384.
+    /// </summary>
+    internal static string MaskItemNumber(string? itemNumber)
+    {
+        var padded = (itemNumber ?? string.Empty).PadRight(15);
+        var value = padded.Length > 15 ? padded[..15] : padded;
+        return $"{value[..4]}  {value[4..]}";
+    }
+
+    /// <summary>Clips a field to a max length so it doesn't run into the label's second column.</summary>
+    internal static string ClipField(string? value, int maxLength) => ClipAscii(value ?? string.Empty, maxLength);
 
     private static string NormalizeType(string? value)
     {
