@@ -19,7 +19,7 @@
 \x1bH615\x1bV075\x1bL0001\x1bXS{CreatedAtUtc}
 \x1bH050\x1bV125\x1bL0101\x1bWL0{ItemNumberMasked}
 \x1bH650\x1bV125\x1bL0001\x1bXS{Inspector}
-\x1bH050\x1bV170\x1bBG03080>H{CartonBarcodeSerial}
+\x1bH050\x1bV170\x1bBG02080>H{CartonBarcodeSerial}
 \x1bH073\x1bV265\x1bFW03H730
 \x1bH095\x1bV283\x1bL0001\x1bM{CartonBarcodeSerial}
 \x1bH050\x1bV310\x1bL0001\x1bXS{ColorDesc}

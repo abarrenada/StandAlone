@@ -49,4 +49,22 @@ public interface IBoxRepository
     /// Wraps from 999,999,999 back to 1.
     /// </summary>
     Task<int> AllocatePalletSerialAsync(int plant, CancellationToken ct);
+
+    /// <summary>
+    /// Appends a printed pallet's info to the pallet registry (<c>pallets.csv</c>) so it can
+    /// later be looked up by serial during EOL scanning.
+    /// </summary>
+    Task SavePalletRecordAsync(PalletRecord record, CancellationToken ct);
+
+    /// <summary>
+    /// Returns the most recently printed pallet matching <paramref name="palletId"/>
+    /// (format "PPP-SSSSSSSSS"), or null if it was never printed/registered.
+    /// </summary>
+    Task<PalletRecord?> GetPalletBySerialAsync(string palletId, CancellationToken ct);
+
+    /// <summary>Appends one EOL scan transaction to the local log (<c>eol-scans.csv</c>).</summary>
+    Task AppendEolScanAsync(EolScanRecord record, CancellationToken ct);
+
+    /// <summary>Returns up to <paramref name="count"/> most recent EOL scans, newest first.</summary>
+    Task<List<EolScanRecord>> GetLastEolScansAsync(int count, CancellationToken ct);
 }

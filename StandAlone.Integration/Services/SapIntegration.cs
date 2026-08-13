@@ -7,6 +7,20 @@ public class PalletIntegrationPayload
     public int Plant { get; set; }
     public string Source { get; set; } = string.Empty;
     public DateTimeOffset ReceivedAt { get; set; }
+
+    // ── Production-confirmation / backflush fields ────────────────────────────
+    // Modeled on the legacy Progress dtrcv-orawms.p PROC-create-MfgOrdConf, which
+    // confirms produced quantity against a manufacturing/shop order. The standalone
+    // system has no sl-setup/MfgOrdRoutes equivalent, so there's no operation/route
+    // tie-in — ConfirmedQty is the pallet's total pieces (LisQty x BoxesPerPallet).
+    public string ShopOrder { get; set; } = string.Empty;
+    public int LineNumber { get; set; }
+    public int Shift { get; set; }
+    public int ConfirmedQty { get; set; }
+    public decimal SalesQty { get; set; }
+    public string SalesUom { get; set; } = string.Empty;
+    public string Inspector { get; set; } = string.Empty;
+    public DateTimeOffset ConfirmedAt { get; set; }
 }
 
 public class SapIntegrationResult
@@ -43,6 +57,14 @@ public class FileSapIntegrationService : ISapIntegrationService
   <Plant>{payload.Plant}</Plant>
   <Source>{System.Security.SecurityElement.Escape(payload.Source)}</Source>
   <ReceivedAt>{payload.ReceivedAt:O}</ReceivedAt>
+  <ShopOrder>{System.Security.SecurityElement.Escape(payload.ShopOrder)}</ShopOrder>
+  <LineNumber>{payload.LineNumber}</LineNumber>
+  <Shift>{payload.Shift}</Shift>
+  <ConfirmedQty>{payload.ConfirmedQty}</ConfirmedQty>
+  <SalesQty>{payload.SalesQty}</SalesQty>
+  <SalesUom>{System.Security.SecurityElement.Escape(payload.SalesUom)}</SalesUom>
+  <Inspector>{System.Security.SecurityElement.Escape(payload.Inspector)}</Inspector>
+  <ConfirmedAt>{payload.ConfirmedAt:O}</ConfirmedAt>
 </PalletIntegration>";
 
         try

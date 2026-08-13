@@ -14,9 +14,9 @@ public class PalletStartupDialog : Form
     public int    Shift     { get; private set; }
     public string Inspector { get; private set; } = string.Empty;
 
-    public PalletStartupDialog(AppSettings settings)
+    public PalletStartupDialog(AppSettings settings, string title = "Pallet Label — Start Session")
     {
-        Text            = "Pallet Label — Start Session";
+        Text            = title;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         StartPosition   = FormStartPosition.CenterScreen;
         MaximizeBox     = false;

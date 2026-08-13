@@ -27,7 +27,7 @@ public sealed class ThermalPrinterCommandExporter
         try
         {
             var commandText = ResolveCommandText(payload);
-            var archivePath = ResolveArchivePath(payload.CreatedAtUtc);
+            var archivePath = ResolveArchivePath();
 
             var dir = Path.GetDirectoryName(archivePath);
             if (!string.IsNullOrEmpty(dir))
@@ -76,7 +76,10 @@ public sealed class ThermalPrinterCommandExporter
                 if (File.Exists(templatePath))
                 {
                     var template = File.ReadAllText(templatePath);
-                    payload.CartonBarcodeSerial = ThermalPrinterCommandBuilder.ComputeCartonBarcodeSerial(payload);
+                    // Reuse an already-known barcode (e.g. a reprint's stored value) instead of
+                    // recomputing from CreatedAtUtc, which would drift on a different calendar day.
+                    if (string.IsNullOrWhiteSpace(payload.CartonBarcodeSerial))
+                        payload.CartonBarcodeSerial = ThermalPrinterCommandBuilder.ComputeCartonBarcodeSerial(payload);
                     payload.MfgDateCode = ThermalPrinterCommandBuilder.ComputeMfgDateCode(payload.CreatedAtUtc);
                     payload.ItemNumberMasked = ThermalPrinterCommandBuilder.MaskItemNumber(payload.ItemNumber);
                     payload.PartDescriptionShort = ThermalPrinterCommandBuilder.ClipField(payload.PartDescription, 36);
@@ -183,10 +186,9 @@ public sealed class ThermalPrinterCommandExporter
         await network.FlushAsync(ct);
     }
 
-    private string ResolveArchivePath(DateTime createdAtUtc)
+    private string ResolveArchivePath()
     {
-        var suffix = createdAtUtc.ToLocalTime().ToString("yyyyMMdd_HHmmss_fff");
-        var fileName = $"thermal_{NormalizeToken(_thermalPrinterType)}_{suffix}.txt";
+        var fileName = $"thermal_{NormalizeToken(_thermalPrinterType)}_last.txt";
         return Path.Combine(_fallbackDirectory, fileName);
     }
 
@@ -308,7 +310,9 @@ internal static class ThermalPrinterCommandBuilder
 
         var localTime = p.CreatedAtUtc.ToLocalTime();
         var hhmm = localTime.ToString("HHmm");
-        var bc128 = ComputeCartonBarcodeSerial(p);
+        // Reuse an already-known barcode (e.g. a reprint's stored value) instead of
+        // recomputing from CreatedAtUtc, which would drift on a different calendar day.
+        var bc128 = string.IsNullOrWhiteSpace(p.CartonBarcodeSerial) ? ComputeCartonBarcodeSerial(p) : p.CartonBarcodeSerial;
         var descLine = BuildDescriptionLine(p);
 
         var businessTypeName = ResolveBusinessLabelTypeName(p.LabelTypeCode);

@@ -18,10 +18,20 @@ namespace StandAlone.CartonUi.Services;
 public class FileBoxRepository : IBoxRepository
 {
     private readonly string _dataDirectory;
+    private readonly string _palletsCsvPath;
 
-    public FileBoxRepository(string dataDirectory)
+    /// <param name="dataDirectory">Local data directory for box/stacker/item CSVs.</param>
+    /// <param name="palletsCsvPath">
+    /// Full path to the pallet registry CSV. Pass a shared network path so multiple
+    /// stations (pallet printing, EOL scanning) see the same registry. Defaults to
+    /// "pallets.csv" under <paramref name="dataDirectory"/> when null/empty.
+    /// </param>
+    public FileBoxRepository(string dataDirectory, string? palletsCsvPath = null)
     {
         _dataDirectory = dataDirectory;
+        _palletsCsvPath = string.IsNullOrWhiteSpace(palletsCsvPath)
+            ? Path.Combine(dataDirectory, "pallets.csv")
+            : palletsCsvPath;
     }
 
     public Task<List<BoxRecord>> GetLastBoxesAsync(int lineId, int count, CancellationToken ct)
@@ -65,6 +75,133 @@ public class FileBoxRepository : IBoxRepository
         File.WriteAllText(filePath, serial.ToString());
         return Task.FromResult(serial);
     }
+
+    public Task SavePalletRecordAsync(PalletRecord record, CancellationToken ct)
+    {
+        var filePath = _palletsCsvPath;
+        var line = string.Join(',',
+            record.PalletId,
+            record.Plant,
+            record.ItemNumber,
+            SanitizeCsvField(record.ColorDesc),
+            SanitizeCsvField(record.ShapeDesc),
+            SanitizeCsvField(record.SeriesDesc),
+            record.LisQty,
+            record.BoxesPerPallet,
+            record.Shade,
+            record.Size,
+            SanitizeCsvField(record.ShopOrder),
+            record.Grade,
+            record.LineNumber,
+            record.Shift,
+            SanitizeCsvField(record.Inspector),
+            record.PrintedAtUtc.ToString("O"));
+
+        var dir = Path.GetDirectoryName(filePath);
+        if (!string.IsNullOrEmpty(dir))
+            Directory.CreateDirectory(dir);
+
+        File.AppendAllText(filePath, line + Environment.NewLine);
+        return Task.CompletedTask;
+    }
+
+    public Task<PalletRecord?> GetPalletBySerialAsync(string palletId, CancellationToken ct)
+    {
+        var filePath = _palletsCsvPath;
+        if (!File.Exists(filePath) || string.IsNullOrWhiteSpace(palletId))
+            return Task.FromResult<PalletRecord?>(null);
+
+        var needle = palletId.Trim();
+        foreach (var line in File.ReadAllLines(filePath).Reverse())
+        {
+            if (string.IsNullOrWhiteSpace(line) || line.StartsWith('#')) continue;
+            var parts = line.Split(',');
+            if (parts.Length < 16) continue;
+            if (!string.Equals(parts[0].Trim(), needle, StringComparison.OrdinalIgnoreCase)) continue;
+
+            return Task.FromResult<PalletRecord?>(new PalletRecord
+            {
+                PalletId       = parts[0].Trim(),
+                Plant          = int.TryParse(parts[1].Trim(), out var pl) ? pl : 0,
+                ItemNumber     = parts[2].Trim(),
+                ColorDesc      = parts[3].Trim(),
+                ShapeDesc      = parts[4].Trim(),
+                SeriesDesc     = parts[5].Trim(),
+                LisQty         = int.TryParse(parts[6].Trim(), out var lq) ? lq : 0,
+                BoxesPerPallet = int.TryParse(parts[7].Trim(), out var bp) ? bp : 0,
+                Shade          = parts[8].Trim(),
+                Size           = parts[9].Trim(),
+                ShopOrder      = parts[10].Trim(),
+                Grade          = int.TryParse(parts[11].Trim(), out var gr) ? gr : 0,
+                LineNumber     = int.TryParse(parts[12].Trim(), out var ln) ? ln : 0,
+                Shift          = int.TryParse(parts[13].Trim(), out var sf) ? sf : 0,
+                Inspector      = parts[14].Trim(),
+                PrintedAtUtc   = DateTime.TryParse(parts[15].Trim(), out var pt) ? pt : DateTime.MinValue,
+            });
+        }
+        return Task.FromResult<PalletRecord?>(null);
+    }
+
+    public Task AppendEolScanAsync(EolScanRecord record, CancellationToken ct)
+    {
+        var filePath = Path.Combine(_dataDirectory, "eol-scans.csv");
+        var line = string.Join(',',
+            record.PalletId,
+            record.Plant,
+            record.ItemNumber,
+            SanitizeCsvField(record.Description),
+            SanitizeCsvField(record.ShopOrder),
+            record.LisQty,
+            record.BoxesPerPallet,
+            record.ConfirmedQty,
+            record.Shift,
+            record.LineNumber,
+            SanitizeCsvField(record.Inspector),
+            record.ScanTimeUtc.ToString("O"),
+            record.SapSuccess,
+            SanitizeCsvField(record.SapDetail));
+
+        File.AppendAllText(filePath, line + Environment.NewLine);
+        return Task.CompletedTask;
+    }
+
+    public Task<List<EolScanRecord>> GetLastEolScansAsync(int count, CancellationToken ct)
+    {
+        var filePath = Path.Combine(_dataDirectory, "eol-scans.csv");
+        var result = new List<EolScanRecord>();
+        if (!File.Exists(filePath))
+            return Task.FromResult(result);
+
+        foreach (var line in File.ReadAllLines(filePath).Reverse())
+        {
+            if (string.IsNullOrWhiteSpace(line) || line.StartsWith('#')) continue;
+            var parts = line.Split(',');
+            if (parts.Length < 14) continue;
+
+            result.Add(new EolScanRecord
+            {
+                PalletId       = parts[0].Trim(),
+                Plant          = int.TryParse(parts[1].Trim(), out var pl) ? pl : 0,
+                ItemNumber     = parts[2].Trim(),
+                Description    = parts[3].Trim(),
+                ShopOrder      = parts[4].Trim(),
+                LisQty         = int.TryParse(parts[5].Trim(), out var lq) ? lq : 0,
+                BoxesPerPallet = int.TryParse(parts[6].Trim(), out var bp) ? bp : 0,
+                ConfirmedQty   = int.TryParse(parts[7].Trim(), out var cq) ? cq : 0,
+                Shift          = int.TryParse(parts[8].Trim(), out var sf) ? sf : 0,
+                LineNumber     = int.TryParse(parts[9].Trim(), out var ln) ? ln : 0,
+                Inspector      = parts[10].Trim(),
+                ScanTimeUtc    = DateTime.TryParse(parts[11].Trim(), out var st) ? st : DateTime.MinValue,
+                SapSuccess     = bool.TryParse(parts[12].Trim(), out var ss) && ss,
+                SapDetail      = parts[13].Trim(),
+            });
+            if (result.Count >= count) break;
+        }
+        return Task.FromResult(result);
+    }
+
+    private static string SanitizeCsvField(string? value) =>
+        string.IsNullOrEmpty(value) ? string.Empty : value.Replace(',', ';').Replace('\n', ' ').Replace('\r', ' ');
 
     public Task<BoxRecord?> GetBoxByBarcodeSerialAsync(int lineId, string barcodeSerial, CancellationToken ct)
     {

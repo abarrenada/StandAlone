@@ -154,6 +154,12 @@ public class SettingsForm : Form
         AddRow(scroll, row++, "Itemdet CSV:", new TextBox { Name = "ItemdetCsvPath", Text = _settings.ItemdetCsvPath });
         AddRow(scroll, row++, "MItemdet CSV:", new TextBox { Name = "MitemdetCsvPath", Text = _settings.MitemdetCsvPath });
 
+        // Shared multi-station data — unlike the CSV paths above, this one is actually
+        // read at runtime. Point it at a network share so the pallet-printing station(s)
+        // and the EOL-scanning station all see the same pallet registry.
+        AddLabel(scroll, row++, 0, "━━ Shared / Multi-Station ━━", true);
+        AddRow(scroll, row++, "Pallets CSV:", new TextBox { Name = "PalletsCsvPath", Text = _settings.PalletsCsvPath });
+
         // Production settings
         AddLabel(scroll, row++, 0, "━━ Production ━━", true);
         var lineInput = new NumericUpDown { Name = "ProductionLineNumber", Minimum = 1, Maximum = 99 };
@@ -325,6 +331,7 @@ public class SettingsForm : Form
         _settings.StackersCsvPath = GetText("StackersCsvPath");
         _settings.ItemdetCsvPath = GetText("ItemdetCsvPath");
         _settings.MitemdetCsvPath = GetText("MitemdetCsvPath");
+        _settings.PalletsCsvPath = GetText("PalletsCsvPath");
         _settings.PlcAddress = GetText("PlcAddress");
         _settings.LabelOutputAddress = GetText("LabelOutputAddress");
 

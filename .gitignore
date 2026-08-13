@@ -53,3 +53,4 @@ Thumbs.db
 carton-settings.json
 NoGo*.txt
 plc*.txt
+data/plc-ip-monitor.log

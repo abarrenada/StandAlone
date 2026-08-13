@@ -104,9 +104,9 @@ public class MainForm : Form
     {
         var baseDir = baseDirectory ?? AppContext.BaseDirectory;
         _config  = CartonConfigLoader.Load(baseDir);
-        _boxRepo = new FileBoxRepository(_config.DataDirectory);
-        _plcPipe = new FilePlcPipeService();
         _settings = SettingsManager.Load();
+        _boxRepo = new FileBoxRepository(_config.DataDirectory, _settings.PalletsCsvPath);
+        _plcPipe = new FilePlcPipeService();
 
         AutoScaleMode = AutoScaleMode.None;
         Text = $"Carton Label Printing — Line {_config.LineNumber:00}";
@@ -430,6 +430,17 @@ public class MainForm : Form
             };
             btnPalletScan.Click += (_, _) => OpenPalletScanForm();
             _startupPanel.Controls.Add(btnPalletScan);
+            nextBtnX += 156;
+
+            var btnEolScan = new Button
+            {
+                Text = "EOL Scan",
+                Size = new Size(150, 44), Location = new Point(nextBtnX, btnY),
+                BackColor = Color.DarkOrange, ForeColor = Color.Black,
+                FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+            };
+            btnEolScan.Click += (_, _) => OpenEolScanForm();
+            _startupPanel.Controls.Add(btnEolScan);
             nextBtnX += 156;
         }
 
@@ -1023,6 +1034,12 @@ public class MainForm : Form
         form.Show(this);
     }
 
+    private void OpenEolScanForm()
+    {
+        var form = new EolScanForm(_settings, _config, _boxRepo, _shift, _inspector);
+        form.Show(this);
+    }
+
     private void ShowPalletQuery()
     {
         var inspector = _inspectorInput.Text.Trim();
@@ -1214,6 +1231,29 @@ public class MainForm : Form
         var (success, _) = await ExportManualLabelAsync(itemDetail, job, CancellationToken.None,
             palletId: palletId, cartonReferenceBarcode: _palletQueryCartonBarcode);
         _btnPalletPrint.Enabled = true;
+
+        if (success)
+        {
+            await _boxRepo.SavePalletRecordAsync(new PalletRecord
+            {
+                PalletId       = palletId,
+                Plant          = itemDetail.Plant,
+                ItemNumber     = itemDetail.ItemNumber,
+                ColorDesc      = itemDetail.ColorDesc,
+                ShapeDesc      = itemDetail.ShapeDesc,
+                SeriesDesc     = itemDetail.SeriesDesc,
+                LisQty         = itemDetail.LisQty,
+                BoxesPerPallet = itemDetail.BoxesPerPallet,
+                Shade          = shade,
+                Size           = itemDetail.SizeShape,
+                ShopOrder      = itemDetail.LastScheduleOrder,
+                Grade          = itemDetail.Grade,
+                LineNumber     = _config.LineNumber,
+                Shift          = (int)_shiftInput!.Value,
+                Inspector      = inspector,
+                PrintedAtUtc   = DateTime.UtcNow,
+            }, CancellationToken.None);
+        }
 
         if (_palletStatusLabel != null)
         {
@@ -1678,7 +1718,8 @@ public class MainForm : Form
                     lisQty: itemDetail?.LisQty ?? 0,
                     grade: itemDetail?.Grade ?? 0,
                     location: _settings.PalletLocation,
-                    plantName: _settings.PlantName);
+                    plantName: _settings.PlantName,
+                    cartonBarcodeSerialOverride: box.BarcodeSerial);
 
                 var thermalExporter = new ThermalPrinterCommandExporter(
                     _settings.LabelOutputAddress,
@@ -1760,7 +1801,11 @@ public class MainForm : Form
 
             // Compute up front so the returned serial is populated regardless of which
             // branch inside ExportAsync actually renders the label (e.g. non-SATO types).
-            payload.CartonBarcodeSerial = ThermalPrinterCommandBuilder.ComputeCartonBarcodeSerial(payload);
+            // Skip if a caller already supplied a known value (e.g. a reprint reusing the
+            // box's originally-stored barcode) — recomputing from "now" would drift once
+            // the reprint happens on a different calendar day than the original print.
+            if (string.IsNullOrWhiteSpace(payload.CartonBarcodeSerial))
+                payload.CartonBarcodeSerial = ThermalPrinterCommandBuilder.ComputeCartonBarcodeSerial(payload);
 
             var thermalExporter = new ThermalPrinterCommandExporter(
                 _settings.LabelOutputAddress,
@@ -1817,10 +1862,15 @@ public class MainForm : Form
         string cartonReferenceBarcode = "",
         string userId = "",
         string printerTermId = "",
-        string wmsUom = "")
+        string wmsUom = "",
+        string cartonBarcodeSerialOverride = "")
     {
         return new ThermalLabelPayload
         {
+            // Reuse an already-known barcode (e.g. a reprint's originally-stored value)
+            // instead of letting it be recomputed from "now" — see CartonBarcodeSerial
+            // guard in ThermalPrinterCommandExporter/ThermalPrinterCommandBuilder.
+            CartonBarcodeSerial = cartonBarcodeSerialOverride,
             LabelFormat = labelFormat,
             LabelTypeCode = labelTypeCode,
             PalletId = palletId,

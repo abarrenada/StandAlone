@@ -58,4 +58,13 @@ public class AppSettings
 
     /// <summary>Warehouse location code printed on pallet labels (e.g., "SHRWRAP").</summary>
     public string PalletLocation { get; set; } = "SHRWRAP";
+
+    /// <summary>
+    /// Full path to the pallet registry CSV (written on every pallet print, read by EOL
+    /// scanning). Unlike the CSV path fields above, this one is actually read at runtime —
+    /// point it at a shared network path so the printing station(s) and the EOL station
+    /// all see the same registry. Leave empty to default to "pallets.csv" in the local
+    /// data directory (single-station/testing use).
+    /// </summary>
+    public string PalletsCsvPath { get; set; } = string.Empty;
 }

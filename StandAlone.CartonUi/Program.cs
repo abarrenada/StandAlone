@@ -27,12 +27,23 @@ if (args.Contains("--pallet"))
 {
     var settings = SettingsManager.Load();
     var config   = CartonConfigLoader.Load(baseDir);
-    var boxRepo  = new FileBoxRepository(config.DataDirectory);
+    var boxRepo  = new FileBoxRepository(config.DataDirectory, settings.PalletsCsvPath);
 
     using var dlg = new PalletStartupDialog(settings);
     if (dlg.ShowDialog() != DialogResult.OK) return;
 
     Application.Run(new PalletScanForm(settings, config, boxRepo, dlg.Shift, dlg.Inspector));
+}
+else if (args.Contains("--eol"))
+{
+    var settings = SettingsManager.Load();
+    var config   = CartonConfigLoader.Load(baseDir);
+    var boxRepo  = new FileBoxRepository(config.DataDirectory, settings.PalletsCsvPath);
+
+    using var dlg = new PalletStartupDialog(settings, "EOL Scan — Start Session");
+    if (dlg.ShowDialog() != DialogResult.OK) return;
+
+    Application.Run(new EolScanForm(settings, config, boxRepo, dlg.Shift, dlg.Inspector));
 }
 else if (args.Contains("--settings"))
     Application.Run(new SettingsForm());

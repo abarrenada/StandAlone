@@ -1,0 +1,42 @@
+# symbolic SATO template
+# branch: default / 4x3
+#
+# STATUS: baseline layout (matches sato_templates_designer/lt_default_45x3.designer.final.sato),
+# restored at the user's request after the rotated dtlbl060b.i port (A3H-17V0005 + %2) couldn't
+# be validated on the lab SATO S86NX (that printer wasn't producing ANY printout at the time,
+# which turned out to be a printer-side issue, not a template/content issue).
+#
+# A %2 (rotate 180) was tried after an earlier test print came out upside down, but it's
+# removed again below per the user - not needed/not wanted on this label.
+
+
+A
+CS2
+Q1
+A3H000V000
+H040V075L0001XSColor/Couleur:
+H280V075L0001XSShape/Forme:
+H615V075L0001XS8/13/2026 6:52:02 PM
+H050V125L0101WL0FL90  36MOD1P4   
+H650V125L0001XSTony
+H050V170BG02080>H%20262256152295550310161000100
+H073V265FW03H730
+H095V283L0001M%20262256152295550310161000100
+H050V310L0001XSFL90-WHITE
+H050V338L0001XS3X6
+H050V366L0001XS3 X 6 X 0.31 IN
+H050V394L0001XSFINISH LINE
+H050V422L0001XS4x3
+H050V450L0001XMFL90-WHITE | 3 X 6 X 0.31 IN | FINIS
+H620V283L0001XSShade/Teinte
+H620V323L0101XS555
+H620V351L0001XSQual/Cal: ORD-2026-1001
+H620V379L0001XSLoc: 1
+H620V407L0001XS615229:610 Marazzi
+H620V435L0001XS12.5 SF
+H620V463L0001XS37.5
+H620V491L0001XS1 UNITS
+H140V505L0001XL0Marazzi
+H550V510D3020700081516630981
+Z
+
