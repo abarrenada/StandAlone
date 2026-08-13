@@ -36,7 +36,7 @@
 \x1bH620\x1bV435\x1bL0001\x1bXS{SalesQty} {SalesUom}
 \x1bH620\x1bV463\x1bL0001\x1bXS{PackageWeight}
 \x1bH620\x1bV491\x1bL0001\x1bXS{Quantity} UNITS
-\x1bH140\x1bV505\x1bL0001\x1bXL0{Plant}
+\x1bH140\x1bV505\x1bL0001\x1bXL0{PlantName}
 \x1bH550\x1bV510\x1bD3020700{CartonUpc}
 \x1bZ
 <ETX>
