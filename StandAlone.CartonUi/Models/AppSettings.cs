@@ -19,6 +19,9 @@ public class AppSettings
 
     public int PlcBaudRate { get; set; } = 9600;
 
+    /// <summary>TCP port to listen on when PlcConnectionType is "IP".</summary>
+    public int PlcPort { get; set; } = 9000;
+
     /// <summary>"NiceLabel Xml", "NetworkPrinter", "SerialPort", or "HttpPost"</summary>
     public string LabelOutputType { get; set; } = "NiceLabel Xml";
 

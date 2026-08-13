@@ -2,6 +2,7 @@ using StandAlone.CartonUi;
 using StandAlone.CartonUi.Forms;
 using StandAlone.CartonUi.Services;
 using System.Windows.Forms;
+using StandAlone.CartonUi.Models;
 
 // Find the workspace root by looking for the "data" directory
 // This allows flag files in the workspace root to be found when running from bin/Debug
@@ -22,7 +23,18 @@ Application.SetHighDpiMode(HighDpiMode.DpiUnaware);
 Application.EnableVisualStyles();
 Application.SetCompatibleTextRenderingDefault(false);
 
-if (args.Contains("--settings"))
+if (args.Contains("--pallet"))
+{
+    var settings = SettingsManager.Load();
+    var config   = CartonConfigLoader.Load(baseDir);
+    var boxRepo  = new FileBoxRepository(config.DataDirectory);
+
+    using var dlg = new PalletStartupDialog(settings);
+    if (dlg.ShowDialog() != DialogResult.OK) return;
+
+    Application.Run(new PalletScanForm(settings, config, boxRepo, dlg.Shift, dlg.Inspector));
+}
+else if (args.Contains("--settings"))
     Application.Run(new SettingsForm());
 else
     Application.Run(new MainForm(baseDir));

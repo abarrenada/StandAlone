@@ -4482,3 +4482,328 @@
 [2026-08-12 14:12:58.302] monitor_stop
 [2026-08-12 14:13:11.556] monitor_start host=10.121.11.16 port=4001 frameLen=8
 [2026-08-12 14:13:11.600] connected
+[2026-08-13 09:35:55.538] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-08-13 09:36:16.805] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:36:39.846] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:37:02.898] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:37:25.955] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:37:48.987] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:38:12.025] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:38:35.092] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:38:58.165] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:39:21.202] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:39:44.247] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:40:07.300] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:40:30.343] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:40:53.392] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:41:16.442] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:41:39.474] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:42:02.518] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:42:25.562] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:42:48.605] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:43:11.648] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:43:34.708] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:43:57.753] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:44:20.806] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:44:43.858] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:45:06.892] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:45:29.945] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:45:52.995] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:46:16.034] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:46:39.063] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:47:02.115] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 09:47:04.117] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:47:06.130] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:47:08.135] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:47:10.149] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:47:12.151] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:47:14.157] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:47:16.172] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:47:18.176] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:47:20.190] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:47:22.205] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:47:24.219] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:47:26.228] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:47:28.233] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:47:30.245] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:47:32.248] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:47:34.256] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:47:36.257] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:47:38.268] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:47:40.277] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:47:42.287] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:47:44.294] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:47:46.300] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:47:48.309] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:47:50.326] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:47:52.328] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:47:54.333] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:47:56.341] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:47:58.352] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:00.366] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:02.370] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:04.384] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:06.400] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:08.419] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:10.425] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:12.436] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:14.443] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:16.457] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:18.462] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:20.468] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:22.483] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:24.486] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:26.499] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:28.508] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:30.518] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:32.534] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:34.551] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:36.562] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:38.562] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:40.567] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:42.579] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:44.587] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:46.592] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:48.602] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:50.605] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:52.619] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:54.628] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:56.643] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:48:58.647] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:00.653] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:02.659] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:04.662] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:06.670] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:08.676] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:10.683] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:12.688] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:14.695] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:16.709] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:18.714] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:20.715] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:22.716] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:24.731] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:26.734] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:28.743] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:30.758] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:32.760] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:34.766] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:36.777] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:38.781] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:40.789] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:42.793] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:44.804] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:46.819] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:48.833] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:50.848] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:52.861] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:54.878] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:56.885] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:49:58.893] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:00.900] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:02.914] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:04.925] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:06.932] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:08.940] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:10.950] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:12.953] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:14.960] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:16.969] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:18.980] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:20.987] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:23.002] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:25.017] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:27.031] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:29.035] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:31.041] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:33.048] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:35.055] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:37.063] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:39.069] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:41.083] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:43.085] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:45.093] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:47.095] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:49.106] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:51.121] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:53.134] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:55.139] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:57.140] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:50:59.148] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:01.164] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:03.172] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:05.182] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:07.188] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:09.204] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:11.205] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:13.209] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:15.210] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:17.213] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:19.218] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:21.229] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:23.243] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:25.244] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:27.258] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:29.267] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:31.279] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:33.286] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:35.291] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:37.300] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:39.305] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:41.315] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:43.331] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:45.342] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:47.353] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:49.359] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:51.361] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:53.369] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:55.382] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:57.398] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:51:59.409] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:01.418] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:03.424] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:05.432] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:07.446] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:09.456] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:11.467] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:13.470] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:15.488] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:17.496] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:19.507] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:21.517] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:23.525] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:25.528] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:27.531] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:29.544] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:31.551] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:33.551] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:35.564] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:37.572] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:39.575] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:41.580] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:43.587] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:45.596] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:47.600] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:49.613] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:51.628] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:53.634] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:55.648] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:57.651] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:52:59.653] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:01.666] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:03.673] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:05.688] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:07.789] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:09.800] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:11.816] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:13.826] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:15.835] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:17.844] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:19.858] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:21.866] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:23.871] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:25.876] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:27.884] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:29.888] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:31.903] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:33.915] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:35.915] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:37.920] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:39.927] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:41.942] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:43.947] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:45.955] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:47.968] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:49.972] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:51.987] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:54.004] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:56.011] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:53:58.023] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:00.035] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:02.045] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:04.056] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:06.060] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:08.075] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:10.080] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:12.085] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:14.091] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:16.100] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:18.115] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:20.131] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:22.136] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:24.143] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:26.159] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:28.169] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:30.187] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:32.196] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:34.209] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:36.227] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:38.232] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:40.241] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:42.245] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:44.261] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:46.272] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:48.276] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:50.287] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:52.295] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:54.298] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:56.306] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:54:58.310] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:55:00.323] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:55:02.336] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:55:04.342] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:55:06.346] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:55:08.360] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:55:10.378] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:55:12.388] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:55:14.397] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:55:16.398] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:55:18.430] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 09:55:20.439] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:33:53.729] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:33:56.236] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:33:58.609] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:00.635] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:02.823] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:04.845] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:06.854] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:08.895] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:10.942] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:12.966] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:15.002] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:17.020] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:19.035] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:21.043] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:23.053] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:25.065] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:27.580] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:29.595] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:31.604] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:33.606] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:35.609] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:37.613] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:39.615] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:41.620] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:43.633] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:45.645] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:47.647] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:49.653] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:51.654] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:53.665] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:55.677] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:57.692] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:34:59.705] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:35:01.719] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:35:03.732] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-08-13 10:35:26.779] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 10:35:49.829] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 10:36:12.891] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 10:36:35.941] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 10:36:58.997] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 10:37:22.028] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 10:37:45.113] error SocketException: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+[2026-08-13 10:37:52.559] monitor_stop
+[2026-08-13 10:43:11.111] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-08-13 10:43:13.362] monitor_stop
+[2026-08-13 10:43:48.068] monitor_start host=10.121.11.16 port=4001 frameLen=8
+[2026-08-13 10:43:50.949] monitor_stop
