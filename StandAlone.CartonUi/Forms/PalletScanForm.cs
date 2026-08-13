@@ -2,14 +2,17 @@ using StandAlone.CartonUi.Models;
 using StandAlone.CartonUi.Services;
 using StandAlone.Integration.Services;
 using System.IO.Ports;
+using System.Net;
+using System.Net.Sockets;
 
 namespace StandAlone.CartonUi.Forms;
 
 /// <summary>
-/// Full-screen pallet-label printing driven by a serial barcode scanner.
-/// Listens on the configured COM port for 30-character carton barcodes
-/// (format: %YYYYDDDIIIIISSSSZSLPPPPQQQQQQ) and auto-prints a pallet label
-/// for each valid scan without requiring operator confirmation.
+/// Full-screen pallet-label printing screen.
+/// Input sources (determined by Settings → PlcConnectionType):
+///   SerialPort — listens on the configured COM port for 30-char carton barcodes.
+///   IP         — listens on a TCP port (Settings → PlcPort, default 9000) for the same barcodes.
+/// In both modes the operator can also type or paste a barcode into the manual-entry bar and press Enter.
 /// </summary>
 public class PalletScanForm : Form
 {
@@ -26,11 +29,14 @@ public class PalletScanForm : Form
     private Label   _descLabel    = null!;
     private Label   _infoLabel    = null!;
     private ListBox _historyList  = null!;
+    private TextBox _manualEntry  = null!;
 
     // Serial
-    private SerialPort?            _port;
-    private CancellationTokenSource? _cts;
-    private volatile bool          _processing;
+    private SerialPort?               _port;
+    // TCP
+    private TcpListener?              _tcpListener;
+    private CancellationTokenSource?  _cts;
+    private volatile bool             _processing;
 
     public PalletScanForm(AppSettings settings, CartonAppConfig config, IBoxRepository boxRepo,
         int shift, string inspector)
@@ -41,7 +47,7 @@ public class PalletScanForm : Form
         _shift     = shift;
         _inspector = inspector;
 
-        Text             = $"Pallet Label — Scanner — Line {config.LineNumber:00}";
+        Text             = $"Pallet Label — Line {config.LineNumber:00}";
         WindowState      = FormWindowState.Maximized;
         FormBorderStyle  = FormBorderStyle.Sizable;
         BackColor        = Color.MidnightBlue;
@@ -63,95 +69,130 @@ public class PalletScanForm : Form
         {
             Dock = DockStyle.Top, Height = 52, BackColor = Color.DarkSlateBlue,
         };
-
         header.Controls.Add(new Label
         {
-            Text = $"PALLET LABEL — SCANNER MODE   Line {_config.LineNumber:00}",
-            Dock = DockStyle.Fill,
+            Text      = $"PALLET LABEL   Line {_config.LineNumber:00}   Inspector: {_inspector}   Shift: {_shift}",
+            Dock      = DockStyle.Fill,
             TextAlign = ContentAlignment.MiddleCenter,
-            Font = new Font("Segoe UI", 16f, FontStyle.Bold),
+            Font      = new Font("Segoe UI", 15f, FontStyle.Bold),
             ForeColor = Color.LightYellow,
         });
-
         var btnBack = new Button
         {
-            Text = "← Back  (Esc)",
-            Size = new Size(140, 38),
-            Dock = DockStyle.Right,
+            Text      = "← Back  (Esc)",
+            Size      = new Size(140, 38),
+            Dock      = DockStyle.Right,
             FlatStyle = FlatStyle.Flat,
             BackColor = Color.DarkRed,
             ForeColor = Color.White,
-            Font = new Font("Segoe UI", 10f),
+            Font      = new Font("Segoe UI", 10f),
         };
         btnBack.Click += (_, _) => Close();
         header.Controls.Add(btnBack);
         Controls.Add(header);
 
+        // ── Manual-entry bar ─────────────────────────────────────────────────
+        var manualBar = new Panel
+        {
+            Dock      = DockStyle.Top,
+            Height    = 50,
+            BackColor = Color.FromArgb(30, 30, 70),
+            Padding   = new Padding(12, 8, 12, 8),
+        };
+        var entryLabel = new Label
+        {
+            Text      = "Carton barcode:",
+            Font      = new Font("Segoe UI", 10f),
+            ForeColor = Color.LightGray,
+            AutoSize  = true,
+            Location  = new Point(12, 14),
+        };
+        _manualEntry = new TextBox
+        {
+            Font      = new Font("Courier New", 11f),
+            Width     = 320,
+            Location  = new Point(130, 11),
+            MaxLength = 50,
+            BackColor = Color.DarkSlateGray,
+            ForeColor = Color.LightGreen,
+        };
+        _manualEntry.KeyDown += ManualEntry_KeyDown;
+
+        var btnPrint = new Button
+        {
+            Text      = "Print (Enter)",
+            Size      = new Size(120, 28),
+            Location  = new Point(460, 11),
+            FlatStyle = FlatStyle.Flat,
+            BackColor = Color.DarkSlateBlue,
+            ForeColor = Color.White,
+            Font      = new Font("Segoe UI", 9f),
+        };
+        btnPrint.Click += async (_, _) => await SubmitManualEntry();
+
+        manualBar.Controls.Add(entryLabel);
+        manualBar.Controls.Add(_manualEntry);
+        manualBar.Controls.Add(btnPrint);
+        Controls.Add(manualBar);
+
         // ── Content ───────────────────────────────────────────────────────────
         var body = new TableLayoutPanel
         {
-            Dock = DockStyle.Fill,
+            Dock        = DockStyle.Fill,
             ColumnCount = 2,
-            RowCount = 7,
-            BackColor = Color.MidnightBlue,
-            Padding = new Padding(40, 20, 40, 20),
+            RowCount    = 7,
+            BackColor   = Color.MidnightBlue,
+            Padding     = new Padding(40, 20, 40, 20),
         };
         body.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 160));
         body.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
         int row = 0;
 
-        // Status (spans both columns)
         _statusLabel = new Label
         {
-            Text = "Initializing...",
-            Font = new Font("Segoe UI", 14f, FontStyle.Bold),
+            Text      = "Initializing...",
+            Font      = new Font("Segoe UI", 14f, FontStyle.Bold),
             ForeColor = Color.LightCyan,
-            Dock = DockStyle.Fill,
+            Dock      = DockStyle.Fill,
             TextAlign = ContentAlignment.MiddleLeft,
-            Height = 44,
+            Height    = 44,
         };
         body.Controls.Add(_statusLabel, 0, row);
         body.SetColumnSpan(_statusLabel, 2);
         row++;
 
-        // Last scan
         body.Controls.Add(FieldLabel("Last scan:"), 0, row);
         _barcodeLabel = FieldValue(string.Empty, "Courier New", 13f, Color.LightGreen);
         body.Controls.Add(_barcodeLabel, 1, row);
         row++;
 
-        // Item
         body.Controls.Add(FieldLabel("Item:"), 0, row);
         _itemLabel = FieldValue(string.Empty, "Segoe UI", 13f, Color.White, bold: true);
         body.Controls.Add(_itemLabel, 1, row);
         row++;
 
-        // Description
         body.Controls.Add(FieldLabel("Desc:"), 0, row);
         _descLabel = FieldValue(string.Empty);
         body.Controls.Add(_descLabel, 1, row);
         row++;
 
-        // Grade / pallet tag
         body.Controls.Add(FieldLabel("Info:"), 0, row);
         _infoLabel = FieldValue(string.Empty);
         body.Controls.Add(_infoLabel, 1, row);
         row++;
 
-        // History header (spans 2)
         var histHeader = FieldLabel("Recent prints:");
         body.Controls.Add(histHeader, 0, row);
         body.SetColumnSpan(histHeader, 2);
         row++;
 
-        // History list (spans 2)
         _historyList = new ListBox
         {
-            Dock = DockStyle.Fill,
-            Font = new Font("Courier New", 10f),
-            BackColor = Color.DarkSlateGray,
-            ForeColor = Color.White,
+            Dock        = DockStyle.Fill,
+            Font        = new Font("Courier New", 10f),
+            BackColor   = Color.DarkSlateGray,
+            ForeColor   = Color.White,
             BorderStyle = BorderStyle.FixedSingle,
         };
         body.Controls.Add(_historyList, 0, row);
@@ -163,22 +204,42 @@ public class PalletScanForm : Form
 
     private static Label FieldLabel(string text) => new()
     {
-        Text = text,
-        Font = new Font("Segoe UI", 10f),
+        Text      = text,
+        Font      = new Font("Segoe UI", 10f),
         ForeColor = Color.LightGray,
-        Dock = DockStyle.Fill,
+        Dock      = DockStyle.Fill,
         TextAlign = ContentAlignment.MiddleLeft,
     };
 
     private static Label FieldValue(string text, string fontName = "Segoe UI", float size = 10.5f,
         Color? color = null, bool bold = false) => new()
     {
-        Text = text,
-        Font = new Font(fontName, size, bold ? FontStyle.Bold : FontStyle.Regular),
+        Text      = text,
+        Font      = new Font(fontName, size, bold ? FontStyle.Bold : FontStyle.Regular),
         ForeColor = color ?? Color.LightGray,
-        Dock = DockStyle.Fill,
+        Dock      = DockStyle.Fill,
         TextAlign = ContentAlignment.MiddleLeft,
     };
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Manual entry
+    // ─────────────────────────────────────────────────────────────────────────
+    private async void ManualEntry_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.KeyCode == Keys.Enter)
+        {
+            e.SuppressKeyPress = true;
+            await SubmitManualEntry();
+        }
+    }
+
+    private async Task SubmitManualEntry()
+    {
+        var barcode = _manualEntry.Text.Trim();
+        if (string.IsNullOrEmpty(barcode)) return;
+        _manualEntry.Clear();
+        await HandleScanAsync(barcode);
+    }
 
     // ─────────────────────────────────────────────────────────────────────────
     //  Lifecycle
@@ -186,7 +247,14 @@ public class PalletScanForm : Form
     protected override void OnLoad(EventArgs e)
     {
         base.OnLoad(e);
-        StartSerialReader();
+        _cts = new CancellationTokenSource();
+
+        if (_settings.PlcConnectionType == "IP")
+            StartTcpListener(_cts.Token);
+        else
+            StartSerialReader(_cts.Token);
+
+        _manualEntry.Focus();
     }
 
     protected override void OnFormClosing(FormClosingEventArgs e)
@@ -194,13 +262,14 @@ public class PalletScanForm : Form
         _cts?.Cancel();
         try { _port?.Close(); } catch { }
         _port?.Dispose();
+        try { _tcpListener?.Stop(); } catch { }
         base.OnFormClosing(e);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
     //  Serial reader
     // ─────────────────────────────────────────────────────────────────────────
-    private void StartSerialReader()
+    private void StartSerialReader(CancellationToken ct)
     {
         var portName = _settings.PlcAddress?.Trim() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(portName))
@@ -224,10 +293,7 @@ public class PalletScanForm : Form
             return;
         }
 
-        SetStatus($"Ready — scan a carton barcode on {portName} ({_settings.PlcBaudRate} baud).", Color.LightCyan);
-
-        _cts = new CancellationTokenSource();
-        var ct = _cts.Token;
+        SetStatus($"Ready — scan a carton barcode on {portName} ({_settings.PlcBaudRate} baud)  or type it above.", Color.LightCyan);
 
         Task.Run(() =>
         {
@@ -251,11 +317,69 @@ public class PalletScanForm : Form
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    //  TCP listener
+    // ─────────────────────────────────────────────────────────────────────────
+    private void StartTcpListener(CancellationToken ct)
+    {
+        var port = _settings.PlcPort;
+        try
+        {
+            _tcpListener = new TcpListener(IPAddress.Any, port);
+            _tcpListener.Start();
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"⚠ Cannot start TCP listener on port {port}: {ex.Message}", Color.Salmon);
+            return;
+        }
+
+        SetStatus($"Ready — listening for scanner on TCP port {port}  or type a barcode above.", Color.LightCyan);
+
+        Task.Run(async () =>
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                try
+                {
+                    var client = await _tcpListener.AcceptTcpClientAsync(ct);
+                    _ = Task.Run(() => HandleTcpClientAsync(client, ct), ct);
+                }
+                catch (OperationCanceledException) { break; }
+                catch (Exception ex)
+                {
+                    if (!ct.IsCancellationRequested)
+                        BeginInvoke(() => SetStatus($"⚠ TCP error: {ex.Message}", Color.Salmon));
+                }
+            }
+        }, ct);
+    }
+
+    private async Task HandleTcpClientAsync(TcpClient client, CancellationToken ct)
+    {
+        using (client)
+        using (var reader = new StreamReader(client.GetStream()))
+        {
+            try
+            {
+                string? line;
+                while (!ct.IsCancellationRequested &&
+                       (line = await reader.ReadLineAsync(ct)) is not null)
+                {
+                    var trimmed = line.Trim();
+                    if (!string.IsNullOrWhiteSpace(trimmed))
+                        BeginInvoke(async () => await HandleScanAsync(trimmed));
+                }
+            }
+            catch (OperationCanceledException) { }
+            catch { /* client disconnected */ }
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     //  Scan processing  (always runs on the UI thread via BeginInvoke)
     // ─────────────────────────────────────────────────────────────────────────
     private async Task HandleScanAsync(string scanned)
     {
-        // Prevent concurrent calls if the printer is still busy
         if (_processing) return;
         _processing = true;
         try
@@ -270,7 +394,6 @@ public class PalletScanForm : Form
 
     private async Task ProcessScanAsync(string scanned)
     {
-        // Carton barcode: exactly 30 chars starting with '%'
         if (scanned.Length != 30 || scanned[0] != '%')
         {
             SetStatus($"Ignored: '{(scanned.Length > 30 ? scanned[..30] + "…" : scanned)}' (not a 30-char carton barcode).", Color.Gray);
@@ -283,7 +406,6 @@ public class PalletScanForm : Form
         _descLabel.Text    = string.Empty;
         _infoLabel.Text    = string.Empty;
 
-        // ── 1. Look up barcode in boxes CSV ───────────────────────────────────
         var box = await _boxRepo.GetBoxByBarcodeSerialAsync(_config.LineNumber, scanned, CancellationToken.None);
         if (box is null)
         {
@@ -296,7 +418,6 @@ public class PalletScanForm : Form
             return;
         }
 
-        // ── 2. Resolve item via stacker ───────────────────────────────────────
         ItemDetail? item = null;
         var stackNum = box.StackNum.Trim();
         if (!string.IsNullOrWhiteSpace(stackNum))
@@ -312,7 +433,6 @@ public class PalletScanForm : Form
             return;
         }
 
-        // ── 3. Allocate pallet serial ─────────────────────────────────────────
         var serial   = await _boxRepo.AllocatePalletSerialAsync(item.Plant, CancellationToken.None);
         var palletId = $"{item.Plant:000}-{serial:000000000}";
 
@@ -320,7 +440,6 @@ public class PalletScanForm : Form
         _descLabel.Text = item.GetPrimaryItemDescription();
         _infoLabel.Text = $"Grade: {item.Grade}   Line: {_config.LineNumber:00}   Shift: {_shift}   Pallet Tag: {palletId}";
 
-        // ── 4. Print ──────────────────────────────────────────────────────────
         SetStatus("Printing...", Color.Yellow);
         var success = await PrintPalletAsync(item, palletId);
 
@@ -349,37 +468,37 @@ public class PalletScanForm : Form
 
         var payload = new ThermalLabelPayload
         {
-            LabelFormat   = "PALLET_LABEL",
-            LabelTypeCode = item.LabelTypeCode,
-            PalletId      = palletId,
-            ItemNumber    = item.ItemNumber,
-            IRef          = item.IRef,
-            Plant         = item.Plant,
-            PartDescription = item.GetPrimaryItemDescription(),
-            ColorDesc     = item.ColorDesc,
-            ShapeDesc     = item.ShapeDesc,
-            SeriesDesc    = item.SeriesDesc,
-            Shade         = item.Shade.ToString("0000"),
-            Size          = item.SizeShape,
-            BoxesPerPallet = item.BoxesPerPallet,
-            SalesQty      = item.SalesQty,
-            SalesUom      = item.SalesUOM,
-            PackageWeight = item.PkgWeight,
-            LisQty        = item.LisQty,
-            Grade         = item.Grade,
-            Location      = _settings.PalletLocation,
-            PlantName     = _settings.PlantName,
-            Inspector     = _inspector,
-            Shift         = _shift,
-            LineNumber    = _config.LineNumber,
-            Quantity      = 1,
-            UccBarcode    = item.GetUCC(),
-            CartonUpc     = item.GetCartonUPC(),
-            CartonUpcNumSys = item.CartonUPC_NumSys.ToString("0"),
-            CartonUpcMfg    = item.CartonUPC_Mfg.ToString("00000"),
-            CartonUpcProd   = item.CartonUPC_Prod.ToString("00000"),
-            CartonUpcChkdgt = item.CartonUPC_Chkdgt.ToString("0"),
-            CreatedAtUtc  = DateTime.UtcNow,
+            LabelFormat      = "PALLET_LABEL",
+            LabelTypeCode    = item.LabelTypeCode,
+            PalletId         = palletId,
+            ItemNumber       = item.ItemNumber,
+            IRef             = item.IRef,
+            Plant            = item.Plant,
+            PartDescription  = item.GetPrimaryItemDescription(),
+            ColorDesc        = item.ColorDesc,
+            ShapeDesc        = item.ShapeDesc,
+            SeriesDesc       = item.SeriesDesc,
+            Shade            = item.Shade.ToString("0000"),
+            Size             = item.SizeShape,
+            BoxesPerPallet   = item.BoxesPerPallet,
+            SalesQty         = item.SalesQty,
+            SalesUom         = item.SalesUOM,
+            PackageWeight    = item.PkgWeight,
+            LisQty           = item.LisQty,
+            Grade            = item.Grade,
+            Location         = _settings.PalletLocation,
+            PlantName        = _settings.PlantName,
+            Inspector        = _inspector,
+            Shift            = _shift,
+            LineNumber       = _config.LineNumber,
+            Quantity         = 1,
+            UccBarcode       = item.GetUCC(),
+            CartonUpc        = item.GetCartonUPC(),
+            CartonUpcNumSys  = item.CartonUPC_NumSys.ToString("0"),
+            CartonUpcMfg     = item.CartonUPC_Mfg.ToString("00000"),
+            CartonUpcProd    = item.CartonUPC_Prod.ToString("00000"),
+            CartonUpcChkdgt  = item.CartonUPC_Chkdgt.ToString("0"),
+            CreatedAtUtc     = DateTime.UtcNow,
         };
 
         var exporter = new ThermalPrinterCommandExporter(
