@@ -441,7 +441,7 @@ public class PalletScanForm : Form
         _infoLabel.Text = $"Grade: {item.Grade}   Line: {_config.LineNumber:00}   Shift: {_shift}   Pallet Tag: {palletId}";
 
         SetStatus("Printing...", Color.Yellow);
-        var success = await PrintPalletAsync(item, palletId);
+        var success = await PrintPalletAsync(item, palletId, scanned);
 
         if (success)
         {
@@ -481,7 +481,7 @@ public class PalletScanForm : Form
     // ─────────────────────────────────────────────────────────────────────────
     //  Label printing
     // ─────────────────────────────────────────────────────────────────────────
-    private async Task<bool> PrintPalletAsync(ItemDetail item, string palletId)
+    private async Task<bool> PrintPalletAsync(ItemDetail item, string palletId, string cartonBarcode)
     {
         if (string.IsNullOrWhiteSpace(_settings.LabelOutputAddress))
             return false;
@@ -518,6 +518,10 @@ public class PalletScanForm : Form
             CartonUpcMfg     = item.CartonUPC_Mfg.ToString("00000"),
             CartonUpcProd    = item.CartonUPC_Prod.ToString("00000"),
             CartonUpcChkdgt  = item.CartonUPC_Chkdgt.ToString("0"),
+            CartonReferenceBarcode = cartonBarcode,
+            UserId           = Environment.UserName,
+            PrinterTermId    = DerivePrinterTermId(_settings.LabelOutputAddress),
+            WmsUom           = item.WmsUOM,
             CreatedAtUtc     = DateTime.UtcNow,
         };
 
@@ -533,6 +537,17 @@ public class PalletScanForm : Form
     // ─────────────────────────────────────────────────────────────────────────
     //  Helpers
     // ─────────────────────────────────────────────────────────────────────────
+    /// <summary>Short terminal identifier for the pallet label footer (Progress w-trk-term), derived
+    /// from the configured output address (analogous to trimming the unix tty/device path).</summary>
+    private static string DerivePrinterTermId(string? outputAddress)
+    {
+        if (string.IsNullOrWhiteSpace(outputAddress))
+            return string.Empty;
+
+        var trimmed = outputAddress.Trim();
+        return trimmed.Length <= 5 ? trimmed : trimmed[^5..];
+    }
+
     private void SetStatus(string text, Color color)
     {
         if (_statusLabel.IsDisposed) return;

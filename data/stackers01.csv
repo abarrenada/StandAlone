@@ -32,3 +32,4 @@ LineId,StackNum,IRef,PlcMsg,Shade,Size,ErrMsg
 1, 34,0, 34                               013536MOD1P4                   ,0,,
 1, 35,615229, 35                               FL9036MOD1P4                   ,555,3X6,
 1, 36,615229, 36                               FL9036MOD1P4                   ,555,3X6,
+1, 37,615229, 37                               FL9036MOD1P4                   ,555,3X6,
