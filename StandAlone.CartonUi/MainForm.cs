@@ -395,7 +395,7 @@ public class MainForm : Form
             _btnBegin.Click += BtnBegin_Click;
         _startupPanel.Controls.Add(_btnBegin);
 
-        int nextBtnX = inputX + 156;
+        int nextBtnX = inputX ;
 
         if (isManualQtyMode)
         {
