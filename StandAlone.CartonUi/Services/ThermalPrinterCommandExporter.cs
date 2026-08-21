@@ -83,6 +83,7 @@ public sealed class ThermalPrinterCommandExporter
                     payload.MfgDateCode = ThermalPrinterCommandBuilder.ComputeMfgDateCode(payload.CreatedAtUtc);
                     payload.ItemNumberMasked = ThermalPrinterCommandBuilder.MaskItemNumber(payload.ItemNumber);
                     payload.PartDescriptionShort = ThermalPrinterCommandBuilder.ClipField(payload.PartDescription, 36);
+                    payload.ShadeLotCode = ThermalPrinterCommandBuilder.ComputeShadeLotCode(payload);
                     var rendered = SatoTemplateRenderer.RenderTemplate(template, payload);
                     return DecodeSatoControlMarkers(rendered);
                 }
@@ -335,7 +336,7 @@ internal static class ThermalPrinterCommandBuilder
         sb.Append(esc).Append("H0180").Append(esc).Append("V0145").Append(esc)
             .Append("XM").Append(ClipAscii($"ITEM: {p.ItemNumber}", 40)).AppendLine();
         sb.Append(esc).Append("H0180").Append(esc).Append("V0190").Append(esc)
-            .Append("XM").Append(ClipAscii($"SHADE: {p.Shade}   SIZE: {p.Size}", 40)).AppendLine();
+            .Append("XM").Append(ClipAscii($"SHADE: {ComputeShadeLotCode(p)}   SIZE: {p.Size}", 40)).AppendLine();
         sb.Append(esc).Append("H0180").Append(esc).Append("V0235").Append(esc)
             .Append("XM").Append(ClipAscii(descLine, 48)).AppendLine();
 
@@ -518,7 +519,7 @@ internal static class ThermalPrinterCommandBuilder
         sb.AppendLine($"A20,2,0,3,1,1,N,\"LTYPE {p.LabelTypeCode:00} {ClipAscii(businessTypeName, 18)}\"");
         sb.AppendLine($"A20,20,0,4,1,1,N,\"ITEM {ClipAscii(p.ItemNumber, 24)}\"");
         sb.AppendLine($"A20,50,0,3,1,1,N,\"{ClipAscii(p.PartDescription, 40)}\"");
-        sb.AppendLine($"A20,80,0,3,1,1,N,\"SHADE {ClipAscii(p.Shade, 8)} SIZE {ClipAscii(p.Size, 8)}\"");
+        sb.AppendLine($"A20,80,0,3,1,1,N,\"SHADE {ClipAscii(ComputeShadeLotCode(p), 8)} SIZE {ClipAscii(p.Size, 8)}\"");
         sb.AppendLine($"A20,110,0,3,1,1,N,\"SHIFT {p.Shift} INSPECTOR {ClipAscii(p.Inspector, 16)}\"");
         sb.AppendLine($"A20,140,0,3,1,1,N,\"STACK {ClipAscii(p.StackNumber, 8)} QTY {Math.Clamp(p.Quantity, 1, 999)}\"");
         var barcode = string.IsNullOrWhiteSpace(p.CartonUpc) ? p.ItemNumber : p.CartonUpc;
@@ -541,7 +542,7 @@ internal static class ThermalPrinterCommandBuilder
         sb.AppendLine($"^FO40,5^A0N,20,20^FDLTYPE {p.LabelTypeCode:00} {ClipAscii(businessTypeName, 18)}^FS");
         sb.AppendLine($"^FO40,30^FDITEM {ClipAscii(p.ItemNumber, 24)}^FS");
         sb.AppendLine($"^FO40,80^A0N,28,28^FD{ClipAscii(p.PartDescription, 46)}^FS");
-        sb.AppendLine($"^FO40,120^A0N,28,28^FDSHADE {ClipAscii(p.Shade, 8)}  SIZE {ClipAscii(p.Size, 8)}^FS");
+        sb.AppendLine($"^FO40,120^A0N,28,28^FDSHADE {ClipAscii(ComputeShadeLotCode(p), 8)}  SIZE {ClipAscii(p.Size, 8)}^FS");
         sb.AppendLine($"^FO40,160^A0N,28,28^FDSHIFT {p.Shift}  INSPECTOR {ClipAscii(p.Inspector, 16)}^FS");
         sb.AppendLine($"^FO40,200^A0N,28,28^FDSTACK {ClipAscii(p.StackNumber, 8)}  QTY {Math.Clamp(p.Quantity, 1, 999)}^FS");
         sb.AppendLine($"^FO40,245^BY2,3,70^BCN,70,N,N,N^FD{ClipAscii(barcode, 20)}^FS");
@@ -559,7 +560,7 @@ internal static class ThermalPrinterCommandBuilder
         sb.AppendLine("PRPOS 20,20");
         sb.AppendLine($"PP 20,20:{Quote(ClipAscii($"ITEM {p.ItemNumber}", 24))}");
         sb.AppendLine($"PP 20,50:{Quote(ClipAscii(p.PartDescription, 40))}");
-        sb.AppendLine($"PP 20,80:{Quote(ClipAscii($"SHADE {p.Shade} SIZE {p.Size}", 30))}");
+        sb.AppendLine($"PP 20,80:{Quote(ClipAscii($"SHADE {ComputeShadeLotCode(p)} SIZE {p.Size}", 30))}");
         sb.AppendLine($"PP 20,110:{Quote(ClipAscii($"SHIFT {p.Shift} INSPECTOR {p.Inspector}", 36))}");
         sb.AppendLine($"PP 20,140:{Quote(ClipAscii($"STACK {p.StackNumber} QTY {Math.Clamp(p.Quantity, 1, 999)}", 24))}");
         sb.AppendLine($"BARSET " + '"' + "CODE128" + '"' + $",2,2,80");
@@ -589,6 +590,40 @@ internal static class ThermalPrinterCommandBuilder
         var shadeInt = int.TryParse(DigitsOnly(p.Shade, 10, "0"), out var sv) ? sv : 0;
         var sizeCode = string.IsNullOrWhiteSpace(p.Caliber) ? p.Size : p.Caliber;
         return ComputeCartonBarcodeSerial(localTime, p.IRef, shadeInt, sizeCode, p.Shift, p.LineNumber, p.Plant, p.LisQty);
+    }
+
+    /// <summary>
+    /// Builds the combined 5-digit shade/lot code for label display — Progress dtlbl060b.i's
+    /// prt-shade2 (4-digit shade*10) + prt-size (trailing lot digit), printed together under
+    /// "Shade/Teinte". Reuses the exact same shade/size resolution as ComputeCartonBarcodeSerial
+    /// so the visible code always matches what's encoded in the barcode.
+    /// </summary>
+    internal static string ComputeShadeLotCode(ThermalLabelPayload p)
+    {
+        var shadeInt = int.TryParse(DigitsOnly(p.Shade, 10, "0"), out var sv) ? sv : 0;
+        var shade2 = shadeInt < 1000 ? shadeInt * 10 : shadeInt;
+        var sizeCode = string.IsNullOrWhiteSpace(p.Caliber) ? p.Size : p.Caliber;
+        var szChar = string.IsNullOrWhiteSpace(sizeCode) ? "0" : sizeCode.Trim()[..1];
+        return $"{shade2:0000}{szChar}";
+    }
+
+    /// <summary>
+    /// Decodes the item reference (IRef) encoded in a 30-char carton barcode — the inverse of
+    /// ComputeCartonBarcodeSerial's iref field (chars 9-14). Mirrors Progress dtscn011.p's
+    /// <c>pip-iref = int(substr(pip-data-stream,9,6))</c> decode.
+    ///
+    /// This barcode has no per-carton uniqueness guarantee in either the legacy system or this
+    /// port — it's a scannable item/shade/size/date descriptor, not a unique identifier (legacy
+    /// never matches a scanned barcode back to a specific production record; it decodes the
+    /// item directly, the same way this method is used). Returns null if the string isn't a
+    /// well-formed 30-char carton barcode.
+    /// </summary>
+    internal static int? TryDecodeCartonBarcodeIRef(string? barcode)
+    {
+        if (string.IsNullOrEmpty(barcode) || barcode.Length != 30 || barcode[0] != '%')
+            return null;
+
+        return int.TryParse(barcode.Substring(8, 6), out var iref) ? iref : null;
     }
 
     /// <summary>

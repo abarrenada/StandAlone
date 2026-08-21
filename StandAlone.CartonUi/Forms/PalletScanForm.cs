@@ -406,30 +406,24 @@ public class PalletScanForm : Form
         _descLabel.Text    = string.Empty;
         _infoLabel.Text    = string.Empty;
 
-        var box = await _boxRepo.GetBoxByBarcodeSerialAsync(_config.LineNumber, scanned, CancellationToken.None);
-        if (box is null)
+        // Decode the item reference straight from the barcode content, the same way Progress
+        // dtscn011.p does — this barcode has no per-carton uniqueness guarantee by design (see
+        // ThermalPrinterCommandBuilder.TryDecodeCartonBarcodeIRef), so we never look for "the
+        // one" matching boxes.csv row; the item is resolved directly from what's encoded in it.
+        var iref = ThermalPrinterCommandBuilder.TryDecodeCartonBarcodeIRef(scanned);
+        if (iref is null)
         {
-            SetStatus($"⚠ Barcode not found in boxes{_config.LineNumber:00}.csv.", Color.Salmon);
-            return;
-        }
-        if (box.PrintNum == 0)
-        {
-            SetStatus($"⚠ Carton found (Rec {box.RecId}) but was never printed.", Color.Salmon);
+            SetStatus("⚠ Could not decode an item reference from this barcode.", Color.Salmon);
             return;
         }
 
-        ItemDetail? item = null;
-        var stackNum = box.StackNum.Trim();
-        if (!string.IsNullOrWhiteSpace(stackNum))
-        {
-            var stacker = await _boxRepo.GetStackerAsync(_config.LineNumber, stackNum, CancellationToken.None);
-            if (stacker is not null)
-                item = await _boxRepo.GetItemDetailByIRefAsync(stacker.IRef, stacker.IsMexicoItem, CancellationToken.None);
-        }
+        var item = await _boxRepo.GetItemDetailByIRefAsync(iref.Value, isMexicoItem: false, CancellationToken.None);
+        if (item is null && _config.DoesMexico)
+            item = await _boxRepo.GetItemDetailByIRefAsync(iref.Value, isMexicoItem: true, CancellationToken.None);
 
         if (item is null)
         {
-            SetStatus($"⚠ Item detail not found for carton (Rec {box.RecId}, stack '{stackNum}').", Color.Salmon);
+            SetStatus($"⚠ Item not found for reference {iref.Value}.", Color.Salmon);
             return;
         }
 

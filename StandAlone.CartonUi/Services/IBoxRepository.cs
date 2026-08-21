@@ -67,4 +67,31 @@ public interface IBoxRepository
 
     /// <summary>Returns up to <paramref name="count"/> most recent EOL scans, newest first.</summary>
     Task<List<EolScanRecord>> GetLastEolScansAsync(int count, CancellationToken ct);
+
+    /// <summary>Returns every stacker record configured for the given line (Stacker Maintenance screen).</summary>
+    Task<List<StackerRecord>> GetAllStackersAsync(int lineId, CancellationToken ct);
+
+    /// <summary>
+    /// Adds or updates a stacker record, keyed by LineId+StackNum. Any existing row(s) for that
+    /// key are removed first so a single, current row remains (stackers{NN}.csv has no unique-key
+    /// enforcement of its own, and GetStackerAsync returns the first match, so leftover duplicate
+    /// rows from hand-editing could otherwise shadow the update).
+    /// </summary>
+    Task SaveStackerAsync(StackerRecord record, CancellationToken ct);
+
+    /// <summary>Removes the stacker record matching LineId+StackNum, if any.</summary>
+    Task DeleteStackerAsync(int lineId, string stackNum, CancellationToken ct);
+
+    /// <summary>
+    /// Returns every itemdet/mitemdet row matching <paramref name="itemNumber"/> — an item number
+    /// can have more than one row differing only by Lis Qty. Empty list if none found.
+    /// </summary>
+    Task<List<ItemDetail>> GetAllItemDetailsByNumberAsync(string itemNumber, bool searchMexicoAlso,
+        CancellationToken ct);
+
+    /// <summary>
+    /// Returns the most recent EOL scan already logged for <paramref name="palletId"/>, or null
+    /// if this pallet has never been scanned at EOL before (duplicate-scan check).
+    /// </summary>
+    Task<EolScanRecord?> FindEolScanByPalletIdAsync(string palletId, CancellationToken ct);
 }

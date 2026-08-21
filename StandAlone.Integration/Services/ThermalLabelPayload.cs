@@ -35,6 +35,15 @@ public sealed class ThermalLabelPayload
     public string MfgDateCode { get; set; } = string.Empty;
     public string ItemNumberMasked { get; set; } = string.Empty;
     public string PartDescriptionShort { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The combined 5-digit shade/lot code shown on the label under "Shade/Teinte" — Progress
+    /// dtlbl060b.i's prt-shade2 (4-digit shade*10) + prt-size (trailing lot digit), printed
+    /// together as one number. Computed at render time (see ThermalPrinterCommandBuilder.
+    /// ComputeShadeLotCode) from the same Shade/Caliber/Size fields used to build the barcode,
+    /// so the visible code always matches what's encoded in the barcode.
+    /// </summary>
+    public string ShadeLotCode { get; set; } = string.Empty;
     public string ShopOrder { get; init; } = string.Empty;
     public string Caliber { get; init; } = string.Empty;
     public string TemplateOrientation { get; init; } = "ref-first";

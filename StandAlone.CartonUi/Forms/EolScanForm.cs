@@ -445,6 +445,15 @@ public class EolScanForm : Form
         _descLabel.Text = pallet.Description;
         _infoLabel.Text = $"Qty: {pallet.TotalPieces}   Shop Order: {pallet.ShopOrder}   Plant: {pallet.Plant:000}   Printed: {pallet.TimeDisplay}";
 
+        // Duplicate-scan guard: only block on a PRIOR scan that actually reached SAP — if the
+        // last attempt failed to send, treat this scan as a retry rather than a duplicate.
+        var previousScan = await _boxRepo.FindEolScanByPalletIdAsync(pallet.PalletId, CancellationToken.None);
+        if (previousScan != null && previousScan.SapSuccess)
+        {
+            SetStatus($"⚠ Pallet '{pallet.PalletId}' was already scanned at {previousScan.TimeDisplay} by {previousScan.Inspector}.", Color.Salmon);
+            return;
+        }
+
         SetStatus("Confirming...", Color.Yellow);
 
         var scanRecord = new EolScanRecord

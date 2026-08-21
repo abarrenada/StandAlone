@@ -94,12 +94,10 @@ public class NiceLabelXmlExporter
                 stacker != null ? new XElement("StackerRecord",
                     new XElement("LineId", stacker.LineId),
                     new XElement("StackNum", stacker.StackNum.Trim()),
-                    new XElement("IRef", stacker.IRef),
+                    new XElement("ItemNumber", stacker.ItemNumber),
+                    new XElement("Qty", stacker.Qty),
                     new XElement("Shade", stacker.Shade),
-                    new XElement("Size", stacker.Size),
-                    new XElement("IsValid", stacker.IsValid),
-                    new XElement("IsMexicoItem", stacker.IsMexicoItem),
-                    new XElement("ErrorMessage", stacker.ErrMsg)
+                    new XElement("Size", stacker.Size)
                 ) : null
             )
         );

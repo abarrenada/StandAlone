@@ -28,8 +28,10 @@ public class MainForm : Form
     private AppSettings _settings = null!;
     private CancellationTokenSource? _plcMonitorCts;
     private Task? _plcMonitorTask;
-    private DateTime _lastPlc8AutoPrintUtc = DateTime.MinValue;
-    private int _plc8AutoPrintInProgress;
+    // Per-stack-number debounce/in-flight guard — scoped per stacker so two DIFFERENT
+    // stackers firing close together don't block each other, only rapid repeats of the SAME one.
+    private readonly Dictionary<int, DateTime> _lastStackerFireUtc = new();
+    private readonly HashSet<int> _stackerHandlingInProgress = new();
 
     // ── Session state (set in startup panel) ─────────────────────────────────
     private int _shift;
@@ -141,7 +143,7 @@ public class MainForm : Form
 
         bool isManualQtyMode = string.Equals(_settings.CartonPrintMode, "Manual Qty", StringComparison.OrdinalIgnoreCase);
         if (isManualQtyMode)
-            ClientSize = new Size(1120, 720);
+            ClientSize = new Size(1200, 720);
 
         // ── Corner info labels ────────────────────────────────────────────────
         _startupPanel.Controls.Add(new Label
@@ -270,8 +272,9 @@ public class MainForm : Form
             nextY += 40;
         }
 
-        // 2nd Primary Item — PLC Signal mode only
-        if (!isManualQtyMode && _config.DoesTwoPrims && _config.DoesManStk && !_config.DoesMexico)
+        // 2nd Primary Item — shown in either print mode when the line is set up for two
+        // primary items (DoesTwoPrims describes the line's setup, not the print mode).
+        if (_config.DoesTwoPrims && _config.DoesManStk && !_config.DoesMexico)
         {
             _startupPanel.Controls.Add(MakeRL("2nd Primary Item:", nextY + 5, 130));
             _secondaryItemInput = new TextBox
@@ -280,6 +283,14 @@ public class MainForm : Form
                 MaxLength = 15, Font = new Font("Segoe UI", 11f),
                 Text = _settings.CurrentSecondaryItem,
                 BackColor = Color.White, ForeColor = Color.Black,
+            };
+            // Save on change so it persists even in Manual Qty mode, where "Begin" (the other
+            // save path, below) never runs.
+            _secondaryItemInput.Leave += (_, _) =>
+            {
+                var secondaryItem = _secondaryItemInput.Text.Trim();
+                _settings.CurrentSecondaryItem = secondaryItem;
+                SettingsManager.SaveField(s => s.CurrentSecondaryItem = secondaryItem);
             };
             _startupPanel.Controls.Add(_secondaryItemInput);
             nextY += 50;
@@ -444,6 +455,20 @@ public class MainForm : Form
             nextBtnX += 156;
         }
 
+        // Visible in both Carton Print Modes — stacker→item setup is a maintenance task
+        // independent of how the line prints, and (per the person who does this work) it
+        // must NOT sit behind the Settings password gate.
+        var btnStackerMaint = new Button
+        {
+            Text = "Stacker Maint.",
+            Size = new Size(150, 44), Location = new Point(nextBtnX, btnY),
+            BackColor = Color.SaddleBrown, ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+        };
+        btnStackerMaint.Click += (_, _) => OpenStackerMaintenanceForm();
+        _startupPanel.Controls.Add(btnStackerMaint);
+        nextBtnX += 156;
+
         var btnExit = new Button
         {
             Text = "Exit  [F4]",
@@ -604,87 +629,19 @@ public class MainForm : Form
         {
             try
             {
-                // Get primary item number (from startup form or default to hardcoded sample)
-                string primaryItem = _settings.CurrentPrimaryItem?.Trim() ?? "FL9036MOD1P4";
-                if (string.IsNullOrEmpty(primaryItem))
-                    primaryItem = "FL9036MOD1P4";
+                // Cycle through stackers 1-3 so repeated clicks are visible in the browse
+                // panel. Delegates to the exact same handler a real PLC signal uses (stacker
+                // lookup, item resolution, barcode, box record, print) so this test button can
+                // never drift out of sync with production behavior the way a separate,
+                // hand-duplicated simulation used to.
+                var existingBoxes = await _boxRepo.GetLastBoxesAsync(_config.LineNumber, 999, CancellationToken.None);
+                var testStack = (existingBoxes.Count % 3) + 1;
 
-                // Look up the item in itemdet.csv to get IRef, description, shade, size
-                var itemDetail = await _boxRepo.GetItemDetailByNumberAsync(primaryItem, _config.DoesMexico, CancellationToken.None);
-                if (itemDetail == null)
-                {
-                    MessageBox.Show($"Cannot find item '{primaryItem}' in item master.\r\nPlease enter a valid Primary Item on startup.", 
-                        "Item Not Found", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-
-                // Generate test stack number (cycle through 1-3 for visibility)
-                var existingStacks = new List<int>();
-                var boxFile = Path.Combine(_config.DataDirectory, $"boxes{_config.LineNumber:00}.csv");
-                if (File.Exists(boxFile))
-                {
-                    foreach (var line in File.ReadAllLines(boxFile))
-                    {
-                        if (!string.IsNullOrWhiteSpace(line) && !line.StartsWith("#"))
-                        {
-                            var parts = line.Split(',');
-                            if (parts.Length >= 4 && int.TryParse(parts[3].Trim(), out var sn))
-                                existingStacks.Add(sn);
-                        }
-                    }
-                }
-                int testStack = (existingStacks.Count % 3) + 1;
-                string stackNum = $" {testStack}";
-
-                // Build PLC message: stack at position 0-1, item description at position 32-61 (30 chars)
-                // Format: "XX[31 spaces]ITEM_DESC[padding]"
-                string plcMsg = stackNum + new string(' ', 31) + itemDetail.ItemNumber.PadRight(30);
-                if (plcMsg.Length < 65) plcMsg = plcMsg.PadRight(65);
-
-                // Create box record (CSV: RecId, LineId, MakeTime, StackNum, PlcMsg, ErrMsg, PrintNum, BarcodeSerial)
-                int nextRecId = existingStacks.Count + 1;
-                var now = DateTime.Now;
-                int shade = itemDetail.Shade;
-                string size = "L"; // Default size/caliber for simulated cartons
-                var barcodeSerial = ThermalPrinterCommandBuilder.ComputeCartonBarcodeSerial(
-                    now, itemDetail.IRef, shade, size, _shift, _config.LineNumber, itemDetail.Plant, itemDetail.LisQty);
-                string boxRecord = $"{nextRecId},{_config.LineNumber},{now:yyyy-MM-dd HH:mm:ss},{stackNum},{plcMsg},,1,{barcodeSerial}";
-
-                // Create stacker record with item details (CSV: LineId, StackNum, IRef, PlcMsg, Shade, Size, ErrMsg)
-                string stackerRecord = $"{_config.LineNumber},{stackNum},{itemDetail.IRef},{plcMsg},{shade},{size},";
-
-                // Append to CSV files
-                AppendToFile(boxFile, boxRecord);
-                var stackerFile = Path.Combine(_config.DataDirectory, $"stackers{_config.LineNumber:00}.csv");
-                AppendToFile(stackerFile, stackerRecord);
-
-                // Show confirmation
-                MessageBox.Show(
-                    $"✓ Simulated carton read: Stack {testStack}\r\n" +
-                    $"  Item: {primaryItem}\r\n" +
-                    $"  IRef: {itemDetail.IRef}\r\n" +
-                    $"  Shade: {shade}, Size: {size}\r\n" +
-                    $"\r\nWill appear in browse panel in 1 second.\r\n" +
-                    $"Select it and press F1 to print.",
-                    "Carton Simulated", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                // Wait for refresh to pick up the data, then auto-trigger print
-                await Task.Delay(1500);
-                this.Invoke(() =>
-                {
-                    // Find and select the newest row
-                    if (_browseRows.Count > 0)
-                    {
-                        _browseGrid.ClearSelection();
-                        _browseGrid.Rows[0].Selected = true;
-                        // Trigger F1 reprint
-                        BtnF1Reprint_Click(null, EventArgs.Empty);
-                    }
-                });
+                await HandleStackerCartonEventAsync(testStack, DateTime.Now);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error simulating carton read:\r\n{ex.Message}", "Error", 
+                MessageBox.Show($"Error simulating carton read:\r\n{ex.Message}", "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         });
@@ -834,14 +791,20 @@ public class MainForm : Form
     }
 
     /// <summary>
-    /// Appends a box + stacker record so a printed carton can later be found by barcode serial
+    /// Appends a box record so a printed carton can later be found by barcode serial
     /// (pallet-scan lookup) or stack number. barcodeSerial should match what was actually printed
     /// on the label (see ThermalPrinterCommandBuilder.ComputeCartonBarcodeSerial).
+    ///
+    /// Does NOT touch stackers{NN}.csv — that table is operator-maintained configuration
+    /// (Stacker Maintenance screen: which item/shade/size each physical stacker is assigned),
+    /// read here to resolve what to print, never written as a side effect of a carton event.
+    /// (It previously was written here on every single carton — auto-appending a stacker
+    /// row per event, unbounded — which is why stackers01.csv had accumulated dozens of
+    /// duplicate/garbage rows.)
     /// </summary>
     private void AppendCartonBoxRecord(ItemDetail itemDetail, int stackNumber, string barcodeSerial, DateTime timestamp)
     {
         var boxFile = Path.Combine(_config.DataDirectory, $"boxes{_config.LineNumber:00}.csv");
-        var stackerFile = Path.Combine(_config.DataDirectory, $"stackers{_config.LineNumber:00}.csv");
 
         int nextRecId = 1;
         if (File.Exists(boxFile))
@@ -862,10 +825,8 @@ public class MainForm : Form
         if (plcMsg.Length < 65) plcMsg = plcMsg.PadRight(65);
 
         var boxRecord = $"{nextRecId},{_config.LineNumber},{timestamp:yyyy-MM-dd HH:mm:ss},{stackNum},{plcMsg},,1,{barcodeSerial}";
-        var stackerRecord = $"{_config.LineNumber},{stackNum},{itemDetail.IRef},{plcMsg},{itemDetail.Shade},{itemDetail.SizeShape},";
 
         AppendToFile(boxFile, boxRecord);
-        AppendToFile(stackerFile, stackerRecord);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -1040,6 +1001,12 @@ public class MainForm : Form
         form.Show(this);
     }
 
+    private void OpenStackerMaintenanceForm()
+    {
+        var form = new StackerMaintenanceForm(_boxRepo, _config.LineNumber, _config.DoesMexico, _settings, _config.DoesTwoPrims);
+        form.Show(this);
+    }
+
     private void ShowPalletQuery()
     {
         var inspector = _inspectorInput.Text.Trim();
@@ -1099,31 +1066,23 @@ public class MainForm : Form
         string statusFound = string.Empty;
         _palletQueryCartonBarcode = string.Empty;
 
-        // 1. Try as a barcode serial — validates the carton was actually produced on this line.
-        var matchedBox = await _boxRepo.GetBoxByBarcodeSerialAsync(_config.LineNumber, serialNo, CancellationToken.None);
-        if (matchedBox != null)
+        // 1. Try as a carton barcode — decode its encoded item reference directly, the same
+        //    way Progress dtscn011.p does. Legacy never matches a scanned barcode back to a
+        //    specific box log row (it has no per-carton uniqueness guarantee, by design —
+        //    it's a scannable item/shade/size/date descriptor, not a unique identifier); it
+        //    decodes the item straight from the barcode's own content. Matching that intent
+        //    here means we never need "the one" boxes.csv row to exist or be unambiguous.
+        var decodedIRef = ThermalPrinterCommandBuilder.TryDecodeCartonBarcodeIRef(serialNo);
+        if (decodedIRef is int iref && iref > 0)
         {
-            if (matchedBox.PrintNum <= 0)
-            {
-                if (_palletStatusLabel != null)
-                {
-                    _palletStatusLabel.Text = $"Carton serial found but was never printed (Rec {matchedBox.RecId})";
-                    _palletStatusLabel.ForeColor = Color.Salmon;
-                }
-                return;
-            }
-
-            var stacker = await _boxRepo.GetStackerAsync(_config.LineNumber, matchedBox.StackNum, CancellationToken.None);
-            var iRef = stacker?.IRef ?? 0;
-            var isMexico = stacker?.IsMexicoItem ?? false;
-            if (iRef > 0)
-                itemDetail = await _boxRepo.GetItemDetailByIRefAsync(iRef, isMexico, CancellationToken.None);
+            itemDetail = await _boxRepo.GetItemDetailByIRefAsync(iref, isMexicoItem: false, CancellationToken.None);
+            if (itemDetail is null && _config.DoesMexico)
+                itemDetail = await _boxRepo.GetItemDetailByIRefAsync(iref, isMexicoItem: true, CancellationToken.None);
 
             if (itemDetail != null)
             {
-                if (stacker?.Shade > 0) shadeText = stacker.Shade.ToString();
-                statusFound = $"Carton verified — box #{matchedBox.RecId}, stack {matchedBox.StackNum.Trim()}, {matchedBox.MakeTime:HH:mm:ss}";
-                _palletQueryCartonBarcode = matchedBox.BarcodeSerial;
+                statusFound = $"Carton barcode decoded — item {itemDetail.ItemNumber}";
+                _palletQueryCartonBarcode = serialNo;
             }
         }
 
@@ -1139,9 +1098,9 @@ public class MainForm : Form
         if (itemDetail == null)
         {
             var stacker = await _boxRepo.GetStackerAsync(_config.LineNumber, serialNo, CancellationToken.None);
-            if (stacker != null && stacker.IRef > 0)
+            if (stacker != null && !string.IsNullOrWhiteSpace(stacker.ItemNumber))
             {
-                itemDetail = await _boxRepo.GetItemDetailByIRefAsync(stacker.IRef, stacker.IsMexicoItem, CancellationToken.None);
+                itemDetail = await _boxRepo.GetItemDetailByNumberAsync(stacker.ItemNumber, _config.DoesMexico, CancellationToken.None);
                 if (itemDetail != null)
                 {
                     if (stacker.Shade > 0) shadeText = stacker.Shade.ToString();
@@ -1458,13 +1417,18 @@ public class MainForm : Form
                 {
                     var stacker = await _boxRepo.GetStackerAsync(
                         _config.LineNumber, box.StackNum.Trim(), CancellationToken.None);
-                    if (stacker is not null)
+                    if (stacker is not null && !string.IsNullOrWhiteSpace(stacker.ItemNumber))
                     {
-                        var display = await _boxRepo.GetItemDisplayAsync(
-                            stacker.IRef, stacker.IsMexicoItem,
-                            stacker.Shade, stacker.Size,
-                            _config.W4DigitShade, CancellationToken.None);
-                        if (display is not null) row.PartOrError = display;
+                        var itemDetail = await _boxRepo.GetItemDetailByNumberAsync(
+                            stacker.ItemNumber, _config.DoesMexico, CancellationToken.None);
+                        if (itemDetail is not null)
+                        {
+                            // Progress: w-4digitshade = shade as 4 digits; else shade * 10 as 4 digits
+                            var shadeStr = _config.W4DigitShade
+                                ? stacker.Shade.ToString("0000")
+                                : (stacker.Shade * 10).ToString("0000");
+                            row.PartOrError = $"{itemDetail.ItemNumber.TrimEnd()}-{itemDetail.LisQty}-{shadeStr}-{stacker.Size}";
+                        }
                     }
                 }
                 _browseRows.Add(row);
@@ -1602,10 +1566,10 @@ public class MainForm : Form
                 {
                     var stacker = await _boxRepo.GetStackerAsync(_config.LineNumber, row.StackNum.Trim(), CancellationToken.None);
                     ItemDetail? itemDetail = null;
-                    if (stacker is not null)
+                    if (stacker is not null && !string.IsNullOrWhiteSpace(stacker.ItemNumber))
                     {
-                        itemDetail = await _boxRepo.GetItemDetailByIRefAsync(
-                            stacker.IRef, stacker.IsMexicoItem, CancellationToken.None);
+                        itemDetail = await _boxRepo.GetItemDetailByNumberAsync(
+                            stacker.ItemNumber, _config.DoesMexico, CancellationToken.None);
                     }
 
                     // ItemDisplay is the "PartOrError" field shown in the browse grid.
@@ -1637,12 +1601,13 @@ public class MainForm : Form
 
     private async Task ValidateAndReprintByStackAsync(string stackNum)
     {
-        // Progress: find stacker where st-errmsg begins "*OK" or st-errmsg eq ""
+        // Progress: find stacker where st-errmsg begins "*OK" or st-errmsg eq "" — that error-flag
+        // concept doesn't exist in this format; just confirm the stacker is configured at all.
         var stacker = await _boxRepo.GetStackerAsync(_config.LineNumber, stackNum, CancellationToken.None);
-        if (stacker is null || !stacker.IsValid)
+        if (stacker is null || string.IsNullOrWhiteSpace(stacker.ItemNumber))
         {
             MessageBox.Show(
-                $"Stack {stackNum} SETUP: {stacker?.ErrMsg ?? "not found"}",
+                $"Stack {stackNum} SETUP: not configured in Stacker Maintenance.",
                 "Reprint by Stack", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
@@ -1698,7 +1663,7 @@ public class MainForm : Form
                     labelTypeCode: itemDetail?.LabelTypeCode ?? 0,
                     palletId: string.Empty,
                     itemNumber: itemDetail?.ItemNumber ?? itemDisplay,
-                    iRef: itemDetail?.IRef ?? stacker?.IRef ?? 0,
+                    iRef: itemDetail?.IRef ?? 0,
                     plant: itemDetail?.Plant ?? 0,
                     partDescription: itemDetail?.GetPrimaryItemDescription() ?? itemDisplay,
                     colorDesc: itemDetail?.ColorDesc ?? string.Empty,
@@ -2115,81 +2080,62 @@ public class MainForm : Form
         var line = $"{frame.Timestamp:HH:mm:ss}  {decoded,-8}  {frame.Signature}";
         AddPlcInputLine(line);
 
-        _ = AppendPlcFrameToBrowseAsync(frame);
-
-        if (string.Equals(decoded, "8", StringComparison.OrdinalIgnoreCase))
-            _ = AutoPrintForPlc8Async();
+        // Every decoded numeric value is a "this stacker just produced a carton" signal —
+        // there is no separate/special print-trigger code. Which item/shade/size to print is
+        // resolved from the Stacker Maintenance table for that stack number, not a single
+        // global "Current Primary Item" (that setting is only used by the manual print flows).
+        if (int.TryParse(decoded, out var stackNumber))
+            _ = HandleStackerCartonEventAsync(stackNumber, frame.Timestamp);
     }
 
-    private async Task AppendPlcFrameToBrowseAsync(PlcDecodedFrame frame)
+    /// <summary>
+    /// Handles one "stacker N produced a carton" PLC event end-to-end: resolves the stacker's
+    /// assigned item/shade/size (Stacker Maintenance), records the box, and prints the carton
+    /// label — sequentially, so the recorded barcode and the printed barcode can never drift
+    /// apart the way two independent fire-and-forget handlers could.
+    /// </summary>
+    private async Task HandleStackerCartonEventAsync(int stackNumber, DateTime frameTimestamp)
     {
-        if (!_browsePanel.Visible)
-            return;
-
-        // Only known decoded values are converted to sorter rows.
-        if (!int.TryParse(frame.DecodedValue, out var decodedNumber))
-            return;
-
-        try
-        {
-            var itemNumber = _settings.CurrentPrimaryItem?.Trim() ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(itemNumber))
-                return;
-
-            var itemDetail = await _boxRepo.GetItemDetailByNumberAsync(itemNumber, _config.DoesMexico, CancellationToken.None);
-            if (itemDetail is null)
-                return;
-
-            var stackNumber = Math.Clamp(decodedNumber, 1, 99);
-            var now = DateTime.Now;
-            var sizeCode = string.IsNullOrWhiteSpace(itemDetail.SizeShape) ? "0" : itemDetail.SizeShape.Trim()[..1];
-            var barcodeSerial = ThermalPrinterCommandBuilder.ComputeCartonBarcodeSerial(
-                now, itemDetail.IRef, itemDetail.Shade, sizeCode, _shift, _config.LineNumber, itemDetail.Plant, itemDetail.LisQty);
-            AppendCartonBoxRecord(itemDetail, stackNumber, barcodeSerial, now);
-
-            await RefreshBrowseAsync();
-        }
-        catch (Exception ex)
-        {
-            SetStatus($"PLC browse append error: {ex.Message}");
-        }
-    }
-
-    private async Task AutoPrintForPlc8Async()
-    {
-        // Ignore PLC triggers outside the active browse/run state.
         if (!_browsePanel.Visible)
             return;
 
         var nowUtc = DateTime.UtcNow;
-        if (nowUtc - _lastPlc8AutoPrintUtc < TimeSpan.FromMilliseconds(700))
+        if (_lastStackerFireUtc.TryGetValue(stackNumber, out var last) && nowUtc - last < TimeSpan.FromMilliseconds(700))
             return;
-
-        if (Interlocked.Exchange(ref _plc8AutoPrintInProgress, 1) == 1)
+        if (!_stackerHandlingInProgress.Add(stackNumber))
             return;
+        _lastStackerFireUtc[stackNumber] = nowUtc;
 
-        _lastPlc8AutoPrintUtc = nowUtc;
         try
         {
-            var itemNumber = _settings.CurrentPrimaryItem?.Trim() ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(itemNumber))
+            var stackNumStr = stackNumber.ToString();
+            var stacker = await _boxRepo.GetStackerAsync(_config.LineNumber, stackNumStr, CancellationToken.None);
+            if (stacker is null || string.IsNullOrWhiteSpace(stacker.ItemNumber))
             {
-                SetStatus("PLC 8 received, but Current Primary Item is empty.");
+                SetStatus($"Stacker {stackNumStr}: not configured — set it up in Stacker Maintenance.");
+                return;
+            }
+
+            var itemDetail = await _boxRepo.GetItemDetailByNumberAsync(stacker.ItemNumber, _config.DoesMexico, CancellationToken.None);
+            if (itemDetail is null)
+            {
+                SetStatus($"Stacker {stackNumStr}: item '{stacker.ItemNumber}' not found in item master.");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(_labelSize))
             {
-                SetStatus("PLC 8 received before startup completion (label size missing).");
+                SetStatus("PLC signal received before startup completion (label size missing).");
                 return;
             }
 
-            var itemDetail = await _boxRepo.GetItemDetailByNumberAsync(itemNumber, _config.DoesMexico, CancellationToken.None);
-            if (itemDetail is null)
-            {
-                SetStatus($"PLC 8 print skipped: item '{itemNumber}' not found.");
-                return;
-            }
+            // Shade/Size come from the STACKER's assignment, not the item's own defaults —
+            // the same item can run in different shades/sizes on different physical stackers.
+            var sizeCode = string.IsNullOrWhiteSpace(stacker.Size) ? "0" : stacker.Size.Trim()[..1];
+            var barcodeSerial = ThermalPrinterCommandBuilder.ComputeCartonBarcodeSerial(
+                frameTimestamp, itemDetail.IRef, stacker.Shade, sizeCode, _shift, _config.LineNumber, itemDetail.Plant, itemDetail.LisQty);
+            AppendCartonBoxRecord(itemDetail, stackNumber, barcodeSerial, frameTimestamp);
+            await RefreshBrowseAsync();
 
             var job = new ManualCartonPrintJob(
                 itemDetail.ItemNumber,
@@ -2199,21 +2145,22 @@ public class MainForm : Form
                 _labelSize,
                 itemDetail.GetPrimaryItemDescription(),
                 Environment.UserName,
-                DateTime.Now);
+                DateTime.Now,
+                ShadeOverride: stacker.Shade.ToString(),
+                Caliber: stacker.Size);
 
             var (success, _) = await ExportManualLabelAsync(itemDetail, job, CancellationToken.None);
-            if (success)
-                SetStatus($"PLC 8 auto-print sent for {itemDetail.ItemNumber}.");
-            else
-                SetStatus($"PLC 8 auto-print failed for {itemDetail.ItemNumber}.");
+            SetStatus(success
+                ? $"Stacker {stackNumStr} auto-print sent for {itemDetail.ItemNumber}."
+                : $"Stacker {stackNumStr} auto-print failed for {itemDetail.ItemNumber}.");
         }
         catch (Exception ex)
         {
-            SetStatus($"PLC 8 auto-print error: {ex.Message}");
+            SetStatus($"Stacker auto-print error: {ex.Message}");
         }
         finally
         {
-            Interlocked.Exchange(ref _plc8AutoPrintInProgress, 0);
+            _stackerHandlingInProgress.Remove(stackNumber);
         }
     }
 

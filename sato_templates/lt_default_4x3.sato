@@ -28,15 +28,15 @@
 \x1bH050\x1bV394\x1bL0001\x1bXS{SeriesDesc}
 \x1bH050\x1bV422\x1bL0001\x1bXS{LabelSize}
 \x1bH050\x1bV450\x1bL0001\x1bXM{PartDescriptionShort}
+\x1bH050\x1bV505\x1bL0001\x1bXL0{PlantName}
 \x1bH620\x1bV283\x1bL0001\x1bXSShade/Teinte
-\x1bH620\x1bV323\x1bL0101\x1bXS{Shade}
+\x1bH620\x1bV323\x1bL0101\x1bXM{ShadeLotCode}
 \x1bH620\x1bV351\x1bL0001\x1bXSQual/Cal: {StackNumber}
 \x1bH620\x1bV379\x1bL0001\x1bXSLoc: {LineNumber}
 \x1bH620\x1bV407\x1bL0001\x1bXS{IRef}:{Plant} {PlantName}
 \x1bH620\x1bV435\x1bL0001\x1bXS{SalesQty} {SalesUom}
 \x1bH620\x1bV463\x1bL0001\x1bXS{PackageWeight}
 \x1bH620\x1bV491\x1bL0001\x1bXS{Quantity} UNITS
-\x1bH140\x1bV505\x1bL0001\x1bXL0{PlantName}
 \x1bH550\x1bV510\x1bD3020700{CartonUpc}
 \x1bZ
 <ETX>

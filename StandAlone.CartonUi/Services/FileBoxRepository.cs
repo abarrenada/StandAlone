@@ -65,15 +65,56 @@ public class FileBoxRepository : IBoxRepository
         return Task.FromResult(result);
     }
 
-    public Task<int> AllocatePalletSerialAsync(int plant, CancellationToken ct)
+    /// <summary>
+    /// Atomically increments and returns the next pallet serial for the plant. Uses an
+    /// exclusive file lock (FileShare.None) around the whole read-modify-write, mirroring
+    /// Progress's "find first serial exclusive-lock ... serial.ipsn = serial.ipsn + 1 ...
+    /// release" atomic increment — needed because multiple stations (e.g. Pallet Query and
+    /// Pallet Scan, possibly on different PCs sharing this data directory) can call this for
+    /// the same plant at nearly the same instant; an unlocked read-then-write here would let
+    /// two callers read the same counter value and mint the same "unique" serial twice.
+    /// </summary>
+    public async Task<int> AllocatePalletSerialAsync(int plant, CancellationToken ct)
     {
         var filePath = Path.Combine(_dataDirectory, $"pallet-serial-{plant:000}.txt");
-        int serial = 0;
-        if (File.Exists(filePath) && int.TryParse(File.ReadAllText(filePath).Trim(), out var prev))
-            serial = prev;
-        serial = serial >= 999_999_999 ? 1 : serial + 1;
-        File.WriteAllText(filePath, serial.ToString());
-        return Task.FromResult(serial);
+        var dir = Path.GetDirectoryName(filePath);
+        if (!string.IsNullOrEmpty(dir))
+            Directory.CreateDirectory(dir);
+
+        const int maxAttempts = 20;
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            try
+            {
+                using var stream = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+
+                var serial = 0;
+                if (stream.Length > 0)
+                {
+                    var buffer = new byte[stream.Length];
+                    var read = await stream.ReadAsync(buffer, ct);
+                    int.TryParse(System.Text.Encoding.ASCII.GetString(buffer, 0, read).Trim(), out serial);
+                }
+                serial = serial >= 999_999_999 ? 1 : serial + 1;
+
+                var bytes = System.Text.Encoding.ASCII.GetBytes(serial.ToString());
+                stream.SetLength(0);
+                stream.Position = 0;
+                await stream.WriteAsync(bytes, ct);
+                await stream.FlushAsync(ct);
+
+                return serial;
+            }
+            catch (IOException) when (attempt < maxAttempts)
+            {
+                // Locked by another concurrent allocation (this station or another one on a
+                // shared drive) — brief backoff and retry rather than risk two callers ever
+                // reading the same counter value.
+                await Task.Delay(25 * attempt, ct);
+            }
+        }
+
+        throw new IOException($"Could not allocate a pallet serial for plant {plant:000} — the counter file stayed locked after {maxAttempts} attempts.");
     }
 
     public Task SavePalletRecordAsync(PalletRecord record, CancellationToken ct)
@@ -200,6 +241,41 @@ public class FileBoxRepository : IBoxRepository
         return Task.FromResult(result);
     }
 
+    public Task<EolScanRecord?> FindEolScanByPalletIdAsync(string palletId, CancellationToken ct)
+    {
+        var filePath = Path.Combine(_dataDirectory, "eol-scans.csv");
+        if (!File.Exists(filePath) || string.IsNullOrWhiteSpace(palletId))
+            return Task.FromResult<EolScanRecord?>(null);
+
+        var needle = palletId.Trim();
+        foreach (var line in File.ReadAllLines(filePath).Reverse())
+        {
+            if (string.IsNullOrWhiteSpace(line) || line.StartsWith('#')) continue;
+            var parts = line.Split(',');
+            if (parts.Length < 14) continue;
+            if (!string.Equals(parts[0].Trim(), needle, StringComparison.OrdinalIgnoreCase)) continue;
+
+            return Task.FromResult<EolScanRecord?>(new EolScanRecord
+            {
+                PalletId       = parts[0].Trim(),
+                Plant          = int.TryParse(parts[1].Trim(), out var pl) ? pl : 0,
+                ItemNumber     = parts[2].Trim(),
+                Description    = parts[3].Trim(),
+                ShopOrder      = parts[4].Trim(),
+                LisQty         = int.TryParse(parts[5].Trim(), out var lq) ? lq : 0,
+                BoxesPerPallet = int.TryParse(parts[6].Trim(), out var bp) ? bp : 0,
+                ConfirmedQty   = int.TryParse(parts[7].Trim(), out var cq) ? cq : 0,
+                Shift          = int.TryParse(parts[8].Trim(), out var sf) ? sf : 0,
+                LineNumber     = int.TryParse(parts[9].Trim(), out var ln) ? ln : 0,
+                Inspector      = parts[10].Trim(),
+                ScanTimeUtc    = DateTime.TryParse(parts[11].Trim(), out var st) ? st : DateTime.MinValue,
+                SapSuccess     = bool.TryParse(parts[12].Trim(), out var ss) && ss,
+                SapDetail      = parts[13].Trim(),
+            });
+        }
+        return Task.FromResult<EolScanRecord?>(null);
+    }
+
     private static string SanitizeCsvField(string? value) =>
         string.IsNullOrEmpty(value) ? string.Empty : value.Replace(',', ';').Replace('\n', ' ').Replace('\r', ' ');
 
@@ -232,33 +308,125 @@ public class FileBoxRepository : IBoxRepository
         return Task.FromResult<BoxRecord?>(null);
     }
 
+    private const string StackersHeader = "Stacker,Item Number,Qty,Shade,Size";
+
+    /// <summary>True for the header row ("Stacker,Item Number,Qty,Shade,Size") or any comment/blank line.</summary>
+    private static bool IsStackersNonDataLine(string line) =>
+        string.IsNullOrWhiteSpace(line) || line.StartsWith('#') ||
+        line.TrimStart().StartsWith("Stacker,", StringComparison.OrdinalIgnoreCase);
+
+    private static StackerRecord? ParseStackerLine(string line, int lineId)
+    {
+        var parts = line.Split(',');
+        if (parts.Length < 5) return null;
+
+        return new StackerRecord
+        {
+            LineId     = lineId,
+            StackNum   = parts[0].Trim(),
+            ItemNumber = parts[1].Trim(),
+            Qty        = int.TryParse(parts[2].Trim(), out var q) ? q : 0,
+            Shade      = int.TryParse(parts[3].Trim(), out var sh) ? sh : 0,
+            Size       = parts[4].Trim(),
+        };
+    }
+
     public Task<StackerRecord?> GetStackerAsync(int lineId, string stackNum, CancellationToken ct)
     {
         var filePath = Path.Combine(_dataDirectory, $"stackers{lineId:00}.csv");
         if (!File.Exists(filePath))
             return Task.FromResult<StackerRecord?>(null);
 
+        var needle = stackNum.Trim();
         foreach (var line in File.ReadAllLines(filePath))
         {
-            if (string.IsNullOrWhiteSpace(line) || line.StartsWith('#')) continue;
-            var parts = line.Split(',');
-            if (parts.Length < 7) continue;
-
-            if (!int.TryParse(parts[0].Trim(), out var lid) || lid != lineId) continue;
-            if (parts[1].Trim() != stackNum) continue;
-
-            return Task.FromResult<StackerRecord?>(new StackerRecord
-            {
-                LineId   = lid,
-                StackNum = parts[1].Trim(),
-                IRef     = int.TryParse(parts[2].Trim(), out var ir) ? ir : 0,
-                PlcMsg   = parts[3].Trim(),
-                Shade    = int.TryParse(parts[4].Trim(), out var sh) ? sh : 0,
-                Size     = parts[5].Trim(),
-                ErrMsg   = parts[6].Trim(),
-            });
+            if (IsStackersNonDataLine(line)) continue;
+            var record = ParseStackerLine(line, lineId);
+            if (record != null && record.StackNum == needle)
+                return Task.FromResult<StackerRecord?>(record);
         }
         return Task.FromResult<StackerRecord?>(null);
+    }
+
+    public Task<List<StackerRecord>> GetAllStackersAsync(int lineId, CancellationToken ct)
+    {
+        var filePath = Path.Combine(_dataDirectory, $"stackers{lineId:00}.csv");
+        var result = new List<StackerRecord>();
+        if (!File.Exists(filePath))
+            return Task.FromResult(result);
+
+        foreach (var line in File.ReadAllLines(filePath))
+        {
+            if (IsStackersNonDataLine(line)) continue;
+            var record = ParseStackerLine(line, lineId);
+            if (record != null)
+                result.Add(record);
+        }
+        return Task.FromResult(result);
+    }
+
+    public Task SaveStackerAsync(StackerRecord record, CancellationToken ct)
+    {
+        var filePath = Path.Combine(_dataDirectory, $"stackers{record.LineId:00}.csv");
+        var kept = new List<string>();
+        var sawHeader = false;
+
+        if (File.Exists(filePath))
+        {
+            foreach (var line in File.ReadAllLines(filePath))
+            {
+                if (IsStackersNonDataLine(line))
+                {
+                    if (line.TrimStart().StartsWith("Stacker,", StringComparison.OrdinalIgnoreCase))
+                        sawHeader = true;
+                    kept.Add(line);
+                    continue;
+                }
+
+                var parsed = ParseStackerLine(line, record.LineId);
+                if (parsed == null || parsed.StackNum != record.StackNum.Trim())
+                    kept.Add(line);
+                // else: this is the old row for the same StackNum — drop it, the fresh row
+                // is appended below.
+            }
+        }
+
+        if (!sawHeader)
+            kept.Insert(0, StackersHeader);
+
+        kept.Add(string.Join(',',
+            record.StackNum,
+            SanitizeCsvField(record.ItemNumber),
+            record.Qty,
+            record.Shade,
+            record.Size));
+
+        var dir = Path.GetDirectoryName(filePath);
+        if (!string.IsNullOrEmpty(dir))
+            Directory.CreateDirectory(dir);
+
+        File.WriteAllLines(filePath, kept);
+        return Task.CompletedTask;
+    }
+
+    public Task DeleteStackerAsync(int lineId, string stackNum, CancellationToken ct)
+    {
+        var filePath = Path.Combine(_dataDirectory, $"stackers{lineId:00}.csv");
+        if (!File.Exists(filePath))
+            return Task.CompletedTask;
+
+        var needle = stackNum.Trim();
+        var kept = new List<string>();
+        foreach (var line in File.ReadAllLines(filePath))
+        {
+            if (IsStackersNonDataLine(line)) { kept.Add(line); continue; }
+            var parsed = ParseStackerLine(line, lineId);
+            if (parsed == null || parsed.StackNum != needle)
+                kept.Add(line);
+        }
+
+        File.WriteAllLines(filePath, kept);
+        return Task.CompletedTask;
     }
 
     public Task<string?> GetItemDisplayAsync(int iRef, bool isMexicoItem, int shade, string size,
@@ -338,6 +506,46 @@ public class FileBoxRepository : IBoxRepository
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Looks up every ItemDetail row matching ItemNumber (an item can have more than one row,
+    /// differing only by Lis Qty). Searches US items first, then Mexico items if enabled.
+    /// </summary>
+    public async Task<List<ItemDetail>> GetAllItemDetailsByNumberAsync(string itemNumber,
+        bool searchMexicoAlso, CancellationToken ct)
+    {
+        var results = await SearchAllItemsByNumberAsync("itemdet.csv", itemNumber, ct);
+
+        if (searchMexicoAlso)
+            results.AddRange(await SearchAllItemsByNumberAsync("mitemdet.csv", itemNumber, ct));
+
+        return results;
+    }
+
+    /// <summary>
+    /// Internal helper: searches CSV file for every row matching ItemNumber.
+    /// </summary>
+    private Task<List<ItemDetail>> SearchAllItemsByNumberAsync(string fileName, string itemNumber,
+        CancellationToken ct)
+    {
+        var filePath = Path.Combine(_dataDirectory, fileName);
+        var results = new List<ItemDetail>();
+        if (!File.Exists(filePath))
+            return Task.FromResult(results);
+
+        var searchTerm = itemNumber.Trim();
+        foreach (var line in File.ReadAllLines(filePath))
+        {
+            if (string.IsNullOrWhiteSpace(line) || line.StartsWith('#'))
+                continue;
+
+            var parts = line.Split(',');
+            if (parts.Length < 2) continue;
+            if (parts[1].Trim() == searchTerm)
+                results.Add(ParseItemDetail(parts));
+        }
+        return Task.FromResult(results);
     }
 
     /// <summary>
