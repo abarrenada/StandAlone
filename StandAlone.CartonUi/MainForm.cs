@@ -1487,6 +1487,32 @@ public class MainForm : Form
 
             if (itemDetail != null)
             {
+                // Validate right away — as soon as the item resolves — rather than waiting
+                // until Print is pressed, so the operator finds out immediately instead of
+                // after filling out the rest of the form.
+                if (itemDetail.OpenQty <= 0)
+                {
+                    _primaryItemDetail = null;
+                    _primaryItemDescLabel.Text = $"⚠ Item '{itemNumber}' has no open quantity on schedule.";
+                    _primaryItemDescLabel.ForeColor = Color.Salmon;
+                    MessageBox.Show(
+                        $"Item '{itemNumber}' has no open quantity on schedule.\nCannot proceed until open quantity is available.",
+                        "Cannot Proceed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                if (!DateTime.TryParse(itemDetail.ScheduleDate, out var schedDate) || schedDate.Date < DateTime.Today)
+                {
+                    var dateDisplay = string.IsNullOrEmpty(itemDetail.ScheduleDate) ? "(not set)" : itemDetail.ScheduleDate;
+                    _primaryItemDetail = null;
+                    _primaryItemDescLabel.Text = $"⚠ Item '{itemNumber}' schedule date ({dateDisplay}) must be today or a future date.";
+                    _primaryItemDescLabel.ForeColor = Color.Salmon;
+                    MessageBox.Show(
+                        $"Item '{itemNumber}' schedule date ({dateDisplay}) must be today or a future date.\nCannot proceed until schedule date criteria is met.",
+                        "Cannot Proceed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
                 _primaryItemDetail = itemDetail;
                 // Display format: "ColorDesc | ShapeDesc | SeriesDesc"
                 var description = itemDetail.GetPrimaryItemDescription();
