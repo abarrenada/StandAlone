@@ -44,6 +44,23 @@ public sealed class ThermalLabelPayload
     /// so the visible code always matches what's encoded in the barcode.
     /// </summary>
     public string ShadeLotCode { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The physical stacker that produced this carton, "01".."09" — set only for prints tied
+    /// to a real PLC stacker event (carton labels only; pallet/HCS labels never show this).
+    /// Empty otherwise (e.g. a manual print), in which case InspectorDisplay falls back to "00".
+    /// </summary>
+    public string PhysicalStackNumber { get; init; } = string.Empty;
+
+    /// <summary>
+    /// "{Inspector} {PhysicalStackNumber:00}" (or "{Inspector} 00" when no stacker applies) —
+    /// Progress dtplc067.p builds this by concatenating prt-inspector + " " +
+    /// string(stacker.st-stacknum,"99") at the point the label string is assembled; prt-inspector
+    /// itself only ever holds the raw 2-char inspector code (see Inspector above). Computed at
+    /// render time (see ThermalPrinterCommandBuilder.ComputeInspectorDisplay). Carton labels only.
+    /// </summary>
+    public string InspectorDisplay { get; set; } = string.Empty;
+
     public string ShopOrder { get; init; } = string.Empty;
     public string Caliber { get; init; } = string.Empty;
     public string TemplateOrientation { get; init; } = "ref-first";

@@ -134,11 +134,15 @@ public class SettingsForm : Form
         Controls.Clear();
         SuspendLayout();
 
+        // Taller than the password prompt's 600 — 22 rows (7 section headers + 15 fields) no
+        // longer fit comfortably; AutoScroll below still covers anyone on a smaller display.
+        ClientSize = new Size(1100, 760);
+
         var scroll = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
             ColumnCount = 2,
-            RowCount = 15,
+            RowCount = 22,
             AutoScroll = true,
             BackColor = Color.MidnightBlue,
         };

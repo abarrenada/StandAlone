@@ -84,6 +84,7 @@ public sealed class ThermalPrinterCommandExporter
                     payload.ItemNumberMasked = ThermalPrinterCommandBuilder.MaskItemNumber(payload.ItemNumber);
                     payload.PartDescriptionShort = ThermalPrinterCommandBuilder.ClipField(payload.PartDescription, 36);
                     payload.ShadeLotCode = ThermalPrinterCommandBuilder.ComputeShadeLotCode(payload);
+                    payload.InspectorDisplay = ThermalPrinterCommandBuilder.ComputeInspectorDisplay(payload);
                     var rendered = SatoTemplateRenderer.RenderTemplate(template, payload);
                     return DecodeSatoControlMarkers(rendered);
                 }
@@ -345,7 +346,7 @@ internal static class ThermalPrinterCommandBuilder
         sb.Append(esc).Append("H0180").Append(esc).Append("V0325").Append(esc)
             .Append("XM").Append(ClipAscii($"WT: {p.PackageWeight:0.#} LB   LINE: {p.LineNumber:00} SHIFT: {p.Shift}", 48)).AppendLine();
         sb.Append(esc).Append("H0180").Append(esc).Append("V0370").Append(esc)
-            .Append("XM").Append(ClipAscii($"INSP: {p.Inspector}  STACK: {p.StackNumber}  SIZECD: {p.LabelSize}", 48)).AppendLine();
+            .Append("XM").Append(ClipAscii($"INSP: {ComputeInspectorDisplay(p)}  STACK: {p.StackNumber}  SIZECD: {p.LabelSize}", 48)).AppendLine();
         sb.Append(esc).Append("H0180").Append(esc).Append("V0415").Append(esc)
             .Append("XM").Append(ClipAscii($"DATE: {localTime.Year:0000}{localTime.DayOfYear:000}:{hhmm}  IREF: {p.IRef:000000}  PLANT: {p.Plant:000}", 48)).AppendLine();
         sb.Append(esc).Append("H0180").Append(esc).Append("V0450").Append(esc)
@@ -520,7 +521,7 @@ internal static class ThermalPrinterCommandBuilder
         sb.AppendLine($"A20,20,0,4,1,1,N,\"ITEM {ClipAscii(p.ItemNumber, 24)}\"");
         sb.AppendLine($"A20,50,0,3,1,1,N,\"{ClipAscii(p.PartDescription, 40)}\"");
         sb.AppendLine($"A20,80,0,3,1,1,N,\"SHADE {ClipAscii(ComputeShadeLotCode(p), 8)} SIZE {ClipAscii(p.Size, 8)}\"");
-        sb.AppendLine($"A20,110,0,3,1,1,N,\"SHIFT {p.Shift} INSPECTOR {ClipAscii(p.Inspector, 16)}\"");
+        sb.AppendLine($"A20,110,0,3,1,1,N,\"SHIFT {p.Shift} INSPECTOR {ClipAscii(ComputeInspectorDisplay(p), 16)}\"");
         sb.AppendLine($"A20,140,0,3,1,1,N,\"STACK {ClipAscii(p.StackNumber, 8)} QTY {Math.Clamp(p.Quantity, 1, 999)}\"");
         var barcode = string.IsNullOrWhiteSpace(p.CartonUpc) ? p.ItemNumber : p.CartonUpc;
         sb.AppendLine($"B20,170,0,1,3,6,70,N,\"{ClipAscii(barcode, 20)}\"");
@@ -543,7 +544,7 @@ internal static class ThermalPrinterCommandBuilder
         sb.AppendLine($"^FO40,30^FDITEM {ClipAscii(p.ItemNumber, 24)}^FS");
         sb.AppendLine($"^FO40,80^A0N,28,28^FD{ClipAscii(p.PartDescription, 46)}^FS");
         sb.AppendLine($"^FO40,120^A0N,28,28^FDSHADE {ClipAscii(ComputeShadeLotCode(p), 8)}  SIZE {ClipAscii(p.Size, 8)}^FS");
-        sb.AppendLine($"^FO40,160^A0N,28,28^FDSHIFT {p.Shift}  INSPECTOR {ClipAscii(p.Inspector, 16)}^FS");
+        sb.AppendLine($"^FO40,160^A0N,28,28^FDSHIFT {p.Shift}  INSPECTOR {ClipAscii(ComputeInspectorDisplay(p), 16)}^FS");
         sb.AppendLine($"^FO40,200^A0N,28,28^FDSTACK {ClipAscii(p.StackNumber, 8)}  QTY {Math.Clamp(p.Quantity, 1, 999)}^FS");
         sb.AppendLine($"^FO40,245^BY2,3,70^BCN,70,N,N,N^FD{ClipAscii(barcode, 20)}^FS");
         sb.AppendLine("^XZ");
@@ -561,7 +562,7 @@ internal static class ThermalPrinterCommandBuilder
         sb.AppendLine($"PP 20,20:{Quote(ClipAscii($"ITEM {p.ItemNumber}", 24))}");
         sb.AppendLine($"PP 20,50:{Quote(ClipAscii(p.PartDescription, 40))}");
         sb.AppendLine($"PP 20,80:{Quote(ClipAscii($"SHADE {ComputeShadeLotCode(p)} SIZE {p.Size}", 30))}");
-        sb.AppendLine($"PP 20,110:{Quote(ClipAscii($"SHIFT {p.Shift} INSPECTOR {p.Inspector}", 36))}");
+        sb.AppendLine($"PP 20,110:{Quote(ClipAscii($"SHIFT {p.Shift} INSPECTOR {ComputeInspectorDisplay(p)}", 36))}");
         sb.AppendLine($"PP 20,140:{Quote(ClipAscii($"STACK {p.StackNumber} QTY {Math.Clamp(p.Quantity, 1, 999)}", 24))}");
         sb.AppendLine($"BARSET " + '"' + "CODE128" + '"' + $",2,2,80");
         sb.AppendLine($"BAR 20,180:{Quote(ClipAscii(barcode, 20))}");
@@ -605,6 +606,18 @@ internal static class ThermalPrinterCommandBuilder
         var sizeCode = string.IsNullOrWhiteSpace(p.Caliber) ? p.Size : p.Caliber;
         var szChar = string.IsNullOrWhiteSpace(sizeCode) ? "0" : sizeCode.Trim()[..1];
         return $"{shade2:0000}{szChar}";
+    }
+
+    /// <summary>
+    /// Builds "{Inspector} {PhysicalStackNumber:00}" for carton-label display — Progress
+    /// dtplc067.p's prt-inspector + " " + string(stacker.st-stacknum,"99"), falling back to
+    /// "00" when no stacker applies (dtplc067_prep.p: "else LabelVarB = LabelVarB + '00'").
+    /// </summary>
+    internal static string ComputeInspectorDisplay(ThermalLabelPayload p)
+    {
+        var stackDigits = int.TryParse(DigitsOnly(p.PhysicalStackNumber, 2, "0"), out var sn) ? sn : 0;
+        var stackCode = string.IsNullOrWhiteSpace(p.PhysicalStackNumber) ? "00" : stackDigits.ToString("00");
+        return $"{p.Inspector} {stackCode}";
     }
 
     /// <summary>

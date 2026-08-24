@@ -150,4 +150,11 @@ public sealed record ManualCartonPrintJob(
     string ShopOrder = "",
     string ShadeOverride = "",
     string Caliber = "",
-    string LabelFormat = "");
+    string LabelFormat = "",
+    /// <summary>
+    /// The physical stacker that produced this carton, "01".."09" — set only when this print
+    /// is tied to a real PLC stacker event. Progress dtplc067.p prints "{Inspector} {this:00}"
+    /// together on the carton label, falling back to "00" when no stacker applies (e.g. a
+    /// manual print not tied to any physical stacker).
+    /// </summary>
+    string PhysicalStackNumber = "");

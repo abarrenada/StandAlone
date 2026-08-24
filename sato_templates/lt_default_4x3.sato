@@ -14,29 +14,34 @@
 \x1bCS2
 \x1bQ{Quantity}
 \x1bA3H000V000
-\x1bH040\x1bV075\x1bL0001\x1bXSColor/Couleur:
-\x1bH280\x1bV075\x1bL0001\x1bXSShape/Forme:
-\x1bH615\x1bV075\x1bL0001\x1bXS{CreatedAtUtc}
-\x1bH050\x1bV125\x1bL0101\x1bWL0{ItemNumberMasked}
-\x1bH650\x1bV125\x1bL0001\x1bXS{Inspector}
-\x1bH050\x1bV170\x1bBG02080>H{CartonBarcodeSerial}
-\x1bH073\x1bV265\x1bFW03H730
-\x1bH095\x1bV283\x1bL0001\x1bM{CartonBarcodeSerial}
-\x1bH050\x1bV310\x1bL0001\x1bXS{ColorDesc}
-\x1bH050\x1bV338\x1bL0001\x1bXS{Size}
-\x1bH050\x1bV366\x1bL0001\x1bXS{ShapeDesc}
-\x1bH050\x1bV394\x1bL0001\x1bXS{SeriesDesc}
-\x1bH050\x1bV422\x1bL0001\x1bXS{LabelSize}
-\x1bH050\x1bV450\x1bL0001\x1bXM{PartDescriptionShort}
-\x1bH050\x1bV505\x1bL0001\x1bXL0{PlantName}
-\x1bH620\x1bV283\x1bL0001\x1bXSShade/Teinte
-\x1bH620\x1bV323\x1bL0101\x1bXM{ShadeLotCode}
-\x1bH620\x1bV351\x1bL0001\x1bXSQual/Cal: {StackNumber}
-\x1bH620\x1bV379\x1bL0001\x1bXSLoc: {LineNumber}
-\x1bH620\x1bV407\x1bL0001\x1bXS{IRef}:{Plant} {PlantName}
-\x1bH620\x1bV435\x1bL0001\x1bXS{SalesQty} {SalesUom}
-\x1bH620\x1bV463\x1bL0001\x1bXS{PackageWeight}
-\x1bH620\x1bV491\x1bL0001\x1bXS{Quantity} UNITS
-\x1bH550\x1bV510\x1bD3020700{CartonUpc}
+\x1bH040\x1bV055\x1bL0101\x1bSColor/Couleur:
+\x1bH280\x1bV055\x1bL0101\x1bSShape/Forme:
+\x1bH615\x1bV055\x1bL0101\x1bS{CreatedAtUtc}
+\x1bH050\x1bV75\x1bL0202\x1bWB1{ItemNumberMasked}
+\x1bH650\x1bV105\x1bL0101\x1bM{InspectorDisplay}
+\x1bH050\x1bV150\x1bBG03075>H{CartonBarcodeSerial}
+\x1bH073\x1bV245\x1bFW03H675
+\x1bH095\x1bV263\x1bL0101\x1bM{CartonBarcodeSerial}
+\x1bH050\x1bV290\x1bL0102\x1bXS{ColorDesc}
+\x1bH050\x1bV318\x1bL0102\x1bXS{Size}
+\x1bH050\x1bV346\x1bL0102\x1bXS{ShapeDesc}
+\x1bH050\x1bV374\x1bL0102\x1bXS{SeriesDesc}
+\x1bH050\x1bV402\x1bL0102\x1bXS{LabelSize}
+\x1bH050\x1bV430\x1bL0102\x1bM{PartDescriptionShort}
+\x1bH100\x1bV485\x1bL0101\x1bWL1{PlantName}
+\x1bH620\x1bV263\x1bL0101\x1bSShade/Teinte
+\x1bH620\x1bV285\x1bL0101\x1bWL1{ShadeLotCode}
+\x1bH620\x1bV331\x1bL0101\x1bSQual/Cal: {StackNumber}
+\x1bH620\x1bV359\x1bL0101\x1bMLoc: {LineNumber}
+\x1bH620\x1bV387\x1bL0101\x1bM{IRef}:{Plant} {PlantName}
+\x1bH620\x1bV415\x1bL0101\x1bM{SalesQty} {SalesUom}
+\x1bH620\x1bV443\x1bL0101\x1bM{PackageWeight}
+\x1bH620\x1bV471\x1bL0101\x1bM{Quantity} UNITS
+\x1bH550\x1bV490\x1bD3020700{CartonUpc}
+\x1bH553\x1bV490\x1bFW03H150
+\x1bH540\x1bV560\x1bL0102\x1bS{CartonUpcChkdgt}
+\x1bH570\x1bV570\x1bL0102\x1bS{CartonUpcProd}
+\x1bH660\x1bV570\x1bL0102\x1bS{CartonUpcMfg}
+\x1bH750\x1bV560\x1bL0102\x1bS{CartonUpcNumSys}
 \x1bZ
 <ETX>

@@ -401,13 +401,17 @@ public class MainForm : Form
             ForeColor = isManualQtyMode ? Color.DarkGray : Color.White,
             FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 11f, FontStyle.Bold),
             Enabled = !isManualQtyMode,
+            // In Manual Qty mode, Print Carton sits at this exact same spot (freeing up
+            // horizontal room for the rest of the button row) — Enabled=false alone left Begin
+            // fully opaque and on top, hiding Print Carton underneath it entirely.
+            Visible = !isManualQtyMode,
         };
         if (!isManualQtyMode)
             _btnBegin.Click += BtnBegin_Click;
         _startupPanel.Controls.Add(_btnBegin);
 
         int nextBtnX = inputX ;
-
+       
         if (isManualQtyMode)
         {
             _btnPrintCarton = new Button
@@ -1706,11 +1710,16 @@ public class MainForm : Form
                     quantity: Math.Max(1, box.PrintNum),
                     uccBarcode: itemDetail?.GetUCC() ?? string.Empty,
                     cartonUpc: itemDetail?.GetCartonUPC() ?? string.Empty,
+                    cartonUpcNumSys: itemDetail?.CartonUPC_NumSys.ToString("0") ?? string.Empty,
+                    cartonUpcMfg: itemDetail?.CartonUPC_Mfg.ToString("00000") ?? string.Empty,
+                    cartonUpcProd: itemDetail?.CartonUPC_Prod.ToString("00000") ?? string.Empty,
+                    cartonUpcChkdgt: itemDetail?.CartonUPC_Chkdgt.ToString("0") ?? string.Empty,
                     lisQty: itemDetail?.LisQty ?? 0,
                     grade: itemDetail?.Grade ?? 0,
                     location: _settings.PalletLocation,
                     plantName: _settings.PlantName,
-                    cartonBarcodeSerialOverride: box.BarcodeSerial);
+                    cartonBarcodeSerialOverride: box.BarcodeSerial,
+                    physicalStackNumber: box.StackNum.Trim());
 
                 var thermalExporter = new ThermalPrinterCommandExporter(
                     _settings.LabelOutputAddress,
@@ -1788,7 +1797,8 @@ public class MainForm : Form
                 cartonReferenceBarcode: cartonReferenceBarcode,
                 userId: job.RequestedBy,
                 printerTermId: DerivePrinterTermId(_settings.LabelOutputAddress),
-                wmsUom: itemDetail.WmsUOM);
+                wmsUom: itemDetail.WmsUOM,
+                physicalStackNumber: job.PhysicalStackNumber);
 
             // Compute up front so the returned serial is populated regardless of which
             // branch inside ExportAsync actually renders the label (e.g. non-SATO types).
@@ -1854,10 +1864,12 @@ public class MainForm : Form
         string userId = "",
         string printerTermId = "",
         string wmsUom = "",
-        string cartonBarcodeSerialOverride = "")
+        string cartonBarcodeSerialOverride = "",
+        string physicalStackNumber = "")
     {
         return new ThermalLabelPayload
         {
+            PhysicalStackNumber = physicalStackNumber,
             // Reuse an already-known barcode (e.g. a reprint's originally-stored value)
             // instead of letting it be recomputed from "now" — see CartonBarcodeSerial
             // guard in ThermalPrinterCommandExporter/ThermalPrinterCommandBuilder.
@@ -2173,7 +2185,8 @@ public class MainForm : Form
                 Environment.UserName,
                 DateTime.Now,
                 ShadeOverride: stacker.Shade.ToString(),
-                Caliber: stacker.Size);
+                Caliber: stacker.Size,
+                PhysicalStackNumber: stackNumStr);
 
             var (success, _) = await ExportManualLabelAsync(itemDetail, job, CancellationToken.None);
             SetStatus(success
