@@ -80,4 +80,43 @@ public class IntegrationTests
             Directory.Delete(tempDir, recursive: true);
         }
     }
+
+    [Fact]
+    public void FileWmsIntegrationService_WritesWmsXmlFile()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var service = new FileWmsIntegrationService(tempDir);
+            var payload = new WmsIntegrationPayload
+            {
+                SerialNumber = "SER12345678901234567890",
+                ItemNumber = "ABC123",
+                Plant = 1,
+                Source = "EOL",
+                ReceivedAt = DateTimeOffset.UtcNow,
+                Location = "SHRWRAP",
+                BoxesPerPallet = 48,
+                LisQty = 10,
+            };
+
+            var result = service.SendPalletIntegrationAsync(payload, CancellationToken.None).GetAwaiter().GetResult();
+
+            Assert.True(result.Success);
+            var files = Directory.GetFiles(tempDir, "*.xml");
+            Assert.Single(files);
+            var content = File.ReadAllText(files[0]);
+            Assert.Contains("<SerialNumber>SER12345678901234567890</SerialNumber>", content);
+            Assert.Contains("<ItemNumber>ABC123</ItemNumber>", content);
+            Assert.Contains("<Plant>1</Plant>", content);
+            Assert.Contains("<Location>SHRWRAP</Location>", content);
+            Assert.Contains("<BoxesPerPallet>48</BoxesPerPallet>", content);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
 }

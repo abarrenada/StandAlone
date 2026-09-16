@@ -12,7 +12,11 @@ namespace StandAlone.CartonUi.Forms;
 /// End-of-line scanning screen: operator scans (or types) a pallet serial as it leaves
 /// the line. The pallet's info is looked up from the local registry (written when the
 /// pallet label was printed — see <see cref="IBoxRepository.SavePalletRecordAsync"/>),
-/// logged as a production-confirmation transaction, and sent to SAP for backflush.
+/// logged as a receiving transaction, and sent to both SAP (production backflush) and
+/// WMS (warehouse receipt) — matching the legacy Progress "Pallet Receiving" flow
+/// (dtrcv001.p manual / dtscn012.p automated), which creates sap-receipt and wms-receipt
+/// staging rows for two separate background daemons to push to Oracle. This screen's
+/// manual-entry bar below is the equivalent of dtrcv001.p's operator scan screen.
 /// Input sources mirror <see cref="PalletScanForm"/> (determined by Settings → PlcConnectionType):
 ///   SerialPort — listens on the configured COM port for a pallet serial.
 ///   IP         — listens on a TCP port (Settings → PlcPort) for the same.
@@ -215,6 +219,7 @@ public class EolScanForm : Form
         _historyGrid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Shop Order",  DataPropertyName = "ShopOrder",    Width = 110 });
         _historyGrid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Qty",       DataPropertyName = "ConfirmedQty",   Width = 80  });
         _historyGrid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "SAP",       DataPropertyName = "SapStatusDisplay", Width = 80 });
+        _historyGrid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "WMS",       DataPropertyName = "WmsStatusDisplay", Width = 80 });
         _historyGrid.DataSource = _history;
 
         body.Controls.Add(_historyGrid, 0, row);
@@ -445,10 +450,12 @@ public class EolScanForm : Form
         _descLabel.Text = pallet.Description;
         _infoLabel.Text = $"Qty: {pallet.TotalPieces}   Shop Order: {pallet.ShopOrder}   Plant: {pallet.Plant:000}   Printed: {pallet.TimeDisplay}";
 
-        // Duplicate-scan guard: only block on a PRIOR scan that actually reached SAP — if the
-        // last attempt failed to send, treat this scan as a retry rather than a duplicate.
+        // Duplicate-scan guard: only block on a PRIOR scan that actually reached BOTH
+        // integrations — if either failed to send last time, treat this scan as a retry
+        // rather than a duplicate (matches wmstosend only reaching "received" once every
+        // configured downstream system's staging row has been created).
         var previousScan = await _boxRepo.FindEolScanByPalletIdAsync(pallet.PalletId, CancellationToken.None);
-        if (previousScan != null && previousScan.SapSuccess)
+        if (previousScan != null && previousScan.SapSuccess && previousScan.WmsSuccess)
         {
             SetStatus($"⚠ Pallet '{pallet.PalletId}' was already scanned at {previousScan.TimeDisplay} by {previousScan.Inspector}.", Color.Salmon);
             return;
@@ -476,16 +483,25 @@ public class EolScanForm : Form
         scanRecord.SapSuccess = sapResult.Success;
         scanRecord.SapDetail  = sapResult.Success ? "OK" : (sapResult.ErrorMessage ?? "Unknown error");
 
+        var wmsResult = await SendToWmsAsync(pallet, scanRecord.ScanTimeUtc, CancellationToken.None);
+        scanRecord.WmsSuccess = wmsResult.Success;
+        scanRecord.WmsDetail  = wmsResult.Success ? "OK" : (wmsResult.ErrorMessage ?? "Unknown error");
+
         await _boxRepo.AppendEolScanAsync(scanRecord, CancellationToken.None);
 
         _history.Insert(0, scanRecord);
         while (_history.Count > 15)
             _history.RemoveAt(_history.Count - 1);
 
-        SetStatus(sapResult.Success
-                ? $"✓ Confirmed: {pallet.PalletId}   {pallet.ItemNumber}   sent to SAP"
-                : $"⚠ Confirmed and logged, but SAP send failed: {sapResult.ErrorMessage}",
-            sapResult.Success ? Color.LightGreen : Color.Salmon);
+        if (sapResult.Success && wmsResult.Success)
+            SetStatus($"✓ Confirmed: {pallet.PalletId}   {pallet.ItemNumber}   sent to SAP + WMS", Color.LightGreen);
+        else
+        {
+            var failures = new List<string>();
+            if (!sapResult.Success) failures.Add($"SAP: {sapResult.ErrorMessage}");
+            if (!wmsResult.Success) failures.Add($"WMS: {wmsResult.ErrorMessage}");
+            SetStatus($"⚠ Confirmed and logged, but send failed — {string.Join("; ", failures)}", Color.Salmon);
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -511,6 +527,35 @@ public class EolScanForm : Form
         };
 
         return await sapIntegration.SendPalletIntegrationAsync(payload, ct);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  WMS warehouse-receipt integration
+    // ─────────────────────────────────────────────────────────────────────────
+    private async Task<WmsIntegrationResult> SendToWmsAsync(PalletRecord pallet, DateTime scanTimeUtc, CancellationToken ct)
+    {
+        var wmsIntegration = new FileWmsIntegrationService(Path.Combine(_config.DataDirectory, "wms-output"));
+
+        var payload = new WmsIntegrationPayload
+        {
+            SerialNumber   = pallet.PalletId,
+            ItemNumber     = pallet.ItemNumber,
+            Plant          = pallet.Plant,
+            Source         = "EOL",
+            ReceivedAt     = scanTimeUtc,
+            ColorDesc      = pallet.ColorDesc,
+            ShapeDesc      = pallet.ShapeDesc,
+            SeriesDesc     = pallet.SeriesDesc,
+            Grade          = pallet.Grade,
+            Location       = _settings.PalletLocation,
+            BoxesPerPallet = pallet.BoxesPerPallet,
+            LisQty         = pallet.LisQty,
+            LineNumber     = _config.LineNumber,
+            Shift          = _shift,
+            Inspector      = _inspector,
+        };
+
+        return await wmsIntegration.SendPalletIntegrationAsync(payload, ct);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
