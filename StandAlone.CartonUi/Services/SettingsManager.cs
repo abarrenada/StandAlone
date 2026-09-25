@@ -31,6 +31,8 @@ public static class SettingsManager
                 settings.LabelOutputType = NormalizeLabelOutputType(settings.LabelOutputType);
                 settings.CartonPrintMode = NormalizeCartonPrintMode(settings.CartonPrintMode);
                 settings.ThermalPrinterType = NormalizeThermalPrinterType(settings.ThermalPrinterType);
+                settings.PrinterModel = NormalizePrinterModel(settings.PrinterModel);
+                settings.BackflushVehicle = NormalizeBackflushVehicle(settings.BackflushVehicle);
                 return settings;
             }
             catch { /* parsing error, return defaults */ }
@@ -80,6 +82,7 @@ public static class SettingsManager
             PlcBaudRate = 9600,
             LabelOutputType = "NiceLabel Xml",
             ThermalPrinterType = "SATO",
+            PrinterModel = "M84Pro",
             CartonPrintMode = "PLC Signal",
             MasterPasswordHash = AppSettings.HashPassword("admin123"), // Default: "admin123"
         };
@@ -138,6 +141,28 @@ public static class SettingsManager
             "zpl" => "ZPL",
             "fingerprint" => "Fingerprint",
             _ => value,
+        };
+    }
+
+    /// <summary>
+    /// Unlike the other Normalize* helpers, the valid values here come from an extensible CSV
+    /// catalog (data/printer_models.csv), not a fixed switch — so this just trims/defaults
+    /// rather than validating against a known list. PrinterModelCatalog.GetHand already falls
+    /// back safely (Right) for any model name it doesn't recognize.
+    /// </summary>
+    private static string NormalizePrinterModel(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? "M84Pro" : value.Trim();
+
+    private static string NormalizeBackflushVehicle(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return "BizTalk";
+
+        return value.Trim().ToLowerInvariant() switch
+        {
+            "oracledirect" or "oracle" or "oracle direct" => "OracleDirect",
+            "biztalk" or "biz talk" => "BizTalk",
+            _ => "BizTalk",
         };
     }
 }

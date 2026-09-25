@@ -1,0 +1,47 @@
+# symbolic SATO template
+# family: F&D Private Label (label-type-code=4) / 4.5x3 / manual (operator-triggered)
+# ported field-for-field from c:\Workspace\southalr\dtplb001.i, dispatched from
+# dtlbl090.p:765-767 / dtlbl091.p:712-714 when ih-label-type-code=04.
+#
+# Note: dtplb001.i's OWN header comment claims "3X4.5" -- almost certainly a copy-paste error
+# from whatever file it was cloned from. The actual field coordinates structurally match
+# dtplb003.i's dead/commented-out 4.5x3 hand-branch code (same H-ranges, same 3-way model
+# split), and dtplb003.i's own header says "New copy of dtplb001.i" -- a 4.5x3 file claiming
+# lineage from a genuinely-3x4.5 file would make no sense, so this is ported as 4.5x3.
+#
+# Source has THREE full per-model hand-branches with entirely different absolute coordinates
+# (M-8400RV/84VL, then 85R/S86RD/85x, then S86LD) -- unlike the auto 4.5x3 template, these
+# aren't a shared layout plus one offset, they're genuinely different layouts. Only the primary
+# M-8400RV/84VL branch is ported here; the other two are a known gap (same spirit as Standard
+# Retail's RightHandOnlyRetailSizes) since none of today's cataloged models match any of the
+# three literally anyway. Same SAP-gap/Box-Quantity/setsato simplifications as the other F&D
+# templates.
+
+<STX>
+\x1bA
+\x1bCS4
+\x1b#E2
+\x1bN
+\x1bA3H0000V0000
+\x1b%3
+\x1bH800\x1bV0020\x1bL0101\x1bRDA00,P16,P20,{ColorDesc}
+\x1bH740\x1bV0540\x1bL0101\x1bRDA00,P16,P16,SKU# {CustomerPartNumber}
+\x1bH735\x1bV0020\x1bL0101\x1bRDA00,P12,P12,Box Quantity: {LisQty}
+\x1bH700\x1bV0020\x1bL0101\x1bRDA00,P12,P12,Lot Code: {ShadeLotCode}
+\x1bH665\x1bV0020\x1bL0101\x1bRDA00,P12,P12,Production Date: {MfgDateCodeShort}
+\x1bH700\x1bV0650\x1bD3021300{CartonUpcNumSys}{CartonUpcMfg}{CartonUpcProd}{CartonUpcChkdgt}
+\x1bH565\x1bV0635\x1bL0102\x1bS{CartonUpcNumSys}
+\x1bH565\x1bV0680\x1bL0102\x1bS{CartonUpcMfg}
+\x1bH565\x1bV0765\x1bL0102\x1bS{CartonUpcProd}
+\x1bH565\x1bV0855\x1bL0102\x1bS{CartonUpcChkdgt}
+\x1bH620\x1bV0020\x1bL0101\x1bMNominal Size: {NominalSizeUs}
+\x1bH590\x1bV0230\x1bL0101\x1bM{NominalSizeMetric}
+\x1bH560\x1bV0020\x1bL0101\x1bMActual Size: {ActualSizeUs}
+\x1bH530\x1bV0218\x1bL0101\x1bM{ActualSizeMetric}
+\x1bH500\x1bV0020\x1bL0101\x1bMThickness: {Thickness}
+\x1bH470\x1bV0020\x1bL0101\x1bMCoverage Area Per Carton: {SalesQtyFormatted} {SalesUom}{CoverageMetricFormatted}
+\x1bH440\x1bV0020\x1bL0101\x1bMWeight Per Carton: {PackageWeightFormatted} LBS{PackageWeightMetricFormatted}
+\x1bH400\x1bV0035\x1bB9030852B02C28{CartonBarcodeSerial}
+\x1bQ{Quantity}
+\x1bZ
+<ETX>xxxxxxxxxx

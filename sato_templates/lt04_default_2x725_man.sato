@@ -1,0 +1,65 @@
+# symbolic SATO template
+# family: F&D Private Label (label-type-code=4) / 2x7.25 / manual (operator-triggered)
+# ported field-for-field from c:\Workspace\southalr\dtplb002.i, dispatched from
+# dtlbl061.p:744-746 (SAP) / dtlbl071.p:727-729 (Non-SAP) when ih-label-type-code=04.
+#
+# Genuinely a 2-up print, like CrossOver's manual variant -- two full copies of the same fields
+# side by side (H830.../H780... first copy, H400.../H350... second copy), not a rendering
+# trick. Source's model gate only supports M-8400RV/84VL here (narrower than the auto 3x4.5
+# gate) -- skipped for the same reason as the other sizes (none of today's cataloged models
+# match "M-8400RV" or "84VL" literally either, so always rendering the real content is more
+# useful for testing than defaulting to "NON SUPPORTED PRINTER STYLE").
+#
+# Same SAP-gap/Box-Quantity/setsato simplifications as the auto F&D templates. Unlike every
+# other F&D/CrossOver auto template, dtplb002.i has NO trailing "~033Q~033Z~003" of its own --
+# same as CrossOver's manual variant, the calling program (dtlbl061.p lines 767-769) appends
+# "~033Q" + prt-qty + "~033Z~003" generically after dispatch, using the operator-entered
+# quantity. Folded directly into this template as {Quantity}, same convention already used for
+# lt06_xover_2x725_man-2upkiss.sato.
+
+<STX>
+\x1bA
+\x1bCS3
+\x1b#E2
+\x1bA3H0000V0000
+\x1b%3
+\x1bH830\x1bV0020\x1bL0101\x1bRDA00,P16,P20,{ColorDesc}
+\x1bH780\x1bV0950\x1bL0101\x1bRDA00,P16,P16,SKU# {CustomerPartNumber}
+\x1bH770\x1bV0020\x1bL0101\x1bRDA00,P12,P12,Box Quantity: {LisQty}
+\x1bH735\x1bV0020\x1bL0101\x1bRDA00,P12,P12,Lot Code: {ShadeLotCode}
+\x1bH700\x1bV0020\x1bL0101\x1bRDA00,P12,P12,Production Date: {MfgDateCodeShort}
+\x1bH740\x1bV0950\x1bD3021300{CartonUpcNumSys}{CartonUpcMfg}{CartonUpcProd}{CartonUpcChkdgt}
+\x1bH605\x1bV0935\x1bL0102\x1bS{CartonUpcNumSys}
+\x1bH605\x1bV0975\x1bL0102\x1bS{CartonUpcMfg}
+\x1bH605\x1bV1060\x1bL0102\x1bS{CartonUpcProd}
+\x1bH605\x1bV1145\x1bL0102\x1bS{CartonUpcChkdgt}
+\x1bH660\x1bV0020\x1bL0101\x1bMNominal Size: {NominalSizeUs}
+\x1bH660\x1bV0570\x1bL0101\x1bM{NominalSizeMetric}
+\x1bH630\x1bV0020\x1bL0101\x1bMActual Size: {ActualSizeUs}
+\x1bH630\x1bV0570\x1bL0101\x1bM{ActualSizeMetric}
+\x1bH600\x1bV0020\x1bL0101\x1bMThickness: {Thickness}
+\x1bH540\x1bV0760\x1bL0101\x1bMCoverage Area Per Carton: {SalesQtyFormatted} {SalesUom}{CoverageMetricFormatted}
+\x1bH520\x1bV0760\x1bL0101\x1bMWeight Per Carton: {PackageWeightFormatted} LBS{PackageWeightMetricFormatted}
+\x1bH560\x1bV0035\x1bB9030852B02C28{CartonBarcodeSerial}
+\x1b%3
+\x1bH400\x1bV0020\x1bL0101\x1bRDA00,P16,P20,{ColorDesc}
+\x1bH350\x1bV0950\x1bL0101\x1bRDA00,P16,P16,SKU# {CustomerPartNumber}
+\x1bH340\x1bV0020\x1bL0101\x1bRDA00,P12,P12,Box Quantity: {LisQty}
+\x1bH305\x1bV0020\x1bL0101\x1bRDA00,P12,P12,Lot Code: {ShadeLotCode}
+\x1bH270\x1bV0020\x1bL0101\x1bRDA00,P12,P12,Production Date: {MfgDateCodeShort}
+\x1bH310\x1bV0950\x1bD3021300{CartonUpcNumSys}{CartonUpcMfg}{CartonUpcProd}{CartonUpcChkdgt}
+\x1bH175\x1bV0935\x1bL0102\x1bS{CartonUpcNumSys}
+\x1bH175\x1bV0975\x1bL0102\x1bS{CartonUpcMfg}
+\x1bH175\x1bV1060\x1bL0102\x1bS{CartonUpcProd}
+\x1bH175\x1bV1145\x1bL0102\x1bS{CartonUpcChkdgt}
+\x1bH230\x1bV0020\x1bL0101\x1bMNominal Size: {NominalSizeUs}
+\x1bH230\x1bV0570\x1bL0101\x1bM{NominalSizeMetric}
+\x1bH200\x1bV0020\x1bL0101\x1bMActual Size: {ActualSizeUs}
+\x1bH200\x1bV0570\x1bL0101\x1bM{ActualSizeMetric}
+\x1bH170\x1bV0020\x1bL0101\x1bMThickness: {Thickness}
+\x1bH110\x1bV0760\x1bL0101\x1bMCoverage Area Per Carton: {SalesQtyFormatted} {SalesUom}{CoverageMetricFormatted}
+\x1bH090\x1bV0760\x1bL0101\x1bMWeight Per Carton: {PackageWeightFormatted} LBS{PackageWeightMetricFormatted}
+\x1bH125\x1bV0035\x1bB9030852B02C28{CartonBarcodeSerial}
+\x1bQ{Quantity}
+\x1bZ
+<ETX>

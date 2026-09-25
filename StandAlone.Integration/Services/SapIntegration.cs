@@ -21,6 +21,24 @@ public class PalletIntegrationPayload
     public string SalesUom { get; set; } = string.Empty;
     public string Inspector { get; set; } = string.Empty;
     public DateTimeOffset ConfirmedAt { get; set; }
+
+    /// <summary>Warehouse location code (Settings → Pallet Location) — mirrors
+    /// wmstosend.ts-location. Only consumed by OracleSapIntegrationService today.</summary>
+    public string Location { get; set; } = string.Empty;
+
+    // ── Fields below mirror additional wmstosend.ts-* columns; only OracleSapIntegrationService
+    // reads them today (its 300-byte fixed-width DATA_IN string needs them), FileSapIntegrationService
+    // ignores them. ──
+    /// <summary>Boxes/cartons on the pallet — mirrors wmstosend.ts-numctns.</summary>
+    public int Cartons { get; set; }
+    /// <summary>Mirrors wmstosend.ts-shade.</summary>
+    public string Shade { get; set; } = string.Empty;
+    /// <summary>Mirrors wmstosend.ts-calbr (approximated — this port has no separate
+    /// caliber field, only the printed Size string).</summary>
+    public string Size { get; set; } = string.Empty;
+    /// <summary>Raw numeric grade code, not the looked-up 3-char description — same
+    /// simplification already documented for ItemDetail.Grade.</summary>
+    public int Grade { get; set; }
 }
 
 public class SapIntegrationResult

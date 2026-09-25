@@ -1,0 +1,54 @@
+# symbolic SATO template
+# family: Standard Retail (customer H/L/B/D/F) / 2x6
+# ported field-for-field from c:\Workspace\southalr\dtlbl060r.i (85x/S86R right-hand branch).
+#
+# This size's side-panel behavior is genuinely different from every other Standard Retail
+# size (see ApplyRetail2x6): the PEI/WA/COF/Tone/grade icon stack always shows regardless
+# of PanelType, EXCEPT when CustomerChar="L" (Lowe's), which instead gets its own CPN box
+# appended to the bottom of the label (folded into QtyWeightBlock — see ApplyRetail2x6).
+# CustomerChar B/F additionally swap ColorDesc for CPN+ColorDesc with a highlight box
+# (CustomerHighlightBlock). Also hardcodes prt-qty="01" like lt_retail_2x725.sato.
+
+<STX>
+\x1bA
+\x1b%0
+\x1bCS4
+\x1b#E2
+\x1bA3H000V0000
+{SidePanelBlock}
+\x1b%3
+\x1bH197\x1bV0845\x1bL0101\x1bSQual/Cal:
+\x1bH200\x1bV0945\x1bL0101\x1bM{Grade}
+\x1bH175\x1bV0845\x1bL0101\x1bSLoc:
+\x1bH178\x1bV0887\x1bL0101\x1bM{Plant}
+\x1bH152\x1bV0845\x1bL0101\x1bM{MfgDateCode}
+\x1bH380\x1bV0025\x1bL0101\x1bSColor/Couleur/Color:
+\x1bH380\x1bV0255\x1bL0101\x1bSShape/Forme/Formato:
+\x1bH380\x1bV0720\x1bL0101\x1bS{MachineLineTerminalCode}
+\x1bH365\x1bV0025\x1bL0203\x1bWB1{ItemNumberMasked}
+\x1bH120\x1bV0280\x1bB9030852B02C28{CartonBarcodeSerial}
+\x1bH120\x1bV0278\x1bFW03H675
+\x1bH035\x1bV0280\x1bL0101\x1bM{CartonBarcodeSerial}
+\x1bH285\x1bV0280\x1bL0102\x1bXS{ColorDescDisplay}
+\x1bH255\x1bV0280\x1bL0102\x1bXS{ShapeDesc}
+\x1bH215\x1bV0280\x1bL0102\x1bXS{ColorDescFrench}
+\x1bH185\x1bV0280\x1bL0102\x1bXS{ShapeDescFrench}
+\x1bH285\x1bV0650\x1bL0102\x1bXS{ColorDescSpanish}
+\x1bH255\x1bV0650\x1bL0102\x1bXS{ShapeDescSpanish}
+\x1bH147\x1bV0280\x1bL0102\x1bS{SeriesDesc}
+\x1bH330\x1bV0700\x1bL0101\x1bM{InspectorDisplay}
+{CustomerHighlightBlock}
+\x1bH365\x1bV0825\x1bL0102\x1bSShade/Telnte/Tono
+\x1bH340\x1bV0830\x1bL0102\x1bWB1{ShadeLotCode}
+{QtyWeightBlock}
+{CaseBarcodeBlock}
+\x1b%0\x1bH055\x1bV0015\x1bD3020850{CartonUpc}
+\x1bH052\x1bV0015\x1bFW03H197
+\x1bH040\x1bV0105\x1bL0102\x1bS{CartonUpcNumSys}
+\x1bH075\x1bV0105\x1bS{CartonUpcMfg}
+\x1bH175\x1bV0105\x1bL0102\x1bS{CartonUpcProd}
+\x1bH255\x1bV0105\x1bS{CartonUpcChkdgt}
+{GradeHighlightBlock}
+\x1bQ1
+\x1bZ
+<ETX>

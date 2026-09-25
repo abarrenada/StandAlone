@@ -1,0 +1,19 @@
+# Per-line device wiring (C# analog of Progress dev-detail / dtmnt036.p).
+# Columns: LineNumber,DeviceType,Ifr,Dev,Stty,Cmd,Model
+#   DeviceType: TERM (operator terminal), S-SCAN (barcode scanner), A-PTR (auto printer)
+#   Ifr:        SER (serial port) | IP (host:port, or bare port for a listener) | CMD (shell print command)
+#   Dev:        COM port / tty path for SER, "host:port" for IP
+#   Stty:       serial line settings, e.g. "9600 -parity icanon icrnl -echo" (first number = baud rate)
+#   Cmd:        shell print command, only used when Ifr = CMD
+#   Model:      printer model (A-PTR only; see printer_models.csv)
+#
+# A (LineNumber, DeviceType) pair with no row below falls back to this station's AppSettings
+# (PlcConnectionType/PlcAddress/PlcBaudRate/PlcPort for S-SCAN, LabelOutputAddress for A-PTR) —
+# this file ships empty so nothing changes until a line is explicitly added here.
+#
+# Examples (uncomment and edit for your line):
+# 1,S-SCAN,SER,COM3,9600 -parity icanon icrnl -echo,,
+# 1,S-SCAN,IP,10.4.20.31:5000,,,
+# 1,A-PTR,SER,COM4,9600 -parity icanon icrnl -echo,,M84Pro
+# 1,A-PTR,IP,10.4.20.40:9100,,,M84Pro
+LineNumber,DeviceType,Ifr,Dev,Stty,Cmd,Model

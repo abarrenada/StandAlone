@@ -1,0 +1,50 @@
+# symbolic SATO template
+# family: Standard Retail (customer H/L/B/D/F) / 1.75x8.38
+# ported field-for-field from c:\Workspace\southalr\dtlbl060o.i (85x right-hand branch).
+# No id-cust-char ColorDesc/highlight-box swap on this size (dtlbl060o.i's own copy of
+# that logic is commented out/dead in the legacy source, so it's correctly omitted here
+# too — CustomerHighlightBlock is always empty for this size).
+
+<STX>
+\x1bA
+\x1b%0
+\x1bCS4
+\x1b#E2
+\x1bA3H000V0000
+{SidePanelBlock}
+\x1b%3\x1bP2
+\x1bH070\x1bV1015\x1bL0102\x1bXSQual/Cal:
+\x1bH070\x1bV1115\x1bL0202\x1bXS{Grade}
+\x1bH040\x1bV1015\x1bL0102\x1bXSLoc:
+\x1bH040\x1bV1115\x1bL0102\x1bXS{Plant}
+\x1bH145\x1bV1285\x1bL0102\x1bXS{MfgDateCode}
+\x1bH320\x1bV0300\x1bL0101\x1bSColor/Couleur/Color:
+\x1bH320\x1bV0510\x1bL0101\x1bSShape/Forme/Formato:
+\x1bH320\x1bV1235\x1bL0101\x1bS{MachineLineTerminalCode}
+\x1bH305\x1bV0305\x1bL0202\x1bWB1{ItemNumberMasked}
+\x1bH110\x1bV0310\x1bB9030802B02C28{CartonBarcodeSerial}
+\x1bH110\x1bV0305\x1bFW03H675
+\x1bH025\x1bV0365\x1bL0101\x1bM{CartonBarcodeSerial}
+\x1bH240\x1bV0305\x1bL0202\x1bS{ColorDescDisplay}
+\x1bH210\x1bV0305\x1bL0202\x1bS{ShapeDesc}
+\x1bH180\x1bV0305\x1bL0202\x1bS{ColorDescFrench}
+\x1bH150\x1bV0305\x1bL0202\x1bS{ShapeDescFrench}
+\x1bH240\x1bV0915\x1bL0202\x1bS{ColorDescSpanish}
+\x1bH210\x1bV0915\x1bL0202\x1bS{ShapeDescSpanish}
+\x1bH305\x1bV0950\x1bL0102\x1bXS{SeriesDesc}
+\x1bH270\x1bV0950\x1bL0102\x1bXS{InspectorDisplay}
+{CustomerHighlightBlock}
+\x1bH150\x1bV1015\x1bXSShade/Telnte/Tono
+\x1bH120\x1bV1015\x1bL0303\x1bXS{ShadeLotCode}
+{QtyWeightBlock}
+{CaseBarcodeBlock}
+\x1bH060\x1bV0150\x1bD3021100{CartonUpc}
+\x1bH057\x1bV0150\x1bFW03H197
+\x1bH045\x1bV0255\x1bL0102\x1bXS{CartonUpcNumSys}
+\x1bH090\x1bV0265\x1bXS{CartonUpcMfg}
+\x1bH180\x1bV0265\x1bL0102\x1bXS{CartonUpcProd}
+\x1bH265\x1bV0255\x1bXS{CartonUpcChkdgt}
+{GradeHighlightBlock}
+\x1bQ{Quantity}
+\x1bZ
+<ETX>

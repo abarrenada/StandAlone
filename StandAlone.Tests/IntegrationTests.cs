@@ -119,4 +119,77 @@ public class IntegrationTests
             Directory.Delete(tempDir, recursive: true);
         }
     }
+
+    [Fact]
+    public async Task OracleSapIntegrationService_BuildsFixedWidth300CharDataIn_AndCallsReceiptProcedure()
+    {
+        var fake = new FakeOracleInterfaceService();
+        var service = new OracleSapIntegrationService(fake);
+
+        var payload = new PalletIntegrationPayload
+        {
+            SerialNumber = "042-000012345",
+            ItemNumber   = "ABC123",
+            Plant        = 42,
+            Source       = "EOL",
+            ShopOrder    = "SO123",
+            LineNumber   = 3,
+            Shift        = 2,
+            ConfirmedQty = 480,
+            Inspector    = "jdoe",
+            ReceivedAt   = new DateTimeOffset(2026, 9, 17, 8, 0, 0, TimeSpan.Zero),
+            ConfirmedAt  = new DateTimeOffset(2026, 9, 17, 8, 5, 30, TimeSpan.Zero),
+            Location     = "SHRWRAP",
+            Cartons      = 40,
+            Shade        = "0750",
+            Size         = "3x45",
+            Grade        = 1,
+        };
+
+        var result = await service.SendPalletIntegrationAsync(payload, CancellationToken.None);
+
+        Assert.True(result.Success);
+        Assert.Equal("p_insert_interface_receipt", fake.CapturedProcedureName);
+        Assert.NotNull(fake.CapturedDataIn);
+        Assert.Equal(300, fake.CapturedDataIn!.Length);
+        Assert.StartsWith("FA042", fake.CapturedDataIn); // "F" literal + trans-type "A" + 3-digit plant
+        Assert.Contains("ABC123", fake.CapturedDataIn);
+    }
+
+    [Fact]
+    public async Task OracleSapIntegrationService_NonSuccessResultCode_ReturnsFailure()
+    {
+        var fake = new FakeOracleInterfaceService { ResultToReturn = "ERR item not found" };
+        var service = new OracleSapIntegrationService(fake);
+
+        var result = await service.SendPalletIntegrationAsync(new PalletIntegrationPayload(), CancellationToken.None);
+
+        Assert.False(result.Success);
+        Assert.Contains("ERR", result.ErrorMessage);
+    }
+
+    private class FakeOracleInterfaceService : IOracleInterfaceService
+    {
+        public string? CapturedProcedureName;
+        public string? CapturedDataIn;
+        public string ResultToReturn = "SUC000000000000000000";
+
+        public Task<IReadOnlyList<IReadOnlyDictionary<string, object?>>> QueryAsync(
+            string sql, IReadOnlyDictionary<string, object?>? parameters = null, CancellationToken cancellationToken = default) =>
+            throw new NotImplementedException();
+
+        public Task<int> ExecuteAsync(
+            string sql, IReadOnlyDictionary<string, object?>? parameters = null, CancellationToken cancellationToken = default) =>
+            throw new NotImplementedException();
+
+        public Task<(bool Success, string? ErrorMessage)> TestConnectionAsync(CancellationToken cancellationToken = default) =>
+            throw new NotImplementedException();
+
+        public Task<string> CallInterfaceProcedureAsync(string procedureName, string dataIn, CancellationToken cancellationToken = default)
+        {
+            CapturedProcedureName = procedureName;
+            CapturedDataIn = dataIn;
+            return Task.FromResult(ResultToReturn);
+        }
+    }
 }

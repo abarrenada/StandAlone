@@ -1,21 +1,55 @@
 # symbolic SATO template
-# source include: t0sz2x725-co-aut-reflast.i
-# branch: label-type=6 / crossover / 2x7.25 / ref-last
+# family: CrossOver (label-type-code=6) / 2x7.25 / ref-last
+# ported field-for-field from c:\Workspace\southalr\t0sz2x725-co-aut-reflast.i (auto/PLC
+# path, dispatched from dtplc067.p's ih-label-type-code=6 branch when the line's configured
+# include for this size is "dtlbl060dI.i" -- the Inverted/opposite-feed-direction mirror of
+# ref-first, same fields, different coordinates and panel/rotation codes).
+#
+# Same simplifications as lt06_xover_2x725_ref-first.sato -- see that file's header for the
+# setsato / sapitemhdr / trailing-"~A0" notes, all identical here.
 
 <STX>
 \x1bA
-\x1bCS2
-\x1bQ1
-\x1bH0180\x1bV0080\x1bL0202\x1bXMDALTILE CARTON LABEL
-\x1bH0180\x1bV0145\x1bXMITEM: {ItemNumber}
-\x1bH0180\x1bV0190\x1bXMSHADE: {Shade} SIZE: {Size}
-\x1bH0180\x1bV0235\x1bXM {PartDescription} |  {Size} X  {Shade} X  {Quantity} IN | FINISH LINE
-\x1bH0180\x1bV0280\x1bXMQTY/CTN: {Quantity} SALES: {SalesQty} {SalesUom}
-\x1bH0180\x1bV0325\x1bXMWT: {PackageWeight} LINE: {LineNumber} SHIFT: {Shift}
-\x1bH0180\x1bV0370\x1bXMINSP: {Inspector} STACK: {StackNumber} SIZECD: {Size}
-\x1bH0180\x1bV0415\x1bXMDATE: {CreatedAtUtc} IREF: {IRef} PLANT: {Plant}
-\x1bH0180\x1bV0470\x1bXMUPC:
-\x1bH0180\x1bV0510\x1bB103100\x1bD {CartonUpc}
-\x1bH0680\x1bV0470\x1bXM128:
-\x1bH0680\x1bV0510\x1bB103080\x1bD {UccBarcode}
+\x1bA3V+000H-012
+\x1bCS6
+\x1b#F5
+\x1bA1V01471H0422
+\x1bPM8
+\x1bPO1+00
+\x1bPO3+00
 \x1bZ
+<ETX>
+<STX>
+\x1bA
+\x1bPS
+\x1b%1\x1bH0030\x1bV01443\x1bL0101\x1bP02\x1bSRef:
+\x1b%1\x1bH0151\x1bV01255\x1bL0101\x1bP02\x1bSShape/Forme/Formato:
+\x1b%0\x1bH0281\x1bV00558\x1bFW04V00681
+\x1b%1\x1bH0221\x1bV00256\x1bL0101\x1bP02\x1bSShade/Telnte/Tono
+\x1b%1\x1bH0300\x1bV00237\x1bL0101\x1bP02\x1bSQual/Cal:
+\x1b%1\x1bH0333\x1bV00237\x1bL0101\x1bP02\x1bSLoc:
+\x1b%0\x1bH0165\x1bV01439\x1bFW04H0202
+\x1b%1\x1bH0045\x1bV00361\x1bL0101\x1bP02\x1bS{MachineLineTerminalCode}
+\x1b%1\x1bH0047\x1bV01441\x1bL0203\x1bP03\x1bWB1{ItemNumberPart1}
+\x1b%1\x1bH0049\x1bV01215\x1bL0203\x1bP03\x1bWB1{ItemNumberPart2}
+\x1b%1\x1bH0062\x1bV00591\x1bL0102\x1bP02\x1bM{ColorDesc}
+\x1b%1\x1bH0112\x1bV00591\x1bL0102\x1bP02\x1bM{ColorDescFrench}
+\x1b%1\x1bH0162\x1bV00591\x1bL0102\x1bP02\x1bM{ColorDescSpanish}
+\x1b%1\x1bH0180\x1bV01235\x1bP02\x1bRDA00,031,034,{ShapeDesc}
+\x1b%1\x1bH0224\x1bV01235\x1bP02\x1bRDB00,031,034,{ShapeDesc}
+\x1b%2\x1bH0356\x1bV01443\x1bBLH02136{CartonUpcNumSys}{CartonUpcMfg}{CartonUpcProd}
+\x1bXS{CartonUpcNumSys}{CartonUpcMfg}{CartonUpcProd}{CartonUpcChkdgt}
+\x1b%1\x1bH0283\x1bV01228\x1bBG03094{CartonBarcodeCommand}
+\x1b%1\x1bH0379\x1bV01141\x1bL0101\x1bP02\x1bM{CartonBarcodeSerial}
+\x1b%1\x1bH0041\x1bV00178\x1bL0101\x1bP02\x1bM{InspectorDisplay}
+\x1b%1\x1bH0238\x1bV00246\x1bL0202\x1bP02\x1bWB1{ShadeLotCode}
+\x1b%1\x1bH0296\x1bV00148\x1bL0101\x1bP02\x1bM{Grade}
+\x1b%1\x1bH0331\x1bV00148\x1bL0101\x1bP02\x1bM{Plant}
+\x1b%1\x1bH0362\x1bV00237\x1bL0101\x1bP02\x1bM{MfgDateCodeShort}:
+\x1b%1\x1bH0235\x1bV00498\x1bL0101\x1bP02\x1bM{SalesQtyFormatted} {SalesUom}
+\x1b%1\x1bH0262\x1bV00502\x1bL0101\x1bP02\x1bM{PackageWeightFormatted} LBS
+\x1b%1\x1bH0296\x1bV00500\x1bL0101\x1bP02\x1bM{LisQty} {LisDesc}
+\x1b~A0
+\x1bQ1
+\x1bZ
+<ETX>

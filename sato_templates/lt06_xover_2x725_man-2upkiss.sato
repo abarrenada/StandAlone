@@ -1,0 +1,104 @@
+# symbolic SATO template
+# family: CrossOver (label-type-code=6) / 2x7.25 / manual, 2-up kiss-cut
+# ported field-for-field from c:\Workspace\southalr\t0sz2x725-co-man-2upkiss.i (operator-
+# triggered path, dispatched from dtlbl061.p:767 [SAP] / dtlbl071.p:738 [Non-SAP] when
+# ih-label-type-code=6 -- confirmed still in production use by Shringa Sekhar/Sachin
+# Santhosam, 2026-09-11).
+#
+# "2-up kiss-cut" = two copies of the same label content printed side by side on one
+# physical stock, perforated but not separated -- the legacy .i file below is genuinely
+# the ref-first content duplicated at a second, offset coordinate set, not a rendering
+# trick. Right-hand copy (H0800/0785/0783.../0468) plus left-hand copy (H0394/0379/
+# 0377.../0062, coordinate-for-coordinate identical to lt06_xover_2x725_ref-first.sato's
+# field positions).
+#
+# Differences from the automatic (ref-first/ref-last) path, all intentional/verbatim from
+# source, not oversights:
+# - Heat/speed defaults #E2/CS4 (vs the auto path's #F5/CS6) -- same "no setsato table
+#   equivalent" gap already accepted elsewhere in this port.
+# - An extra \x1bEX0 (buffer-extend) command and a longer \x1bA114710828 positioning
+#   command in the header, neither present in the auto path.
+# - Barcode-setup command is \x1bDH02136 (with all 4 UPC fields incl. check digit) instead
+#   of the auto path's \x1bBLH02136 (3 fields, check digit commented out in source).
+# - Date field uses the full {MfgDateCode} (yjjj:HHmm) here, not {MfgDateCodeShort} --
+#   the manual .i file appends timstr (HHmm) after the colon; the auto ref-first/ref-last
+#   files don't.
+# - In real Progress, LabelVarB is empty and the trailing "ESC Q<qty> ESC Z" is appended by
+#   the *calling* program (dtlbl061.p line 767-769) generically for every label type, using
+#   the operator-entered prt-qty -- not hardcoded to 1 like the PLC path's ESC Q1. Folded
+#   into this template directly (as the Quantity placeholder below) to match this port's
+#   one-file-per-template convention; functionally identical to the split-across-two-places
+#   legacy source.
+#
+# Same sapitemhdr-vs-itemdet approximation as the auto variants for prt-co-desc-us/fr/sp
+# and prt-shape-co-desc/prt-shape-co-d -- see lt06_xover_2x725_ref-first.sato's header.
+
+<STX>
+\x1bA
+\x1bEX0
+\x1bA3V+000H+024
+\x1bCS4
+\x1b#E2
+\x1bA114710828
+\x1bZ
+<ETX>
+<STX>
+\x1bA
+\x1bPS
+\x1b%3\x1bH0800\x1bV0030\x1bL0101\x1bP02\x1bSRef:
+\x1b%3\x1bH0679\x1bV0218\x1bL0101\x1bP02\x1bSShape/Forme/Formato:
+\x1b%0\x1bH0545\x1bV0234\x1bFW04V0681
+\x1b%3\x1bH0609\x1bV1217\x1bL0101\x1bP02\x1bSShade/Telnte/Tono
+\x1b%3\x1bH0530\x1bV1236\x1bL0101\x1bP02\x1bSQual/Cal:
+\x1b%3\x1bH0497\x1bV1236\x1bL0101\x1bP02\x1bSLoc:
+\x1b%0\x1bH0463\x1bV0030\x1bFW04H0202
+\x1b%3\x1bH0394\x1bV0030\x1bL0101\x1bP02\x1bSRef:
+\x1b%3\x1bH0273\x1bV0218\x1bL0101\x1bP02\x1bSShape/Forme/Formato:
+\x1b%0\x1bH0139\x1bV0234\x1bFW04V0681
+\x1b%3\x1bH0203\x1bV1217\x1bL0101\x1bP02\x1bSShade/Telnte/Tono
+\x1b%3\x1bH0124\x1bV1236\x1bL0101\x1bP02\x1bSQual/Cal:
+\x1b%3\x1bH0091\x1bV1236\x1bL0101\x1bP02\x1bSLoc:
+\x1b%0\x1bH0057\x1bV0030\x1bFW04H0202
+\x1b%3\x1bH0785\x1bV1112\x1bL0101\x1bP02\x1bS{MachineLineTerminalCode}
+\x1b%3\x1bH0783\x1bV0032\x1bL0203\x1bP03\x1bWB1{ItemNumberPart1}
+\x1b%3\x1bH0781\x1bV0258\x1bL0203\x1bP03\x1bWB1{ItemNumberPart2}
+\x1b%3\x1bH0650\x1bV0238\x1bP02\x1bRDB00,031,034,{ShapeDesc}
+\x1b%3\x1bH0606\x1bV0238\x1bP02\x1bRDB00,031,034,{ShapeDesc}
+\x1b%3\x1bH0768\x1bV0882\x1bL0102\x1bP02\x1bM{ColorDesc}
+\x1b%3\x1bH0718\x1bV0882\x1bL0102\x1bP02\x1bM{ColorDescFrench}
+\x1b%3\x1bH0668\x1bV0882\x1bL0102\x1bP02\x1bM{ColorDescSpanish}
+\x1b%0\x1bH0474\x1bV0030\x1bDH02136{CartonUpcNumSys}{CartonUpcMfg}{CartonUpcProd}{CartonUpcChkdgt}
+\x1bXS{CartonUpcNumSys}{CartonUpcMfg}{CartonUpcProd}{CartonUpcChkdgt}
+\x1b%3\x1bH0547\x1bV0245\x1bBG03094{CartonBarcodeCommand}
+\x1b%3\x1bH0451\x1bV0332\x1bL0101\x1bP02\x1bM{CartonBarcodeSerial}
+\x1b%3\x1bH0789\x1bV1295\x1bL0101\x1bP02\x1bM{InspectorDisplay}
+\x1b%3\x1bH0592\x1bV1227\x1bL0202\x1bP02\x1bWB1{ShadeLotCode}
+\x1b%3\x1bH0534\x1bV1325\x1bL0101\x1bP02\x1bM{Grade}
+\x1b%3\x1bH0499\x1bV1325\x1bL0101\x1bP02\x1bM{Plant}
+\x1b%3\x1bH0595\x1bV0975\x1bL0101\x1bP02\x1bM{SalesQtyFormatted} {SalesUom}
+\x1b%3\x1bH0568\x1bV0971\x1bL0101\x1bP02\x1bM{PackageWeightFormatted} LBS
+\x1b%3\x1bH0534\x1bV0973\x1bL0101\x1bP02\x1bM{LisQty} {LisDesc}
+\x1b%3\x1bH0468\x1bV1236\x1bL0101\x1bP02\x1bM{MfgDateCode}
+\x1b%3\x1bH0379\x1bV1112\x1bL0101\x1bP02\x1bS{MachineLineTerminalCode}
+\x1b%3\x1bH0377\x1bV0032\x1bL0203\x1bP03\x1bWB1{ItemNumberPart1}
+\x1b%3\x1bH0375\x1bV0258\x1bL0203\x1bP03\x1bWB1{ItemNumberPart2}
+\x1b%3\x1bH0244\x1bV0238\x1bP02\x1bRDB00,031,034,{ShapeDesc}
+\x1b%3\x1bH0200\x1bV0238\x1bP02\x1bRDB00,031,034,{ShapeDesc}
+\x1b%3\x1bH0362\x1bV0882\x1bL0102\x1bP02\x1bM{ColorDesc}
+\x1b%3\x1bH0312\x1bV0882\x1bL0102\x1bP02\x1bM{ColorDescFrench}
+\x1b%3\x1bH0262\x1bV0882\x1bL0102\x1bP02\x1bM{ColorDescSpanish}
+\x1b%0\x1bH0068\x1bV0030\x1bDH02136{CartonUpcNumSys}{CartonUpcMfg}{CartonUpcProd}{CartonUpcChkdgt}
+\x1bXS{CartonUpcNumSys}{CartonUpcMfg}{CartonUpcProd}{CartonUpcChkdgt}
+\x1b%3\x1bH0141\x1bV0245\x1bBG03094{CartonBarcodeCommand}
+\x1b%3\x1bH0045\x1bV0332\x1bL0101\x1bP02\x1bM{CartonBarcodeSerial}
+\x1b%3\x1bH0383\x1bV1295\x1bL0101\x1bP02\x1bM{InspectorDisplay}
+\x1b%3\x1bH0186\x1bV1227\x1bL0202\x1bP02\x1bWB1{ShadeLotCode}
+\x1b%3\x1bH0128\x1bV1325\x1bL0101\x1bP02\x1bM{Grade}
+\x1b%3\x1bH0093\x1bV1325\x1bL0101\x1bP02\x1bM{Plant}
+\x1b%3\x1bH0189\x1bV0975\x1bL0101\x1bP02\x1bM{SalesQtyFormatted} {SalesUom}
+\x1b%3\x1bH0162\x1bV0971\x1bL0101\x1bP02\x1bM{PackageWeightFormatted} LBS
+\x1b%3\x1bH0128\x1bV0973\x1bL0101\x1bP02\x1bM{LisQty} {LisDesc}
+\x1b%3\x1bH0062\x1bV1236\x1bL0101\x1bP02\x1bM{MfgDateCode}
+\x1bQ{Quantity}
+\x1bZ
+<ETX>

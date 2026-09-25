@@ -1,136 +1,42 @@
-using System.Net.Sockets;
 using System.Text;
 
 namespace StandAlone.CartonUi.Services;
 
 /// <summary>
-/// Persistent TCP monitor for Omron CP1E through Moxa NPort.
-/// Captures raw chunks, reassembles fixed-size frames, and emits decoded diagnostics.
+/// Persistent TCP monitor for the stacker PLC through a Moxa NPort, which forwards the PLC's
+/// output as plain ASCII lines (connection, line splitting and raw logging live in
+/// <see cref="NPortAsciiLineClient"/>). Each line is interpreted the same way dtplc066.p's
+/// SeparateDataString does: the first two characters are the stacker number.
 /// </summary>
 public sealed class OmronNPortMonitorService
 {
-    private readonly string _host;
-    private readonly int _port;
-    private readonly string _logPath;
-    private readonly int _frameLength;
+    private readonly NPortAsciiLineClient _client;
 
-    public OmronNPortMonitorService(string host, int port, string logPath, int frameLength = 8)
+    public OmronNPortMonitorService(string host, int port, string logPath)
     {
-        _host = host;
-        _port = port;
-        _logPath = logPath;
-        _frameLength = frameLength <= 0 ? 8 : frameLength;
+        _client = new NPortAsciiLineClient(host, port, logPath, "monitor");
+        _client.OnStatus = msg => OnStatus?.Invoke($"PLC monitor: {msg}");
+        _client.OnLine = HandleLine;
     }
 
     public Action<string>? OnStatus;
     public Action<PlcDecodedFrame>? OnFrame;
 
-    public async Task RunAsync(CancellationToken ct)
+    public Task RunAsync(CancellationToken ct) => _client.RunAsync(ct);
+
+    private void HandleLine(string raw, string reason)
     {
-        EnsureLogDirectory();
-        Log($"[{Now()}] monitor_start host={_host} port={_port} frameLen={_frameLength}");
+        var bytes = Encoding.ASCII.GetBytes(raw);
+        var decoded = DecodePlcLine(raw);
+        _client.Log($"[{NPortAsciiLineClient.Now()}] line reason={reason} ascii=[{NPortAsciiLineClient.ToPrintableAscii(bytes)}] decoded={decoded}");
 
-        while (!ct.IsCancellationRequested)
-        {
-            TcpClient? client = null;
-            NetworkStream? stream = null;
-
-            try
-            {
-                client = new TcpClient();
-                OnStatus?.Invoke($"PLC monitor connecting {_host}:{_port}...");
-                await client.ConnectAsync(_host, _port, ct);
-                stream = client.GetStream();
-                stream.ReadTimeout = 2000;
-
-                OnStatus?.Invoke($"PLC monitor connected {_host}:{_port}");
-                Log($"[{Now()}] connected");
-
-                var chunkBuffer = new byte[1024];
-                var pending = new List<byte>(_frameLength * 4);
-
-                while (!ct.IsCancellationRequested && client.Connected)
-                {
-                    int read;
-                    try
-                    {
-                        read = await stream.ReadAsync(chunkBuffer, 0, chunkBuffer.Length, ct);
-                    }
-                    catch (IOException)
-                    {
-                        // Keep connection alive through read timeouts and continue listening.
-                        continue;
-                    }
-
-                    if (read <= 0)
-                        break;
-
-                    var chunk = chunkBuffer.AsSpan(0, read).ToArray();
-                    pending.AddRange(chunk);
-                    LogChunk(chunk, pending.Count);
-
-                    while (pending.Count >= _frameLength)
-                    {
-                        var frame = pending.Take(_frameLength).ToArray();
-                        pending.RemoveRange(0, _frameLength);
-                        LogFrame(frame, pending.Count);
-                    }
-                }
-
-                OnStatus?.Invoke("PLC monitor disconnected; retrying...");
-                Log($"[{Now()}] disconnected");
-            }
-            catch (OperationCanceledException)
-            {
-                break;
-            }
-            catch (Exception ex)
-            {
-                OnStatus?.Invoke($"PLC monitor error: {ex.Message}; retrying...");
-                Log($"[{Now()}] error {ex.GetType().Name}: {ex.Message}");
-            }
-            finally
-            {
-                try { stream?.Dispose(); } catch { }
-                try { client?.Dispose(); } catch { }
-            }
-
-            try
-            {
-                await Task.Delay(2000, ct);
-            }
-            catch (OperationCanceledException)
-            {
-                break;
-            }
-        }
-
-        Log($"[{Now()}] monitor_stop");
-    }
-
-    private void LogChunk(byte[] chunk, int pendingBytes)
-    {
-        var hex = BitConverter.ToString(chunk);
-        var ascii = ToPrintableAscii(chunk);
-        Log($"[{Now()}] chunk bytes={chunk.Length} pending={pendingBytes} ascii=[{ascii}] hex=[{hex}]");
-    }
-
-    private void LogFrame(byte[] frame, int pendingAfter)
-    {
-        var hex = BitConverter.ToString(frame);
-        var ascii = ToPrintableAscii(frame);
-        var decoded = DecodeEmulatedValue(frame);
-        var signature = frame.Length >= 4 ? BitConverter.ToString(frame, 0, 4) : string.Empty;
-
-        var u16be = ReadU16BeWords(frame);
-        var u16le = ReadU16LeWords(frame);
-
-        Log($"[{Now()}] frame bytes={frame.Length} pendingAfter={pendingAfter} ascii=[{ascii}] hex=[{hex}] " +
-            $"u16be=[{string.Join(',', u16be)}] u16le=[{string.Join(',', u16le)}] guesses=[{BuildGuessSummary(frame)}]");
+        // Blank lines are the PLC's keep-alive; dtplc066.p skips them silently too.
+        if (raw.Trim().Length == 0)
+            return;
 
         try
         {
-            OnFrame?.Invoke(new PlcDecodedFrame(DateTime.Now, hex, signature, decoded));
+            OnFrame?.Invoke(new PlcDecodedFrame(DateTime.Now, BitConverter.ToString(bytes), raw.Trim(), decoded));
         }
         catch
         {
@@ -138,84 +44,42 @@ public sealed class OmronNPortMonitorService
         }
     }
 
-    private static int[] ReadU16BeWords(byte[] frame)
+    /// <summary>
+    /// Mirrors dtplc066.p SeparateDataString. Returns the stacker number (1-12) as a plain
+    /// integer string only for a "new box drop" — the one case that should record a box and
+    /// print. Every other message comes back as a non-numeric description so callers ignore it.
+    /// </summary>
+    public static string DecodePlcLine(string line)
     {
-        var words = new List<int>();
-        for (int i = 0; i + 1 < frame.Length; i += 2)
-            words.Add((frame[i] << 8) | frame[i + 1]);
-        return words.ToArray();
-    }
+        var instr = line.Trim();
+        if (instr.Length == 0)
+            return "blank";
 
-    private static int[] ReadU16LeWords(byte[] frame)
-    {
-        var words = new List<int>();
-        for (int i = 0; i + 1 < frame.Length; i += 2)
-            words.Add((frame[i + 1] << 8) | frame[i]);
-        return words.ToArray();
-    }
+        var stackText = instr.Length >= 2 ? instr[..2] : instr;
+        if (!int.TryParse(stackText, out var stacker))
+            return $"error(stack# bad:{stackText})";
 
-    private static string BuildGuessSummary(byte[] frame)
-    {
-        var digits = frame.Where(b => b >= (byte)'0' && b <= (byte)'9').Select(b => (char)b).ToArray();
-        var digitText = digits.Length == 0 ? "none" : new string(digits);
-        var decoded = DecodeEmulatedValue(frame);
-
-        if (frame.Length >= 8)
+        if (stacker < 1 || stacker > 12)
         {
-            uint u32be0 = ((uint)frame[0] << 24) | ((uint)frame[1] << 16) | ((uint)frame[2] << 8) | frame[3];
-            uint u32be1 = ((uint)frame[4] << 24) | ((uint)frame[5] << 16) | ((uint)frame[6] << 8) | frame[7];
-            return $"decoded={decoded};digits={digitText};u32be0={u32be0};u32be1={u32be1}";
+            return stacker switch
+            {
+                0  => "error(stacker 00)",
+                99 => "stop(99)",
+                50 => "rebuild(50)",
+                _  => $"error(stack# bad:{stackText})",
+            };
         }
 
-        return $"decoded={decoded};digits={digitText}";
+        // The real system requires exactly 2 characters ("01"); a single digit is accepted
+        // here too because the PLC emulation used on the bench sends unpadded numbers.
+        if (instr.Length <= 2)
+            return stacker.ToString();
+
+        if (instr.Length >= 4 && instr.Substring(2, 2) == ",Y")
+            return $"reprint({stacker})";
+
+        return "error(PLC message length)";
     }
-
-    private static string DecodeEmulatedValue(byte[] frame)
-    {
-        // First-pass decoder derived from observed CP1E emulation frames.
-        // Pattern is stable in bytes[4..7], while bytes[0..3] vary by emulated number.
-        if (frame.Length < 8)
-            return "unknown(frame-too-short)";
-
-        string signature = BitConverter.ToString(frame, 0, 4);
-        return signature switch
-        {
-            "00-98-E0-98" => "1",
-            "00-18-C3-98" => "2",
-            "00-98-78-CC" => "3",
-            "00-18-CC-98" => "4",
-            "00-18-F0-98" => "8",
-            "00-98-F8-98" => "9",
-            _ => $"unknown(sig={signature})",
-        };
-    }
-
-    private void EnsureLogDirectory()
-    {
-        var dir = Path.GetDirectoryName(_logPath);
-        if (!string.IsNullOrWhiteSpace(dir))
-            Directory.CreateDirectory(dir);
-    }
-
-    private void Log(string line)
-    {
-        try
-        {
-            File.AppendAllText(_logPath, line + Environment.NewLine, Encoding.ASCII);
-        }
-        catch
-        {
-            // best-effort logging only
-        }
-    }
-
-    private static string ToPrintableAscii(byte[] bytes)
-    {
-        var chars = bytes.Select(b => b >= 32 && b <= 126 ? (char)b : '.').ToArray();
-        return new string(chars);
-    }
-
-    private static string Now() => DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
 
     public static bool TryParseEndpoint(string input, out string host, out int port)
     {
@@ -244,4 +108,7 @@ public sealed class OmronNPortMonitorService
     }
 }
 
+/// <param name="HexFrame">Hex dump of the raw line bytes, for diagnostics.</param>
+/// <param name="Signature">The trimmed ASCII line as received.</param>
+/// <param name="DecodedValue">Stacker number for a box drop, otherwise a description.</param>
 public sealed record PlcDecodedFrame(DateTime Timestamp, string HexFrame, string Signature, string DecodedValue);

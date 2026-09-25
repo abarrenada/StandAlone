@@ -151,6 +151,23 @@ public class ItemDetail
     /// <summary>Schedule date (YYYY-MM-DD)</summary>
     public string ScheduleDate { get; set; } = string.Empty;
 
+    // ===== Standard Retail fields (itemhdr) =====
+
+    /// <summary>Side-panel style selector for Standard Retail labels (itemhdr.ih-label-type): 1=brand, 2=customer part number, 3=PEI/WA/COF/Tone icon stack.</summary>
+    public int PanelType { get; set; }
+
+    /// <summary>French color description (itemhdr.ih-color-desc-f)</summary>
+    public string ColorDescFrench { get; set; } = string.Empty;
+
+    /// <summary>Spanish color description (itemhdr.ih-color-desc-s)</summary>
+    public string ColorDescSpanish { get; set; } = string.Empty;
+
+    /// <summary>French shape description (itemhdr.ih-shape-desc-f)</summary>
+    public string ShapeDescFrench { get; set; } = string.Empty;
+
+    /// <summary>Spanish shape description (itemhdr.ih-shape-desc-s)</summary>
+    public string ShapeDescSpanish { get; set; } = string.Empty;
+
     // ===== Helper methods =====
     
     /// <summary>

@@ -29,6 +29,7 @@ public class EolScanForm : Form
     private readonly IBoxRepository  _boxRepo;
     private readonly int             _shift;
     private readonly string          _inspector;
+    private readonly IDataLakeService _dataLake;
 
     private readonly BindingList<EolScanRecord> _history = new();
 
@@ -56,6 +57,11 @@ public class EolScanForm : Form
         _boxRepo   = boxRepo;
         _shift     = shift;
         _inspector = inspector;
+        _dataLake  = new MongoDataLakeService(new DataLakeSettings
+        {
+            ConnectionString = settings.MongoConnectionString,
+            DatabaseName     = settings.MongoDatabaseName,
+        });
 
         Text             = $"EOL Scan — Line {config.LineNumber:00}";
         WindowState      = FormWindowState.Maximized;
@@ -274,6 +280,7 @@ public class EolScanForm : Form
     protected override async void OnLoad(EventArgs e)
     {
         base.OnLoad(e);
+        _ = _dataLake.UpsertStationAsync(StationRegistration.Build(_settings, _config, StationRegistration.EolScan));
 
         var recent = await _boxRepo.GetLastEolScansAsync(15, CancellationToken.None);
         foreach (var record in recent)
@@ -450,6 +457,8 @@ public class EolScanForm : Form
         _descLabel.Text = pallet.Description;
         _infoLabel.Text = $"Qty: {pallet.TotalPieces}   Shop Order: {pallet.ShopOrder}   Plant: {pallet.Plant:000}   Printed: {pallet.TimeDisplay}";
 
+        _ = _dataLake.RecordPalletEventAsync(ToLakeRecord(pallet), "Scanned", $"EOL scan by {_inspector}");
+
         // Duplicate-scan guard: only block on a PRIOR scan that actually reached BOTH
         // integrations — if either failed to send last time, treat this scan as a retry
         // rather than a duplicate (matches wmstosend only reaching "received" once every
@@ -487,6 +496,10 @@ public class EolScanForm : Form
         scanRecord.WmsSuccess = wmsResult.Success;
         scanRecord.WmsDetail  = wmsResult.Success ? "OK" : (wmsResult.ErrorMessage ?? "Unknown error");
 
+        _ = _dataLake.RecordPalletEventAsync(ToLakeRecord(pallet),
+            sapResult.Success ? "Backflushed" : "BackflushFailed",
+            sapResult.Success ? $"Vehicle: {_settings.BackflushVehicle}" : (sapResult.ErrorMessage ?? "Unknown error"));
+
         await _boxRepo.AppendEolScanAsync(scanRecord, CancellationToken.None);
 
         _history.Insert(0, scanRecord);
@@ -505,11 +518,44 @@ public class EolScanForm : Form
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    //  Data lake
+    // ─────────────────────────────────────────────────────────────────────────
+    private PalletLakeRecord ToLakeRecord(PalletRecord pallet) => new()
+    {
+        PalletId       = pallet.PalletId,
+        PlantName      = _settings.PlantName,
+        StationId      = _settings.StationId,
+        Plant          = pallet.Plant,
+        ItemNumber     = pallet.ItemNumber,
+        ColorDesc      = pallet.ColorDesc,
+        ShapeDesc      = pallet.ShapeDesc,
+        SeriesDesc     = pallet.SeriesDesc,
+        LisQty         = pallet.LisQty,
+        BoxesPerPallet = pallet.BoxesPerPallet,
+        Shade          = pallet.Shade,
+        Size           = pallet.Size,
+        ShopOrder      = pallet.ShopOrder,
+        Grade          = pallet.Grade,
+        LineNumber     = _config.LineNumber,
+        Shift          = _shift,
+        Inspector      = _inspector,
+    };
+
+    // ─────────────────────────────────────────────────────────────────────────
     //  SAP backflush integration
     // ─────────────────────────────────────────────────────────────────────────
     private async Task<SapIntegrationResult> SendToSapAsync(PalletRecord pallet, DateTime scanTimeUtc, CancellationToken ct)
     {
-        var sapIntegration = new FileSapIntegrationService(Path.Combine(_config.DataDirectory, "sap-output"));
+        ISapIntegrationService sapIntegration = string.Equals(_settings.BackflushVehicle, "OracleDirect", StringComparison.OrdinalIgnoreCase)
+            ? new OracleSapIntegrationService(new OracleInterfaceService(new OracleConnectionSettings
+              {
+                  Host        = _settings.OracleHost,
+                  Port        = _settings.OraclePort,
+                  ServiceName = _settings.OracleServiceName,
+                  Username    = _settings.OracleUsername,
+                  Password    = _settings.OraclePassword,
+              }))
+            : new FileSapIntegrationService(Path.Combine(_config.DataDirectory, "sap-output"));
 
         var payload = new PalletIntegrationPayload
         {
@@ -524,6 +570,11 @@ public class EolScanForm : Form
             ConfirmedQty = pallet.TotalPieces,
             Inspector    = _inspector,
             ConfirmedAt  = scanTimeUtc,
+            Location     = _settings.PalletLocation,
+            Cartons      = pallet.BoxesPerPallet,
+            Shade        = pallet.Shade,
+            Size         = pallet.Size,
+            Grade        = pallet.Grade,
         };
 
         return await sapIntegration.SendPalletIntegrationAsync(payload, ct);

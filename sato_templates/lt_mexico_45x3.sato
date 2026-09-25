@@ -1,21 +1,65 @@
 # symbolic SATO template
-# source include: dtlbl066n.i
-# branch: mexico / 4.5x3
+# family: Mexico Store (MEXICO-ONLY flag + mitemdet/mitemhdr) / 4.5x3 / automatic (PLC only --
+# Mexico has no manual-entry print path at all, confirmed in dtlbl067.p's GetItem procedure)
+# ported from c:\Workspace\southalr\dtlbl066n.i's S86-engine branch only (the plain 85x/85R
+# branch and the "NON SUPPORTED PRINTER STYLE" fallback are not ported -- same S86-first scope
+# as the rest of this port; see project memory feature_mexico_label_research_20260923).
+#
+# Dispatched from SatoTemplateResolver when payload.IsMexicoItem is true -- checked before the
+# LabelTypeCode/CustomerChar family branches, matching dtplc067.p's GenSingleLabel: Mexico is a
+# hard fork (its own case-statement `return`s immediately), not a shared branch with feature
+# flags, so this template shares nothing with lt_retail_45x3/lt04_default_45x3/lt_default_45x3.
+#
+# Known gaps/simplifications (flagged, not oversights):
+#  - Company name/address/body-type description (prt-company-name/addr1/addr2/made-in/
+#    prt-body-desc) have no data source in this port (no mitemhdr.mih-body-code lookup table
+#    equivalent exists) -- placeholder Spanish text below, real content pending a data source.
+#  - "Lot:" is NOT a real lot number -- see ThermalLabelPayload.MexicoLotCode's doc comment.
+#  - The internal I-2-of-5 case barcode (prt-I2of5) is not ported (same SAP-item-master-gap
+#    class as CrossOver/F&D's sapitemhdr dependencies -- no case-shipping data source here).
+#  - "Color" + apply-type suffix is hardcoded to ":" (automated-line marker) since Mexico has
+#    no manual print path for the ";" (non-automated) variant to ever occur.
 
 <STX>
 \x1bA
-\x1bCS2
-\x1bQ1
-\x1bH0180\x1bV0080\x1bL0202\x1bXMDALTILE CARTON LABEL
-\x1bH0180\x1bV0145\x1bXMITEM: {ItemNumber}
-\x1bH0180\x1bV0190\x1bXMSHADE: {Shade} SIZE: {Size}
-\x1bH0180\x1bV0235\x1bXM {PartDescription} |  {Size} X  {Shade} X  {Quantity} IN | FINISH LINE
-\x1bH0180\x1bV0280\x1bXMQTY/CTN: {Quantity} SALES: {SalesQty} {SalesUom}
-\x1bH0180\x1bV0325\x1bXMWT: {PackageWeight} LINE: {LineNumber} SHIFT: {Shift}
-\x1bH0180\x1bV0370\x1bXMINSP: {Inspector} STACK: {StackNumber} SIZECD: {Size}
-\x1bH0180\x1bV0415\x1bXMDATE: {CreatedAtUtc} IREF: {IRef} PLANT: {Plant}
-\x1bH0180\x1bV0470\x1bXMUPC:
-\x1bH0180\x1bV0510\x1bB103100\x1bD {CartonUpc}
-\x1bH0680\x1bV0470\x1bXM128:
-\x1bH0680\x1bV0510\x1bB103080\x1bD {UccBarcode}
+\x1bCS4
+\x1b#E2
+\x1bN
+\x1bA3H-17V0005
+\x1b%2
+\x1bH890\x1bV0600\x1bL0101\x1bSColor:
+\x1bH680\x1bV600\x1bSFormato:
+\x1bH220\x1bV600\x1bS{MachineLineTerminalCode}
+\x1bH890\x1bV0580\x1bL0202\x1bWB1{ItemNumberMasked}
+\x1bH877\x1bV0520\x1bBG03100{MexicoBarcodeCommand}
+\x1bH882\x1bV0423\x1bFW03H677
+\x1bH850\x1bV0419\x1bL0101\x1bM{MexicoBarcodeSerial}
+\x1bH0344\x1bV0115\x1bD3020800{CartonUpcNumSys}{CartonUpcMfg}{CartonUpcProd}{CartonUpcChkdgt}
+\x1bH0349\x1bV0115\x1bFW03H197
+\x1bH0363\x1bV0040\x1bL0202\x1bU{CartonUpcNumSys}
+\x1bH0329\x1bV0031\x1bL0202\x1bU{CartonUpcMfg}
+\x1bH0234\x1bV0031\x1bL0202\x1bU{CartonUpcProd}
+\x1bH0145\x1bV0040\x1bL0202\x1bU{CartonUpcChkdgt}
+\x1bH890\x1bV0400\x1bL0102\x1bM{ColorDesc}
+\x1bH890\x1bV0360\x1bL0102\x1bM{ShapeDesc}
+{MexicoToneCalbrBlock}
+\x1bH0310\x1bV0355\x1bL0101\x1bSCalidad:
+\x1bH0308\x1bV0339\x1bL0101\x1bWB0{Grade}
+\x1bH0310\x1bV0300\x1bL0101\x1bSFecha:
+\x1bH0245\x1bV0300\x1bL0201\x1bXS{MfgDateCodeShort}
+\x1bH0310\x1bV0260\x1bL0101\x1bSInspe:
+\x1bH0310\x1bV0242\x1bL0201\x1bXS{Inspector}
+\x1bH0235\x1bV0260\x1bL0101\x1bSTurno:
+\x1bH0235\x1bV0242\x1bL0201\x1bXS{Shift}
+\x1bH0310\x1bV0220\x1bL0101\x1bMLot:
+\x1bH0245\x1bV0220\x1bL0101\x1bWB0{MexicoLotCode}
+\x1bH890\x1bV0320\x1bL0102\x1bMFabricado por
+\x1bH890\x1bV0300\x1bL0102\x1bMDaltile de Mexico, S.A. de C.V.
+\x1bH890\x1bV0280\x1bL0102\x1bMAv. Industrias 100
+\x1bH890\x1bV0260\x1bL0102\x1bMSaltillo, Coahuila, Mexico
+\x1bH890\x1bV0240\x1bL0102\x1bMHecho en Mexico
+\x1bH890\x1bV0170\x1bL0103\x1bM{MexicoQtyString}
+{MexicoIconBlock}
+\x1bQ{Quantity}
 \x1bZ
+<ETX>

@@ -1,0 +1,22 @@
+[2026-09-24 19:21:45.430] pallet_scan_start host=10.121.11.16 port=4001 mode=ascii-line
+[2026-09-24 19:21:45.435] connected
+[2026-09-24 19:22:27.012] pallet_scan_stop
+[2026-09-24 19:23:47.520] pallet_scan_start host=10.121.11.16 port=4001 mode=ascii-line
+[2026-09-24 19:23:47.522] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-09-24 19:23:49.530] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-09-24 19:23:51.540] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-09-24 19:23:53.559] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-09-24 19:23:55.641] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-09-24 19:23:57.650] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-09-24 19:23:59.667] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-09-24 19:24:01.682] error SocketException: A socket operation was attempted to an unreachable host.
+[2026-09-24 19:24:03.698] connected
+[2026-09-24 19:39:18.068] chunk bytes=4 ascii=[06..] hex=[30-36-0D-0A]
+[2026-09-24 19:39:18.072] line reason=delimiter len=2 ascii=[06]
+[2026-09-24 19:39:28.715] pallet_scan_stop
+[2026-09-24 20:34:27.035] pallet_scan_start host=10.121.11.16 port=4001 mode=ascii-line
+[2026-09-24 20:34:27.039] connected
+[2026-09-24 20:47:39.463] pallet_scan_stop
+[2026-09-24 21:43:35.046] pallet_scan_start host=10.121.11.16 port=4001 mode=ascii-line
+[2026-09-24 21:43:35.050] connected
+[2026-09-24 21:48:29.523] pallet_scan_stop

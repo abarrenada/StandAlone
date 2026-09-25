@@ -142,8 +142,57 @@ public class FileBoxRepository : IBoxRepository
         if (!string.IsNullOrEmpty(dir))
             Directory.CreateDirectory(dir);
 
-        File.AppendAllText(filePath, line + Environment.NewLine);
+        AppendSharedLine(filePath, line);
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Appends one line to a CSV that other stations may be reading over a network share at the
+    /// same moment (pallets.csv: Pallet Scan writes, EOL Scan reads). Retries briefly on a
+    /// sharing violation instead of failing the print.
+    /// </summary>
+    private static void AppendSharedLine(string filePath, string line)
+    {
+        var bytes = System.Text.Encoding.UTF8.GetBytes(line + Environment.NewLine);
+        const int maxAttempts = 20;
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                using var stream = new FileStream(filePath, FileMode.Append, FileAccess.Write, FileShare.Read);
+                stream.Write(bytes, 0, bytes.Length);
+                return;
+            }
+            catch (IOException) when (attempt < maxAttempts)
+            {
+                Thread.Sleep(25 * attempt);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Reads all lines of a shared CSV without blocking a concurrent writer on another station
+    /// (FileShare.ReadWrite), retrying briefly if the file is momentarily locked.
+    /// </summary>
+    private static List<string> ReadSharedLines(string filePath)
+    {
+        const int maxAttempts = 20;
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+                using var reader = new StreamReader(stream);
+                var lines = new List<string>();
+                while (reader.ReadLine() is { } l)
+                    lines.Add(l);
+                return lines;
+            }
+            catch (IOException) when (attempt < maxAttempts && File.Exists(filePath))
+            {
+                Thread.Sleep(25 * attempt);
+            }
+        }
     }
 
     public Task<PalletRecord?> GetPalletBySerialAsync(string palletId, CancellationToken ct)
@@ -153,7 +202,7 @@ public class FileBoxRepository : IBoxRepository
             return Task.FromResult<PalletRecord?>(null);
 
         var needle = palletId.Trim();
-        foreach (var line in File.ReadAllLines(filePath).Reverse())
+        foreach (var line in Enumerable.Reverse(ReadSharedLines(filePath)))
         {
             if (string.IsNullOrWhiteSpace(line) || line.StartsWith('#')) continue;
             var parts = line.Split(',');
@@ -575,6 +624,100 @@ public class FileBoxRepository : IBoxRepository
     }
 
     /// <summary>
+    /// Looks up a retail customer's CPN in <c>bc_cpn.csv</c> (format:
+    /// <c>ItemNumber,LisQty,CustNbr,CaseCpn,CtnNumSys,CtnMfg,CtnProd,CtnChkdgt</c> — the last four
+    /// are the carton-UPC-override fields, only populated/used for F&amp;D "D" items). Returns null if
+    /// the file is missing or no row matches all three keys, mirroring Progress's
+    /// <c>not available bc-cpn</c>. <paramref name="custNbr"/> must already be the mapped
+    /// customer-number constant (see ThermalPrinterCommandBuilder.ResolveCpnCustomerNumber), not the
+    /// raw single-char CustomerChar.
+    /// </summary>
+    public Task<CpnLookupResult?> GetCpnAsync(string itemNumber, int lisQty, string custNbr, CancellationToken ct)
+    {
+        var filePath = Path.Combine(_dataDirectory, "bc_cpn.csv");
+        if (!File.Exists(filePath))
+            return Task.FromResult<CpnLookupResult?>(null);
+
+        var itemTerm = itemNumber.Trim();
+        var custTerm = custNbr.Trim();
+        foreach (var line in File.ReadAllLines(filePath))
+        {
+            if (string.IsNullOrWhiteSpace(line) || line.StartsWith('#') || line.StartsWith("ItemNumber", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var parts = line.Split(',');
+            if (parts.Length < 4) continue;
+            if (parts[0].Trim() != itemTerm) continue;
+            if (!int.TryParse(parts[1].Trim(), out var rowLisQty) || rowLisQty != lisQty) continue;
+            if (parts[2].Trim() != custTerm) continue;
+
+            var caseCpn = parts[3].Trim();
+            if (caseCpn.Length == 0)
+                return Task.FromResult<CpnLookupResult?>(null);
+
+            var ctnNumSys = parts.Length > 4 && int.TryParse(parts[4].Trim(), out var ns) ? ns : 0;
+            var ctnMfg    = parts.Length > 5 && int.TryParse(parts[5].Trim(), out var mf) ? mf : 0;
+            var ctnProd   = parts.Length > 6 && int.TryParse(parts[6].Trim(), out var pr) ? pr : 0;
+            var ctnChkdgt = parts.Length > 7 && int.TryParse(parts[7].Trim(), out var ck) ? ck : 0;
+            return Task.FromResult<CpnLookupResult?>(new CpnLookupResult(caseCpn, ctnNumSys, ctnMfg, ctnProd, ctnChkdgt));
+        }
+        return Task.FromResult<CpnLookupResult?>(null);
+    }
+
+    /// <summary>
+    /// Looks up a brand's print-ready name in <c>brands.csv</c> (format:
+    /// <c>BrandCode,BrDesc,BrPrint</c>). Returns null if not found, or found with BrPrint=false,
+    /// mirroring Progress's <c>if br-print eq yes then prt-name = brand.br-desc else prt-name = ""</c>.
+    /// </summary>
+    public Task<string?> GetBrandNameAsync(string brandCode, CancellationToken ct)
+    {
+        var filePath = Path.Combine(_dataDirectory, "brands.csv");
+        if (!File.Exists(filePath))
+            return Task.FromResult<string?>(null);
+
+        var term = brandCode.Trim();
+        foreach (var line in File.ReadAllLines(filePath))
+        {
+            if (string.IsNullOrWhiteSpace(line) || line.StartsWith('#'))
+                continue;
+
+            var parts = line.Split(',');
+            if (parts.Length < 3) continue;
+            if (parts[0].Trim() != term) continue;
+
+            var brPrint = bool.TryParse(parts[2].Trim(), out var bp) && bp;
+            return Task.FromResult<string?>(brPrint ? parts[1].Trim().ToUpperInvariant() : null);
+        }
+        return Task.FromResult<string?>(null);
+    }
+
+    /// <summary>
+    /// Looks up whether a grade code draws the highlight box in <c>grades.csv</c> (format:
+    /// <c>GradeCode,GrHighlight</c>). False if the file or row is missing, mirroring the absence
+    /// of a matching <c>grade</c> record in Progress.
+    /// </summary>
+    public Task<bool> GetGradeHighlightAsync(string gradeCode, CancellationToken ct)
+    {
+        var filePath = Path.Combine(_dataDirectory, "grades.csv");
+        if (!File.Exists(filePath))
+            return Task.FromResult(false);
+
+        var term = gradeCode.Trim();
+        foreach (var line in File.ReadAllLines(filePath))
+        {
+            if (string.IsNullOrWhiteSpace(line) || line.StartsWith('#'))
+                continue;
+
+            var parts = line.Split(',');
+            if (parts.Length < 2) continue;
+            if (parts[0].Trim() != term) continue;
+
+            return Task.FromResult(bool.TryParse(parts[1].Trim(), out var hi) && hi);
+        }
+        return Task.FromResult(false);
+    }
+
+    /// <summary>
     /// Parses a CSV line into an ItemDetail object.
     /// Handles both 43-column format (new) and 3-column format (legacy).
     /// 
@@ -688,6 +831,16 @@ public class FileBoxRepository : IBoxRepository
             detail.OpenQty = decimal.TryParse(parts[45].Trim(), out var oq) ? oq : 0;
         if (parts.Length >= 47)
             detail.ScheduleDate = parts[46].Trim();
+        if (parts.Length >= 48)
+            detail.PanelType = int.TryParse(parts[47].Trim(), out var pt) ? pt : 0;
+        if (parts.Length >= 49)
+            detail.ColorDescFrench = parts[48].Trim();
+        if (parts.Length >= 50)
+            detail.ColorDescSpanish = parts[49].Trim();
+        if (parts.Length >= 51)
+            detail.ShapeDescFrench = parts[50].Trim();
+        if (parts.Length >= 52)
+            detail.ShapeDescSpanish = parts[51].Trim();
 
         return detail;
     }

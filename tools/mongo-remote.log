@@ -1,0 +1,34 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20260924210516
+Username: NA\E290462
+RunAs User: NA\E290462
+Configuration Name: 
+Machine: DALLAP7YR37G4 (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\Workspace\StandAlone\tools\Enable-MongoRemote.ps1
+Process ID: 1252
+PSVersion: 5.1.26100.9444
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9444
+BuildVersion: 10.0.26100.9444
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+bindIp set to 0.0.0.0 in C:\Program Files\MongoDB\Server\8.3\bin\mongod.cfg (backup: C:\Program Files\MongoDB\Server\8.3\bin\mongod.cfg.localhost-only.bak)
+Firewall rule added: TCP 27017 from 10.121.0.0/16
+
+Name     Status
+----     ------
+MongoDB Running
+
+LocalAddress LocalPort
+------------ ---------
+0.0.0.0          27017
+Other stations: mongodb://DALLAP7YR37G4.na.int.grp:27017
+RESULT=OK
+**********************
+Windows PowerShell transcript end
+End time: 20260924210528
+**********************

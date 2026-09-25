@@ -94,4 +94,31 @@ public interface IBoxRepository
     /// if this pallet has never been scanned at EOL before (duplicate-scan check).
     /// </summary>
     Task<EolScanRecord?> FindEolScanByPalletIdAsync(string palletId, CancellationToken ct);
+
+    /// <summary>
+    /// Looks up a retail customer's own Customer Product Number (CPN) for the given item, matching
+    /// Progress <c>bc-cpn</c> (<c>bcc-item</c>/<c>bcc-lis-qty</c>/<c>bcc-cust-nbr</c>/<c>bcc-case-cpn</c>
+    /// plus the <c>bcc-ctn-*</c> carton-UPC-override fields F&amp;D "D" items use). <paramref name="custNbr"/>
+    /// is the already-mapped customer-number constant (e.g. "74035" for Lowe's, "FD001" for F&amp;D — see
+    /// <c>ThermalPrinterCommandBuilder.ResolveCpnCustomerNumber</c>), not the raw single-char CustomerChar.
+    /// Returns null if no matching row exists in <c>bc_cpn.csv</c> — callers must decide whether that's
+    /// a hard failure (F&amp;D Private Label "D" items) or a soft blank (everyone else), matching legacy's
+    /// split behavior in <c>dtplc067.p</c>'s GetCpn.
+    /// </summary>
+    Task<CpnLookupResult?> GetCpnAsync(string itemNumber, int lisQty, string custNbr, CancellationToken ct);
+
+    /// <summary>
+    /// Looks up a brand's print-ready description and whether it should actually be printed, matching
+    /// Progress <c>brand</c> (<c>br-desc</c>/<c>br-print</c>). Returns null if the brand code isn't
+    /// found in <c>brands.csv</c>, or if found but <c>BrPrint</c> is false — either way the caller
+    /// should treat the brand name as blank, matching legacy's <c>prt-name = ""</c> fallback.
+    /// </summary>
+    Task<string?> GetBrandNameAsync(string brandCode, CancellationToken ct);
+
+    /// <summary>
+    /// Returns whether the given grade code should draw the highlight box around the Qual/Cal field,
+    /// matching Progress <c>grade.gr-highlight</c>. False (no highlight) if the code isn't found in
+    /// <c>grades.csv</c>.
+    /// </summary>
+    Task<bool> GetGradeHighlightAsync(string gradeCode, CancellationToken ct);
 }

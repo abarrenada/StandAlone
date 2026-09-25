@@ -1,0 +1,67 @@
+# symbolic SATO template
+# family: Standard Retail (customer H/L/B/D/F) / 4.5x3
+# ported field-for-field from c:\Workspace\southalr\dtlbl060b.i.
+#
+# {EngineReferenceMove} is the one printer-model-dependent line in this file (dtlbl060b.i's
+# ws-dev-model 3-way branch: right-hand / left-hand-85L / left-hand-S86LD) — every other H/V
+# coordinate below is positioned relative to whatever that move puts the origin at, so it's
+# computed once in ApplyRetail45x3 from the station's configured Printer Model (Settings) via
+# PrinterModelCatalog, not hardcoded here. See data/printer_models.csv.
+#
+# Conditional content (side panel, case barcode, grade highlight, qty/weight block,
+# ColorDesc/CPN swap) is computed in ThermalPrinterCommandBuilder.ApplyRetail45x3
+# since this template's plain placeholder substitution can't express branching —
+# see ThermalLabelPayload's "Standard Retail computed-at-render-time fields".
+#
+# Known simplifications vs. legacy (documented, not oversights):
+#  - "Color/Couleur/Color" always uses the automated-line apply-type (":") — this app
+#    always represents an automated line, so the manual-station ";" variant never applies.
+#  - Series-desc position and the UPC block's H/V both differ slightly between
+#    PanelType=3 vs PanelType 1/2 in the legacy source; this port uses one fixed
+#    position (the PanelType 1/2 coordinates) for both, a minor layout-only delta.
+#  - The 30-byte barcode is emitted as a single ">H" run rather than legacy's
+#    ">H"+2 chars+">C"+rest split, matching the already-hardware-validated approach
+#    used by lt_default_45x3.sato.
+
+<STX>
+\x1bA
+\x1bCS4
+\x1b#E2
+\x1bQ{Quantity}
+{EngineReferenceMove}
+\x1b%2
+\x1bH890\x1bV0600\x1bL0101\x1bSColor/Couleur/Color:
+\x1bH640\x1bV600\x1bSShape/Forme/Formato:
+\x1bH285\x1bV600\x1bS{MachineLineTerminalCode}
+\x1bH890\x1bV0583\x1bL0203\x1bWB1{ItemNumberMasked}
+\x1bH220\x1bV0523\x1bL0101\x1bM{InspectorDisplay}
+\x1bH885\x1bV0498\x1bBG03085{CartonBarcodeCommand}
+\x1bH888\x1bV0416\x1bFW03H675
+\x1bH865\x1bV0409\x1bL0101\x1bM{CartonBarcodeSerial}
+\x1bH905\x1bV0388\x1bL0102\x1bM{ColorDescDisplay}
+\x1bH905\x1bV0348\x1bL0102\x1bM{ShapeDesc}
+\x1bH905\x1bV0303\x1bL0102\x1bM{ColorDescFrench}
+\x1bH905\x1bV0263\x1bL0102\x1bM{ShapeDescFrench}
+\x1bH905\x1bV0218\x1bL0102\x1bM{ColorDescSpanish}
+\x1bH905\x1bV0178\x1bL0102\x1bM{ShapeDescSpanish}
+\x1bH440\x1bV0193\x1bL0102\x1bS{SeriesDesc}
+\x1bH320\x1bV0408\x1bL0101\x1bSShade/Telnte/Tono
+\x1bH305\x1bV0393\x1bL0101\x1bWL1{ShadeLotCode}
+\x1bH305\x1bV338\x1bSQual/Cal:
+\x1bH210\x1bV0338\x1bL0101\x1bM{Grade}
+\x1bH305\x1bV0315\x1bSLoc:
+\x1bH260\x1bV0318\x1bL0101\x1bM{Plant}
+\x1bH305\x1bV0295\x1bL0101\x1bM{MfgDateCode}
+{QtyWeightBlock}
+{CaseBarcodeBlock}
+\x1bH355\x1bV0148\x1bD3021100{CartonUpc}
+\x1bH357\x1bV0151\x1bFW03H194
+\x1bH378\x1bV0043\x1bL0102\x1bS{CartonUpcNumSys}
+\x1bH335\x1bV0038\x1bS{CartonUpcMfg}
+\x1bH243\x1bV0038\x1bL0102\x1bS{CartonUpcProd}
+\x1bH155\x1bV0043\x1bS{CartonUpcChkdgt}
+{GradeHighlightBlock}
+{SidePanelBlock}
+{CustomerHighlightBlock}
+\x1bZ
+<ETX>

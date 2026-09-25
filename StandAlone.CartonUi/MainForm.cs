@@ -25,6 +25,7 @@ public class MainForm : Form
     private readonly CartonAppConfig _config;
     private readonly IBoxRepository _boxRepo;
     private readonly IPlcPipeService _plcPipe;
+    private readonly IDataLakeService _dataLake;
     private AppSettings _settings = null!;
     private CancellationTokenSource? _plcMonitorCts;
     private Task? _plcMonitorTask;
@@ -109,6 +110,12 @@ public class MainForm : Form
         _settings = SettingsManager.Load();
         _boxRepo = new FileBoxRepository(_config.DataDirectory, _settings.PalletsCsvPath);
         _plcPipe = new FilePlcPipeService();
+        _dataLake = new MongoDataLakeService(new DataLakeSettings
+        {
+            ConnectionString = _settings.MongoConnectionString,
+            DatabaseName     = _settings.MongoDatabaseName,
+        });
+        _ = _dataLake.UpsertStationAsync(StationRegistration.Build(_settings, _config, StationRegistration.CartonLabels));
 
         AutoScaleMode = AutoScaleMode.None;
         Text = $"Carton Label Printing — Line {_config.LineNumber:00}";
@@ -831,6 +838,16 @@ public class MainForm : Form
         var boxRecord = $"{nextRecId},{_config.LineNumber},{timestamp:yyyy-MM-dd HH:mm:ss},{stackNum},{plcMsg},,1,{barcodeSerial}";
 
         AppendToFile(boxFile, boxRecord);
+
+        _ = _dataLake.RecordCartonEventAsync(new CartonLakeRecord
+        {
+            BarcodeSerial = barcodeSerial,
+            PlantName     = _settings.PlantName,
+            StationId     = _settings.StationId,
+            LineNumber    = _config.LineNumber,
+            ItemNumber    = itemDetail.ItemNumber,
+            StackNumber   = stackNumber,
+        }, "Printed", $"Shift {_shift}, Inspector {_inspector}");
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -1286,7 +1303,7 @@ public class MainForm : Form
         var plcLabel = new Label
         {
             Text = "PLC Input (Live)",
-            Location = new Point(820, 540), Size = new Size(160, 20),
+            Location = new Point(780, 540), Size = new Size(200, 20),
             ForeColor = Color.LightGreen, Font = new Font("Segoe UI", 9f, FontStyle.Bold),
             TextAlign = ContentAlignment.MiddleLeft,
         };
@@ -1294,8 +1311,8 @@ public class MainForm : Form
 
         _plcInputList = new ListBox
         {
-            Location = new Point(820, 560),
-            Size = new Size(160, 80),
+            Location = new Point(780, 560),
+            Size = new Size(200, 80),
             Font = new Font("Consolas", 8.5f),
             BackColor = Color.Black,
             ForeColor = Color.LightGreen,
@@ -1688,6 +1705,9 @@ public class MainForm : Form
 
             if (string.Equals(outputType, "NetworkPrinter", StringComparison.OrdinalIgnoreCase))
             {
+                var (brandName, customerPartNumber, gradeHighlight, upcOverride) =
+                    await ResolveRetailLookupsAsync(itemDetail, ct);
+
                 var payload = BuildThermalPayload(
                     labelFormat: ResolveThermalLabelFormat(itemDetail, stacker?.Size ?? _labelSize),
                     labelTypeCode: itemDetail?.LabelTypeCode ?? 0,
@@ -1710,21 +1730,45 @@ public class MainForm : Form
                     quantity: Math.Max(1, box.PrintNum),
                     uccBarcode: itemDetail?.GetUCC() ?? string.Empty,
                     cartonUpc: itemDetail?.GetCartonUPC() ?? string.Empty,
-                    cartonUpcNumSys: itemDetail?.CartonUPC_NumSys.ToString("0") ?? string.Empty,
-                    cartonUpcMfg: itemDetail?.CartonUPC_Mfg.ToString("00000") ?? string.Empty,
-                    cartonUpcProd: itemDetail?.CartonUPC_Prod.ToString("00000") ?? string.Empty,
-                    cartonUpcChkdgt: itemDetail?.CartonUPC_Chkdgt.ToString("0") ?? string.Empty,
+                    // F&D "D" items: the bc-cpn row's own carton UPC overrides the item's (Progress
+                    // dtplc067.p GetCpn) — see ResolveRetailLookupsAsync.
+                    cartonUpcNumSys: upcOverride?.CtnNumSys.ToString("0") ?? itemDetail?.CartonUPC_NumSys.ToString("0") ?? string.Empty,
+                    cartonUpcMfg: upcOverride?.CtnMfg.ToString("00000") ?? itemDetail?.CartonUPC_Mfg.ToString("00000") ?? string.Empty,
+                    cartonUpcProd: upcOverride?.CtnProd.ToString("00000") ?? itemDetail?.CartonUPC_Prod.ToString("00000") ?? string.Empty,
+                    cartonUpcChkdgt: upcOverride?.CtnChkdgt.ToString("0") ?? itemDetail?.CartonUPC_Chkdgt.ToString("0") ?? string.Empty,
                     lisQty: itemDetail?.LisQty ?? 0,
                     grade: itemDetail?.Grade ?? 0,
                     location: _settings.PalletLocation,
                     plantName: _settings.PlantName,
                     cartonBarcodeSerialOverride: box.BarcodeSerial,
-                    physicalStackNumber: box.StackNum.Trim());
+                    physicalStackNumber: box.StackNum.Trim(),
+                    customerChar: itemDetail?.CustomerChar ?? string.Empty,
+                    panelType: itemDetail?.PanelType ?? 0,
+                    colorDescFrench: itemDetail?.ColorDescFrench ?? string.Empty,
+                    colorDescSpanish: itemDetail?.ColorDescSpanish ?? string.Empty,
+                    shapeDescFrench: itemDetail?.ShapeDescFrench ?? string.Empty,
+                    shapeDescSpanish: itemDetail?.ShapeDescSpanish ?? string.Empty,
+                    pei: itemDetail?.PEI ?? 0,
+                    wa: itemDetail?.WA ?? 0m,
+                    cof: itemDetail?.COF ?? 0m,
+                    tone: itemDetail?.Tone ?? string.Empty,
+                    typeOfTile: itemDetail?.TypeOfTile ?? string.Empty,
+                    customerPartNumber: customerPartNumber,
+                    brandName: brandName,
+                    gradeHighlight: gradeHighlight,
+                    pkgIndicator: itemDetail?.PkgIndicator ?? 0,
+                    lisDesc: itemDetail?.LISDescription ?? string.Empty,
+                    // Approximates dtplc067.p's substring(stacker.st-plcmsg, 33, 2) eq "M-" check
+                    // (see BuildThermalPayload's isMexicoItem doc comment) using the resolved
+                    // item's number instead of a raw PLC message byte offset this port doesn't have.
+                    isMexicoItem: _config.DoesMexico &&
+                        (itemDetail?.ItemNumber ?? string.Empty).TrimStart().StartsWith("M-", StringComparison.OrdinalIgnoreCase));
 
                 var thermalExporter = new ThermalPrinterCommandExporter(
                     _settings.LabelOutputAddress,
                     _config.DataDirectory,
-                    _settings.ThermalPrinterType);
+                    _settings.ThermalPrinterType,
+                    _settings.PrinterModel);
 
                 var thermalResult = await thermalExporter.ExportAsync(payload, ct);
                 if (thermalResult.Success)
@@ -1761,6 +1805,8 @@ public class MainForm : Form
                 ? itemDetail.Shade.ToString()
                 : job.ShadeOverride;
             var resolvedStack = string.IsNullOrEmpty(job.ShopOrder) ? "MANUAL" : job.ShopOrder;
+            var (brandName, customerPartNumber, gradeHighlight, upcOverride) =
+                await ResolveRetailLookupsAsync(itemDetail, ct);
 
             var payload = BuildThermalPayload(
                 labelFormat: resolvedFormat,
@@ -1784,10 +1830,12 @@ public class MainForm : Form
                 quantity: job.Quantity,
                 uccBarcode: itemDetail.GetUCC(),
                 cartonUpc: itemDetail.GetCartonUPC(),
-                cartonUpcNumSys: itemDetail.CartonUPC_NumSys.ToString("0"),
-                cartonUpcMfg: itemDetail.CartonUPC_Mfg.ToString("00000"),
-                cartonUpcProd: itemDetail.CartonUPC_Prod.ToString("00000"),
-                cartonUpcChkdgt: itemDetail.CartonUPC_Chkdgt.ToString("0"),
+                // F&D "D" items: the bc-cpn row's own carton UPC overrides the item's (Progress
+                // dtplc067.p GetCpn) — see ResolveRetailLookupsAsync.
+                cartonUpcNumSys: upcOverride?.CtnNumSys.ToString("0") ?? itemDetail.CartonUPC_NumSys.ToString("0"),
+                cartonUpcMfg: upcOverride?.CtnMfg.ToString("00000") ?? itemDetail.CartonUPC_Mfg.ToString("00000"),
+                cartonUpcProd: upcOverride?.CtnProd.ToString("00000") ?? itemDetail.CartonUPC_Prod.ToString("00000"),
+                cartonUpcChkdgt: upcOverride?.CtnChkdgt.ToString("0") ?? itemDetail.CartonUPC_Chkdgt.ToString("0"),
                 shopOrder: job.ShopOrder,
                 caliber: job.Caliber,
                 lisQty: itemDetail.LisQty,
@@ -1798,7 +1846,23 @@ public class MainForm : Form
                 userId: job.RequestedBy,
                 printerTermId: DerivePrinterTermId(_settings.LabelOutputAddress),
                 wmsUom: itemDetail.WmsUOM,
-                physicalStackNumber: job.PhysicalStackNumber);
+                physicalStackNumber: job.PhysicalStackNumber,
+                customerChar: itemDetail.CustomerChar,
+                panelType: itemDetail.PanelType,
+                colorDescFrench: itemDetail.ColorDescFrench,
+                colorDescSpanish: itemDetail.ColorDescSpanish,
+                shapeDescFrench: itemDetail.ShapeDescFrench,
+                shapeDescSpanish: itemDetail.ShapeDescSpanish,
+                pei: itemDetail.PEI,
+                wa: itemDetail.WA,
+                cof: itemDetail.COF,
+                tone: itemDetail.Tone,
+                typeOfTile: itemDetail.TypeOfTile,
+                customerPartNumber: customerPartNumber,
+                brandName: brandName,
+                gradeHighlight: gradeHighlight,
+                pkgIndicator: itemDetail.PkgIndicator,
+                lisDesc: itemDetail.LISDescription);
 
             // Compute up front so the returned serial is populated regardless of which
             // branch inside ExportAsync actually renders the label (e.g. non-SATO types).
@@ -1811,7 +1875,8 @@ public class MainForm : Form
             var thermalExporter = new ThermalPrinterCommandExporter(
                 _settings.LabelOutputAddress,
                 _config.DataDirectory,
-                _settings.ThermalPrinterType);
+                _settings.ThermalPrinterType,
+                _settings.PrinterModel);
 
             var thermalResult = await thermalExporter.ExportAsync(payload, ct);
             if (thermalResult.Success)
@@ -1826,6 +1891,61 @@ public class MainForm : Form
 
         SetStatus($"Output type '{_settings.LabelOutputType}' is not supported in manual mode.");
         return (false, string.Empty);
+    }
+
+    /// <summary>
+    /// Resolves the Standard Retail/F&amp;D-family fields that require a repository lookup rather than
+    /// a plain itemdet column: brand name (brands.csv, gated on br-print), CPN (bc_cpn.csv, keyed by
+    /// item/lis-qty/mapped customer number), and the grade-highlight flag (grades.csv). Safe to call
+    /// for any item, including blank-customer Manufacturing items — lookups simply return blank/false
+    /// when there's no matching row.
+    ///
+    /// CPN handling matches Progress dtplc067.p's GetCpn procedure exactly, which splits on
+    /// CustomerChar = "D" (F&amp;D Private Label):
+    ///   - "D": CPN is mandatory (no matching bc-cpn row is a hard print-abort error in Progress —
+    ///     this port can't silently invent a CPN, so CustomerPartNumber/UpcOverride are simply left
+    ///     unset and the caller/template ends up with a blank field rather than aborting), formatted
+    ///     as the plain 10-char CPN with no prefix, and it OVERRIDES the item's own carton UPC with
+    ///     the bc-cpn row's bcc-ctn-* fields (UpcOverride below).
+    ///   - everyone else that attempts a lookup at all (L/B/F — "H" is excluded, matching Progress's
+    ///     own dead/unreachable "H" branch): CPN is optional (blank when missing), formatted as
+    ///     "#" + cpn + " ", and never overrides the carton UPC.
+    /// </summary>
+    private async Task<(string BrandName, string CustomerPartNumber, bool GradeHighlight, CpnLookupResult? UpcOverride)> ResolveRetailLookupsAsync(
+        ItemDetail? itemDetail, CancellationToken ct)
+    {
+        if (itemDetail == null)
+            return (string.Empty, string.Empty, false, null);
+
+        var brandName = string.IsNullOrWhiteSpace(itemDetail.Brand)
+            ? string.Empty
+            : await _boxRepo.GetBrandNameAsync(itemDetail.Brand, ct) ?? string.Empty;
+
+        var customerPartNumber = string.Empty;
+        CpnLookupResult? upcOverride = null;
+        var isFndD = string.Equals(itemDetail.CustomerChar, "D", StringComparison.OrdinalIgnoreCase);
+        var cpnCustNbr = ThermalPrinterCommandBuilder.ResolveCpnCustomerNumber(itemDetail.CustomerChar);
+        if (!string.IsNullOrEmpty(cpnCustNbr))
+        {
+            var cpn = await _boxRepo.GetCpnAsync(itemDetail.ItemNumber, itemDetail.LisQty, cpnCustNbr, ct);
+            if (isFndD)
+            {
+                if (cpn != null)
+                {
+                    customerPartNumber = cpn.CaseCpn.Length > 10 ? cpn.CaseCpn[..10] : cpn.CaseCpn;
+                    upcOverride = cpn;
+                }
+            }
+            else if (cpn != null)
+            {
+                var clipped = cpn.CaseCpn.Length > 10 ? cpn.CaseCpn[..10] : cpn.CaseCpn;
+                customerPartNumber = $"#{clipped} ";
+            }
+        }
+
+        var gradeHighlight = await _boxRepo.GetGradeHighlightAsync(itemDetail.Grade.ToString(), ct);
+
+        return (brandName, customerPartNumber, gradeHighlight, upcOverride);
     }
 
     private ThermalLabelPayload BuildThermalPayload(
@@ -1865,10 +1985,56 @@ public class MainForm : Form
         string printerTermId = "",
         string wmsUom = "",
         string cartonBarcodeSerialOverride = "",
-        string physicalStackNumber = "")
+        string physicalStackNumber = "",
+        string customerChar = "",
+        int panelType = 0,
+        string colorDescFrench = "",
+        string colorDescSpanish = "",
+        string shapeDescFrench = "",
+        string shapeDescSpanish = "",
+        int pei = 0,
+        decimal wa = 0m,
+        decimal cof = 0m,
+        string tone = "",
+        string typeOfTile = "",
+        string customerPartNumber = "",
+        string brandName = "",
+        bool gradeHighlight = false,
+        int pkgIndicator = 0,
+        string lisDesc = "",
+        bool isMexicoItem = false)
     {
         return new ThermalLabelPayload
         {
+            // Progress checks substring(stacker.st-plcmsg, 33, 2) eq "M-" on the raw PLC message
+            // (dtplc067.p GenSingleLabel) before ever looking the item up — this port approximates
+            // that with an item-number-prefix check at the call site (see isMexicoItem callers)
+            // rather than a raw-message byte offset, since there's no equivalent fixed-width
+            // message buffer here. Mexico has no manual-entry print path at all (confirmed in
+            // dtlbl067.p's GetItem), so the manual call site always passes false.
+            IsMexicoItem = isMexicoItem,
+            // CrossOver's manual, operator-triggered 2-up/kiss-cut layout (dtlbl061.p/
+            // dtlbl071.p's ih-label-type-code=6 branch, {t0sz2x725-co-man-2upkiss.i}) is a
+            // different physical layout from the PLC/automatic path (dtplc067.p) — same
+            // CartonPrintMode setting that already distinguishes "PLC Signal" vs "Manual Qty"
+            // print triggering elsewhere in this form.
+            IsManualPrint = string.Equals(_settings.CartonPrintMode, "Manual Qty", StringComparison.OrdinalIgnoreCase),
+            CustomerChar = customerChar,
+            PkgIndicator = pkgIndicator,
+            LisDesc = lisDesc,
+            PanelType = panelType,
+            ColorDescFrench = colorDescFrench,
+            ColorDescSpanish = colorDescSpanish,
+            ShapeDescFrench = shapeDescFrench,
+            ShapeDescSpanish = shapeDescSpanish,
+            Pei = pei,
+            Wa = wa,
+            Cof = cof,
+            Tone = tone,
+            TypeOfTile = typeOfTile,
+            CustomerPartNumber = customerPartNumber,
+            BrandName = brandName,
+            GradeHighlight = gradeHighlight,
             PhysicalStackNumber = physicalStackNumber,
             // Reuse an already-known barcode (e.g. a reprint's originally-stored value)
             // instead of letting it be recomputed from "now" — see CartonBarcodeSerial

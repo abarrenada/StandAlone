@@ -9,10 +9,15 @@ namespace StandAlone.CartonUi.Forms;
 
 /// <summary>
 /// Full-screen pallet-label printing screen.
-/// Input sources (determined by Settings → PlcConnectionType):
-///   SerialPort — listens on the configured COM port for 30-char carton barcodes.
-///   IP         — listens on a TCP port (Settings → PlcPort, default 9000) for the same barcodes.
-/// In both modes the operator can also type or paste a barcode into the manual-entry bar and press Enter.
+/// Input source is resolved per line from data/devices.csv's "S-SCAN" row (the C# analog of
+/// Progress dev-detail's IFR config — see LineDeviceCatalog): SER opens the configured COM port,
+/// IP with "host:port" connects out to a Moxa NPort (TCP Server mode) and reads its ASCII lines, IP with a
+/// bare port listens on that TCP port for a scanner dialing in. A line with no S-SCAN row uses Settings →
+/// Pallet Scan Address (connect out) when set, otherwise falls
+/// back to Settings → PlcConnectionType/PlcAddress/PlcBaudRate/PlcPort, unchanged from before.
+/// Likewise, pallet-label output is resolved from the "A-PTR" row, falling back to Settings →
+/// LabelOutputAddress when absent. In both scan-input modes the operator can also type or paste a
+/// barcode into the manual-entry bar and press Enter.
 /// </summary>
 public class PalletScanForm : Form
 {
@@ -21,6 +26,7 @@ public class PalletScanForm : Form
     private readonly IBoxRepository  _boxRepo;
     private readonly int             _shift;
     private readonly string          _inspector;
+    private readonly IDataLakeService _dataLake;
 
     // UI
     private Label   _statusLabel  = null!;
@@ -46,6 +52,11 @@ public class PalletScanForm : Form
         _boxRepo   = boxRepo;
         _shift     = shift;
         _inspector = inspector;
+        _dataLake  = new MongoDataLakeService(new DataLakeSettings
+        {
+            ConnectionString = settings.MongoConnectionString,
+            DatabaseName     = settings.MongoDatabaseName,
+        });
 
         Text             = $"Pallet Label — Line {config.LineNumber:00}";
         WindowState      = FormWindowState.Maximized;
@@ -247,12 +258,51 @@ public class PalletScanForm : Form
     protected override void OnLoad(EventArgs e)
     {
         base.OnLoad(e);
+        _ = _dataLake.UpsertStationAsync(StationRegistration.Build(_settings, _config, StationRegistration.PalletScan));
         _cts = new CancellationTokenSource();
 
-        if (_settings.PlcConnectionType == "IP")
-            StartTcpListener(_cts.Token);
+        // Per-line override (dev-detail "S-SCAN" row); null means no row for this line, so we
+        // fall back to the station-wide Settings exactly as before.
+        var scanDevice = new LineDeviceCatalog(_config.DataDirectory).GetDevice(_config.LineNumber, "S-SCAN");
+
+        // Outbound mode: an S-SCAN IP row with a host, or (no row) Settings → Pallet Scan Address,
+        // means the scanner sits behind an NPort in TCP Server mode, so we dial out to it.
+        string? nportHost = null;
+        int nportPort = 0;
+        if (scanDevice is { IsIp: true })
+        {
+            if (scanDevice.TryParseHostPort(_settings.PlcPort, out var h, out var p) && h.Length > 0)
+                (nportHost, nportPort) = (h, p);
+        }
+        else if (scanDevice is null &&
+                 OmronNPortMonitorService.TryParseEndpoint(_settings.PalletScanAddress, out var h, out var p))
+        {
+            (nportHost, nportPort) = (h, p);
+        }
+
+        var useIp = scanDevice?.IsIp ?? string.Equals(_settings.PlcConnectionType, "IP", StringComparison.OrdinalIgnoreCase);
+
+        if (nportHost is not null)
+        {
+            StartNPortClient(_cts.Token, nportHost, nportPort);
+        }
+        else if (useIp)
+        {
+            var port = _settings.PlcPort;
+            if (scanDevice is { IsIp: true } && scanDevice.TryParseHostPort(_settings.PlcPort, out _, out var parsedPort))
+                port = parsedPort;
+            StartTcpListener(_cts.Token, port);
+        }
         else
-            StartSerialReader(_cts.Token);
+        {
+            var comPort = scanDevice is { IsIp: false } && !string.IsNullOrWhiteSpace(scanDevice.Dev)
+                ? scanDevice.Dev
+                : _settings.PlcAddress;
+            var baud = scanDevice is { IsIp: false }
+                ? scanDevice.ParseBaudRate(_settings.PlcBaudRate)
+                : _settings.PlcBaudRate;
+            StartSerialReader(_cts.Token, comPort, baud);
+        }
 
         _manualEntry.Focus();
     }
@@ -269,18 +319,18 @@ public class PalletScanForm : Form
     // ─────────────────────────────────────────────────────────────────────────
     //  Serial reader
     // ─────────────────────────────────────────────────────────────────────────
-    private void StartSerialReader(CancellationToken ct)
+    private void StartSerialReader(CancellationToken ct, string portName, int baudRate)
     {
-        var portName = _settings.PlcAddress?.Trim() ?? string.Empty;
+        portName = portName.Trim();
         if (string.IsNullOrWhiteSpace(portName))
         {
-            SetStatus("⚠ No COM port configured — go to Settings → Address.", Color.Salmon);
+            SetStatus("⚠ No COM port configured — go to Settings → Address (or data/devices.csv).", Color.Salmon);
             return;
         }
 
         try
         {
-            _port = new SerialPort(portName, _settings.PlcBaudRate)
+            _port = new SerialPort(portName, baudRate)
             {
                 ReadTimeout = 2000,
                 NewLine     = "\r",
@@ -293,7 +343,7 @@ public class PalletScanForm : Form
             return;
         }
 
-        SetStatus($"Ready — scan a carton barcode on {portName} ({_settings.PlcBaudRate} baud)  or type it above.", Color.LightCyan);
+        SetStatus($"Ready — scan a carton barcode on {portName} ({baudRate} baud)  or type it above.", Color.LightCyan);
 
         Task.Run(() =>
         {
@@ -317,11 +367,42 @@ public class PalletScanForm : Form
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    //  NPort client (outbound connection to a Moxa NPort in TCP Server mode)
+    // ─────────────────────────────────────────────────────────────────────────
+    private void StartNPortClient(CancellationToken ct, string host, int port)
+    {
+        var logPath = Path.Combine(_config.DataDirectory, "pallet-scan-ip.log");
+        var client  = new NPortAsciiLineClient(host, port, logPath, "pallet_scan");
+
+        client.OnStatus = msg => PostToUi(() =>
+        {
+            var connected = msg.StartsWith("Connected", StringComparison.Ordinal);
+            SetStatus(connected ? $"Ready — {msg}. Scan a carton barcode or type it above." : $"Scanner NPort: {msg}",
+                connected ? Color.LightCyan : Color.Salmon);
+        });
+        client.OnLine = (raw, reason) =>
+        {
+            var trimmed = raw.Trim();
+            client.Log($"[{NPortAsciiLineClient.Now()}] line reason={reason} len={trimmed.Length} ascii=[{trimmed}]");
+            if (trimmed.Length > 0)
+                PostToUi(async () => await HandleScanAsync(trimmed));
+        };
+
+        SetStatus($"Scanner NPort: connecting {host}:{port}...", Color.LightCyan);
+        Task.Run(() => client.RunAsync(ct), ct);
+    }
+
+    private void PostToUi(Action action)
+    {
+        if (IsDisposed || !IsHandleCreated) return;
+        try { BeginInvoke(action); } catch { /* form closing */ }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     //  TCP listener
     // ─────────────────────────────────────────────────────────────────────────
-    private void StartTcpListener(CancellationToken ct)
+    private void StartTcpListener(CancellationToken ct, int port)
     {
-        var port = _settings.PlcPort;
         try
         {
             _tcpListener = new TcpListener(IPAddress.Any, port);
@@ -459,6 +540,40 @@ public class PalletScanForm : Form
                 PrintedAtUtc   = DateTime.UtcNow,
             }, CancellationToken.None);
 
+            _ = _dataLake.RecordPalletEventAsync(new PalletLakeRecord
+            {
+                PalletId       = palletId,
+                PlantName      = _settings.PlantName,
+                StationId      = _settings.StationId,
+                Plant          = item.Plant,
+                ItemNumber     = item.ItemNumber,
+                ColorDesc      = item.ColorDesc,
+                ShapeDesc      = item.ShapeDesc,
+                SeriesDesc     = item.SeriesDesc,
+                LisQty         = item.LisQty,
+                BoxesPerPallet = item.BoxesPerPallet,
+                Shade          = item.Shade.ToString("0000"),
+                Size           = item.SizeShape,
+                ShopOrder      = item.LastScheduleOrder,
+                Grade          = item.Grade,
+                LineNumber     = _config.LineNumber,
+                Shift          = _shift,
+                Inspector      = _inspector,
+            }, "Printed", $"Pallet label printed by {_inspector}");
+
+            // Link the scanned carton to this pallet, so its lake record shows the cross-station
+            // trail (Printed on the carton station → Palletized here). Barcode chars 21-22 are
+            // the line that printed it (see ComputeCartonBarcodeSerial).
+            _ = _dataLake.RecordCartonEventAsync(new CartonLakeRecord
+            {
+                BarcodeSerial = scanned,
+                PlantName     = _settings.PlantName,
+                StationId     = _settings.StationId,
+                LineNumber    = int.TryParse(scanned.AsSpan(20, 2), out var cartonLine) ? cartonLine : 0,
+                ItemNumber    = item.ItemNumber,
+                PalletId      = palletId,
+            }, "Palletized", $"Scanned onto pallet {palletId} by {_inspector}");
+
             var histLine = $"{DateTime.Now:HH:mm:ss}  {palletId}  {item.ItemNumber,-20}  {item.LisQty}pc × {item.BoxesPerPallet}ctn";
             _historyList.Items.Insert(0, histLine);
             if (_historyList.Items.Count > 100)
@@ -477,7 +592,13 @@ public class PalletScanForm : Form
     // ─────────────────────────────────────────────────────────────────────────
     private async Task<bool> PrintPalletAsync(ItemDetail item, string palletId, string cartonBarcode)
     {
-        if (string.IsNullOrWhiteSpace(_settings.LabelOutputAddress))
+        // Per-line override (dev-detail "A-PTR" row); null means no row for this line, so we fall
+        // back to the station-wide Settings → LabelOutputAddress exactly as before.
+        var printerDevice = new LineDeviceCatalog(_config.DataDirectory).GetDevice(_config.LineNumber, "A-PTR");
+        var printerDeviceDev = printerDevice?.Dev ?? string.Empty;
+        var outputAddress = printerDeviceDev.Length > 0 ? printerDeviceDev : _settings.LabelOutputAddress;
+
+        if (string.IsNullOrWhiteSpace(outputAddress))
             return false;
 
         var payload = new ThermalLabelPayload
@@ -514,15 +635,18 @@ public class PalletScanForm : Form
             CartonUpcChkdgt  = item.CartonUPC_Chkdgt.ToString("0"),
             CartonReferenceBarcode = cartonBarcode,
             UserId           = Environment.UserName,
-            PrinterTermId    = DerivePrinterTermId(_settings.LabelOutputAddress),
+            PrinterTermId    = DerivePrinterTermId(outputAddress),
             WmsUom           = item.WmsUOM,
             CreatedAtUtc     = DateTime.UtcNow,
         };
 
+        var baudRate = printerDevice is { IsIp: false } ? printerDevice.ParseBaudRate(9600) : 9600;
         var exporter = new ThermalPrinterCommandExporter(
-            _settings.LabelOutputAddress,
+            outputAddress,
             _config.DataDirectory,
-            _settings.ThermalPrinterType);
+            _settings.ThermalPrinterType,
+            _settings.PrinterModel,
+            baudRate);
 
         var result = await exporter.ExportAsync(payload, CancellationToken.None);
         return result.Success;

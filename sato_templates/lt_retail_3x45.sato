@@ -1,0 +1,50 @@
+# symbolic SATO template
+# family: Standard Retail (customer H/L/B/D/F) / 3x4.5
+# ported field-for-field from c:\Workspace\southalr\dtlbl065d.i — a 90°-rotated port of
+# dtlbl060b.i (4.5x3), sharing its field set. CustomerChar L/F/B swap ColorDesc for
+# CPN+ColorDesc with a highlight box, but ONLY when PanelType=1 (unlike 2x6, which
+# is unconditional on PanelType) — see ApplyRetail3x45.
+
+<STX>
+\x1bA
+\x1bCS4
+\x1b#E2
+\x1bQ{Quantity}
+\x1bA109130625
+\x1bA3H-005V000
+\x1b%1
+\x1bH025\x1bV873\x1bL0101\x1bSColor/Couleur/Color:
+\x1bH025\x1bV623\x1bSShape/Forme/Formato:
+\x1bH025\x1bV268\x1bS{MachineLineTerminalCode}
+\x1bH042\x1bV873\x1bL0203\x1bWB1{ItemNumberMasked}
+\x1bH102\x1bV203\x1bL0101\x1bM{InspectorDisplay}
+\x1bH127\x1bV868\x1bBG03085{CartonBarcodeCommand}
+\x1bH209\x1bV871\x1bFW03H675
+\x1bH216\x1bV848\x1bL0101\x1bM{CartonBarcodeSerial}
+\x1bH242\x1bV888\x1bL0102\x1bM{ColorDescDisplay}
+\x1bH282\x1bV888\x1bL0102\x1bM{ShapeDesc}
+\x1bH327\x1bV888\x1bL0102\x1bM{ColorDescFrench}
+\x1bH367\x1bV888\x1bL0102\x1bM{ShapeDescFrench}
+\x1bH412\x1bV888\x1bL0102\x1bM{ColorDescSpanish}
+\x1bH452\x1bV888\x1bL0102\x1bM{ShapeDescSpanish}
+\x1bH432\x1bV423\x1bL0102\x1bS{SeriesDesc}
+\x1bH217\x1bV303\x1bL0101\x1bSShade/Telnte/Tono
+\x1bH232\x1bV288\x1bL0101\x1bWL1{ShadeLotCode}
+\x1bH287\x1bV288\x1bSQual/Cal:
+\x1bH287\x1bV193\x1bL0101\x1bM{Grade}
+\x1bH310\x1bV288\x1bSLoc:
+\x1bH307\x1bV243\x1bL0101\x1bM{Plant}
+\x1bH330\x1bV288\x1bL0101\x1bM{MfgDateCode}
+{QtyWeightBlock}
+{CaseBarcodeBlock}
+\x1bH472\x1bV338\x1bD3021100{CartonUpc}
+\x1bH469\x1bV340\x1bFW03H194
+\x1bH577\x1bV361\x1bL0102\x1bS{CartonUpcNumSys}
+\x1bH582\x1bV318\x1bS{CartonUpcMfg}
+\x1bH582\x1bV226\x1bL0102\x1bS{CartonUpcProd}
+\x1bH577\x1bV138\x1bS{CartonUpcChkdgt}
+{GradeHighlightBlock}
+{SidePanelBlock}
+{CustomerHighlightBlock}
+\x1bZ
+<ETX>

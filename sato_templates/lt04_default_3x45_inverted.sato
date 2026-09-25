@@ -1,21 +1,49 @@
 # symbolic SATO template
-# source include: dtplb008I.i
-# branch: label-type=4 / default / 3x4.5 inverted
+# family: F&D Private Label (label-type-code=4) / 3x4.5 / automatic (PLC), Inverted (right-hand
+# engine / opposite feed direction)
+# ported field-for-field from c:\Workspace\southalr\dtplb008I.i ("Is a copy of dtplb008.i but
+# inverted with awk script" per its own header) -- dispatched from dtplc067.p's
+# ih-label-type-code=4 branch when the line's configured include for this size is
+# "dtlbl065cI.i".
+#
+# Same simplifications as lt04_default_3x45.sato -- see that file's header. One more thing
+# reproduced verbatim: legacy source literally says "iBox Quantity:" (not "Box Quantity:") on
+# this Inverted variant only -- presumably a typo introduced when the file was copied/inverted,
+# left as-is rather than "corrected" since a faithful port isn't the place to silently fix
+# legacy's own label text.
 
 <STX>
 \x1bA
-\x1bCS2
-\x1bQ1
-\x1bH0180\x1bV0080\x1bL0202\x1bXMDALTILE CARTON LABEL
-\x1bH0180\x1bV0145\x1bXMITEM: {ItemNumber}
-\x1bH0180\x1bV0190\x1bXMSHADE: {Shade} SIZE: {Size}
-\x1bH0180\x1bV0235\x1bXM {PartDescription} |  {Size} X  {Shade} X  {Quantity} IN | FINISH LINE
-\x1bH0180\x1bV0280\x1bXMQTY/CTN: {Quantity} SALES: {SalesQty} {SalesUom}
-\x1bH0180\x1bV0325\x1bXMWT: {PackageWeight} LINE: {LineNumber} SHIFT: {Shift}
-\x1bH0180\x1bV0370\x1bXMINSP: {Inspector} STACK: {StackNumber} SIZECD: {Size}
-\x1bH0180\x1bV0415\x1bXMDATE: {CreatedAtUtc} IREF: {IRef} PLANT: {Plant}
-\x1bH0180\x1bV0470\x1bXMUPC:
-\x1bH0180\x1bV0510\x1bB103100\x1bD {CartonUpc}
-\x1bH0680\x1bV0470\x1bXM128:
-\x1bH0680\x1bV0510\x1bB103080\x1bD {UccBarcode}
+\x1bCS4
+\x1b#E2
+\x1bN
+\x1bAR
 \x1bZ
+<ETX>xxxxx
+<STX>
+\x1bA
+\x1bA109120608
+\x1bA3H0000V0000
+\x1b%3
+\x1bH552\x1bV072\x1bL0101\x1bRDA00,P16,P20,{ColorDesc}
+\x1bH492\x1bV602\x1bL0101\x1bRDA00,P16,P16,SKU# {CustomerPartNumber}
+\x1bH487\x1bV072\x1bL0101\x1bRDA00,P12,P12,iBox Quantity: {LisQty}
+\x1bH452\x1bV072\x1bL0101\x1bRDA00,P12,P12,Lot Code: {ShadeLotCode}
+\x1bH417\x1bV072\x1bL0101\x1bRDA00,P12,P12,Production Date: {MfgDateCodeShort}
+\x1bH452\x1bV702\x1bD3021300{CartonUpcNumSys}{CartonUpcMfg}{CartonUpcProd}{CartonUpcChkdgt}
+\x1bH317\x1bV687\x1bL0102\x1bS{CartonUpcNumSys}
+\x1bH317\x1bV732\x1bL0102\x1bS{CartonUpcMfg}
+\x1bH317\x1bV817\x1bL0102\x1bS{CartonUpcProd}
+\x1bH317\x1bV907\x1bL0102\x1bS{CartonUpcChkdgt}
+\x1bH372\x1bV072\x1bL0101\x1bMNominal Size: {NominalSizeUs}
+\x1bH342\x1bV282\x1bL0101\x1bM{NominalSizeMetric}
+\x1bH312\x1bV072\x1bL0101\x1bMActual Size: {ActualSizeUs}
+\x1bH282\x1bV270\x1bL0101\x1bM{ActualSizeMetric}
+\x1bH252\x1bV072\x1bL0101\x1bMThickness: {Thickness}
+\x1bH222\x1bV072\x1bL0101\x1bMCoverage Area Per Carton: {SalesQtyFormatted} {SalesUom}{CoverageMetricFormatted}
+\x1bH192\x1bV072\x1bL0101\x1bMWeight Per Carton: {PackageWeightFormatted} LBS{PackageWeightMetricFormatted}
+\x1bH152\x1bV087\x1bB9030852B02C28{CartonBarcodeSerial}
+\x1bQ{Quantity}
+\x1bZ
+<ETX>xxxxxxxxxx
+{Fnd3x45Footer}

@@ -30,12 +30,54 @@ public static class SatoTemplateResolver
 
         if (payload.LabelTypeCode == 4)
         {
+            // Manual (operator-triggered) F&D prints use different coordinate layouts than the
+            // PLC/automatic path for the 3 sizes that have a manual counterpart in the real source
+            // (dtplb001/002/006.i vs dtplc067.p's dtplb003/004/005.i) -- 3x4.5 has no manual layout
+            // in Progress, so it always falls back to the automatic template.
+            if (payload.IsManualPrint && sizeToken is "45x3" or "2x725" or "175x838")
+            {
+                return $"lt04_default_{sizeToken}_man.sato";
+            }
+
+            // 3x4.5 has a separate "Inverted" auto layout (dtplb008I.i) for the opposite feed
+            // direction -- reuses the same TemplateOrientation flag CrossOver's ref-last uses.
+            if (sizeToken == "3x45" && referenceToken == "ref-last")
+            {
+                return "lt04_default_3x45_inverted.sato";
+            }
+
             return $"lt04_default_{sizeToken}.sato";
         }
 
         if (payload.LabelTypeCode == 6)
         {
+            // Manual (operator-triggered) CrossOver prints use a different, 2-up/kiss-cut
+            // layout (dtlbl061.p/dtlbl071.p + {t0sz...-co-man-2upkiss.i}) than the PLC/
+            // automatic path's single-up ref-first/ref-last layout (dtplc067.p).
+            if (payload.IsManualPrint)
+            {
+                return $"lt06_xover_{sizeToken}_man-2upkiss.sato";
+            }
+
             return $"lt06_xover_{sizeToken}_{referenceToken}.sato";
+        }
+
+        // Standard Retail: a real retail customer (Home Depot/Lowe's/Menards/F&D Standard) is on
+        // the item, as opposed to a blank CustomerChar (Manufacturing). LabelTypeCode 4/6 are
+        // handled above and take precedence even if CustomerChar happens to be set.
+        if (!string.IsNullOrWhiteSpace(payload.CustomerChar))
+        {
+            return $"lt_retail_{sizeToken}.sato";
+        }
+
+        // Manufacturing: 3x4.5 has a separate "Inverted" auto layout (dtmlb005I.i) for the
+        // opposite feed direction, same TemplateOrientation flag used elsewhere in this
+        // resolver. No manual-print variant is implemented for this family yet (blank
+        // id-cust-char) -- IsManualPrint is ignored here and always resolves to the automatic
+        // template, unlike LabelTypeCode 4/6 above.
+        if (sizeToken == "3x45" && referenceToken == "ref-last")
+        {
+            return "lt_default_3x45_inverted.sato";
         }
 
         return $"lt_default_{sizeToken}.sato";

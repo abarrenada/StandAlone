@@ -1,0 +1,59 @@
+# symbolic SATO template
+# family: F&D Private Label (label-type-code=4) / 1.75x8.38 / manual (operator-triggered)
+# ported field-for-field from c:\Workspace\southalr\dtplb006.i, dispatched from
+# dtlbl062.p:777-789 (conditional on printer model matching 85R/86R, else dtplb005.i) /
+# dtlbl072.p:716-718 when ih-label-type-code=04.
+#
+# Genuinely a 2-up print (two full copies side by side, H830.../H820... first copy,
+# H480.../H470... second copy), same as the 2x7.25 manual variant. Source's model gate only
+# supports M-8400RV/84VL -- skipped for the same reason as the other manual sizes (see
+# lt04_default_2x725_man.sato's header). No trailing "~033Q~033Z~003" of its own -- relies on
+# the calling program's shared post-dispatch finalization, folded in directly as {Quantity}
+# same as the 2x7.25 manual variant.
+
+<STX>
+\x1bA
+\x1bCS3
+\x1b#E2
+\x1bA3H0000V0000
+\x1b%3
+\x1bH830\x1bV0020\x1bL0101\x1bRDA00,P16,P20,{ColorDesc}
+\x1bH820\x1bV1050\x1bL0101\x1bRDA00,P16,P16,SKU# {CustomerPartNumber}
+\x1bH770\x1bV0020\x1bL0101\x1bRDA00,P12,P12,Box Quantity: {LisQty}
+\x1bH735\x1bV0020\x1bL0101\x1bRDA00,P12,P12,Lot Code: {ShadeLotCode}
+\x1bH700\x1bV0020\x1bL0101\x1bRDA00,P12,P12,Production Date: {MfgDateCodeShort}
+\x1bH780\x1bV1050\x1bD3021300{CartonUpcNumSys}{CartonUpcMfg}{CartonUpcProd}{CartonUpcChkdgt}
+\x1bH645\x1bV1035\x1bL0102\x1bS{CartonUpcNumSys}
+\x1bH645\x1bV1075\x1bL0102\x1bS{CartonUpcMfg}
+\x1bH645\x1bV1162\x1bL0102\x1bS{CartonUpcProd}
+\x1bH645\x1bV1245\x1bL0102\x1bS{CartonUpcChkdgt}
+\x1bH660\x1bV0020\x1bL0101\x1bMNominal Size: {NominalSizeUs}
+\x1bH660\x1bV0570\x1bL0101\x1bM{NominalSizeMetric}
+\x1bH630\x1bV0020\x1bL0101\x1bMActual Size: {ActualSizeUs}
+\x1bH630\x1bV0570\x1bL0101\x1bM{ActualSizeMetric}
+\x1bH600\x1bV0020\x1bL0101\x1bMThickness: {Thickness}
+\x1bH570\x1bV0020\x1bL0101\x1bMCoverage Area Per Carton: {SalesQtyFormatted} {SalesUom}{CoverageMetricFormatted}
+\x1bH540\x1bV0020\x1bL0101\x1bMWeight Per Carton: {PackageWeightFormatted} LBS{PackageWeightMetricFormatted}
+\x1bH600\x1bV0760\x1bB9030852B02C28{CartonBarcodeSerial}
+\x1b%3
+\x1bH480\x1bV0020\x1bL0101\x1bRDA00,P16,P20,{ColorDesc}
+\x1bH470\x1bV1050\x1bL0101\x1bRDA00,P16,P16,SKU# {CustomerPartNumber}
+\x1bH420\x1bV0020\x1bL0101\x1bRDA00,P12,P12,Box Quantity: {LisQty}
+\x1bH385\x1bV0020\x1bL0101\x1bRDA00,P12,P12,Lot Code: {ShadeLotCode}
+\x1bH350\x1bV0020\x1bL0101\x1bRDA00,P12,P12,Production Date: {MfgDateCodeShort}
+\x1bH430\x1bV1050\x1bD3021300{CartonUpcNumSys}{CartonUpcMfg}{CartonUpcProd}{CartonUpcChkdgt}
+\x1bH295\x1bV1035\x1bL0102\x1bS{CartonUpcNumSys}
+\x1bH295\x1bV1075\x1bL0102\x1bS{CartonUpcMfg}
+\x1bH295\x1bV1162\x1bL0102\x1bS{CartonUpcProd}
+\x1bH295\x1bV1245\x1bL0102\x1bS{CartonUpcChkdgt}
+\x1bH310\x1bV0020\x1bL0101\x1bMNominal Size: {NominalSizeUs}
+\x1bH310\x1bV0570\x1bL0101\x1bM{NominalSizeMetric}
+\x1bH280\x1bV0020\x1bL0101\x1bMActual Size: {ActualSizeUs}
+\x1bH280\x1bV0570\x1bL0101\x1bM{ActualSizeMetric}
+\x1bH250\x1bV0020\x1bL0101\x1bMThickness: {Thickness}
+\x1bH220\x1bV0020\x1bL0101\x1bMCoverage Area Per Carton: {SalesQtyFormatted} {SalesUom}{CoverageMetricFormatted}
+\x1bH190\x1bV0020\x1bL0101\x1bMWeight Per Carton: {PackageWeightFormatted} LBS{PackageWeightMetricFormatted}
+\x1bH250\x1bV0760\x1bB9030852B02C28{CartonBarcodeSerial}
+\x1bQ{Quantity}
+\x1bZ
+<ETX>

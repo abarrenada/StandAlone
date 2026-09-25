@@ -1,21 +1,47 @@
 # symbolic SATO template
-# source include: dtplb003.i
-# branch: label-type=4 / default / 4.5x3
+# family: F&D Private Label (label-type-code=4) / 4.5x3 / automatic (PLC)
+# ported field-for-field from c:\Workspace\southalr\dtplb003.i's ACTIVE code path (the file has
+# a large block of dead/commented-out alternate coordinates from an earlier layout -- this is
+# the one that actually runs today), dispatched from dtplc067.p's ih-label-type-code=4 branch
+# when the line's configured include for this size is "dtlbl060b.i".
+#
+# The only F&D size with real per-model coordinate variance: {FndReferenceMoveOffset} picks a
+# base reference-move offset by raw device-model (M-8400RV/84VL vs S86L*/85L* vs S86R*/85X*) --
+# see ThermalPrinterCommandBuilder.ComputeFndReferenceMoveOffset for why it defaults to the
+# M84-family offset with today's catalog. Every model shares this one field layout below (ESC
+# %2) once positioned.
+#
+# Same other simplifications as lt04_default_2x725.sato -- no setsato, SAP-gap size fields
+# blank, Box Quantity mapped to LisQty, trailing "xxxxxxxxxx" reproduced verbatim. Source ends
+# in ESC N (not present on 2x725/1.75x8.38) followed by ESC %3 then immediately ESC %2 -- both
+# reproduced verbatim even though the %3 looks superseded by the %2 right after it.
 
 <STX>
 \x1bA
-\x1bCS2
-\x1bQ1
-\x1bH0180\x1bV0080\x1bL0202\x1bXMDALTILE CARTON LABEL
-\x1bH0180\x1bV0145\x1bXMITEM: {ItemNumber}
-\x1bH0180\x1bV0190\x1bXMSHADE: {Shade} SIZE: {Size}
-\x1bH0180\x1bV0235\x1bXM {PartDescription} |  {Size} X  {Shade} X  {Quantity} IN | FINISH LINE
-\x1bH0180\x1bV0280\x1bXMQTY/CTN: {Quantity} SALES: {SalesQty} {SalesUom}
-\x1bH0180\x1bV0325\x1bXMWT: {PackageWeight} LINE: {LineNumber} SHIFT: {Shift}
-\x1bH0180\x1bV0370\x1bXMINSP: {Inspector} STACK: {StackNumber} SIZECD: {Size}
-\x1bH0180\x1bV0415\x1bXMDATE: {CreatedAtUtc} IREF: {IRef} PLANT: {Plant}
-\x1bH0180\x1bV0470\x1bXMUPC:
-\x1bH0180\x1bV0510\x1bB103100\x1bD {CartonUpc}
-\x1bH0680\x1bV0470\x1bXM128:
-\x1bH0680\x1bV0510\x1bB103080\x1bD {UccBarcode}
+\x1bCS4
+\x1b#E2
+\x1bN
+\x1bA3{FndReferenceMoveOffset}
+\x1b%3
+\x1b%2
+\x1bH880\x1bV595\x1bL0101\x1bRDA00,P16,P20,{ColorDesc}
+\x1bH350\x1bV535\x1bL0101\x1bRDA00,P16,P16,SKU# {CustomerPartNumber}
+\x1bH880\x1bV530\x1bL0101\x1bRDA00,P12,P12,Box Quantity: {LisQty}
+\x1bH880\x1bV495\x1bL0101\x1bRDA00,P12,P12,Lot Code: {ShadeLotCode}
+\x1bH880\x1bV460\x1bL0101\x1bRDA00,P12,P12,Production Date: {MfgDateCodeShort}
+\x1bH250\x1bV495\x1bD3021300{CartonUpcNumSys}{CartonUpcMfg}{CartonUpcProd}{CartonUpcChkdgt}
+\x1bH265\x1bV360\x1bL0102\x1bS{CartonUpcNumSys}
+\x1bH220\x1bV360\x1bL0102\x1bS{CartonUpcMfg}
+\x1bH135\x1bV360\x1bL0102\x1bS{CartonUpcProd}
+\x1bH035\x1bV360\x1bL0102\x1bS{CartonUpcChkdgt}
+\x1bH880\x1bV415\x1bL0101\x1bMNominal Size: {NominalSizeUs}
+\x1bH670\x1bV385\x1bL0101\x1bM{NominalSizeMetric}
+\x1bH880\x1bV355\x1bL0101\x1bMActual Size: {ActualSizeUs}
+\x1bH682\x1bV325\x1bL0101\x1bM{ActualSizeMetric}
+\x1bH880\x1bV295\x1bL0101\x1bMThickness: {Thickness}
+\x1bH880\x1bV265\x1bL0101\x1bMCoverage Area Per Carton: {SalesQtyFormatted} {SalesUom}{CoverageMetricFormatted}
+\x1bH880\x1bV235\x1bL0101\x1bMWeight Per Carton: {PackageWeightFormatted} LBS{PackageWeightMetricFormatted}
+\x1bH865\x1bV195\x1bB9030852B02C28{CartonBarcodeSerial}
+\x1bQ{Quantity}
 \x1bZ
+<ETX>xxxxxxxxxx

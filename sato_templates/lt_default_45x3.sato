@@ -1,63 +1,72 @@
 # symbolic SATO template
-# source include: dtplc067_prep.p GenSingleLabel, case "dtlbl060b.i" (default / label-type 0 path)
-# branch: default / 4.5x3
+# family: Manufacturing (blank id-cust-char) / 4.5x3 / automatic (PLC)
+# ported field-for-field from c:\Workspace\southalr\dtmlb001.i, dispatched from dtplc067.p's
+# blank-id-cust-char branch (~line 951) when the line's configured include for this size is
+# "dtlbl060b.i".
 #
-# Ported field-for-field from the legacy include. Print-head reference offset below is the
-# legacy right-hand engine family (S86RD/85R/85xrbd) value for genuine 4.5x3 stock, taken
-# verbatim from dtplc067_prep.p:8358 - there's no per-device model setting on this side to
-# pick 85L/S86LD instead.
+# REPLACES the previous content of this file, which was actually a port of Standard Retail's
+# own dtlbl060b.i (PanelType=0, no side panel) — a reasonable stand-in before dtmlb001.i had
+# been researched, but not the real Manufacturing source; its own header already listed exactly
+# the fields dtmlb001.i has that it didn't (machine/line/term string, prt-apply-type suffix,
+# French/Spanish rows, grade highlight box) as "known omissions". Those are all present below.
 #
-# For narrower 4x3 stock, use lt_default_4x3.sato instead (separate file - the coordinate
-# math differs enough on-press that it needs its own tuning, not just an offset tweak here).
+# The only Manufacturing size with real per-hand coordinate variance: {EngineReferenceMove} and
+# {GradeHighlightBlock} are computed from this station's PrinterModel (EngineHand) — see
+# ThermalPrinterCommandBuilder.ComputeMfg45x3ReferenceMove/ComputeMfg45x3GradeHighlightBlock.
 #
-# Known, documented omissions vs. the legacy label (no data source / not applicable here):
-#   - machine/line/term tracking string next to the field labels
-#   - prt-apply-type suffix on the "Color/Couleur" label
-#   - French/Spanish color+shape repeat rows (no translated description data) - collapsed to
-#     one row showing PartDescription
-#   - prt-coverage text field
-#   - grade highlight reverse-video box
-#   - PEI/WA/COF/tone icon block and brand/customer-# highlight block - these only fire in the
-#     legacy code for label-type 1/2/3, not label-type 0 (DALTILE default), so they're correctly
-#     absent here rather than missing.
+# Simplifications (documented, not oversights):
+# - No setsato table equivalent (same accepted gap as the rest of this port) -- heat/speed
+#   hardcoded to the .i file's own defaults (#E2/CS4).
+# - prt-shape-desc-s (Spanish shape description) is never referenced in ANY of the 6
+#   Manufacturing size files -- correctly absent here, not a gap.
+# - The shade block (gated on prt-shade2 > 0), qty/weight block's "changed" variant (gated on
+#   prt-qty-carton <> prt-lis-qty), and UPC block (gated on prt-num-sys-cd > "") are always
+#   rendered here -- these gates are true for essentially every real production item, and this
+#   port doesn't track a separate carton-qty-override value distinct from LisQty anyway (same
+#   simplification already used throughout this port).
+# - ih-label-type=1's static image reference (~033(450,055) is skipped -- no stored-graphic
+#   equivalent exists in this port.
+# - Legacy source's trailing "~A0"-shaped literal doesn't appear here (dtmlb001.i has a clean
+#   "~033Q<qty>~033Z~003" ending, no mystery suffix like CrossOver's auto templates).
 
 <STX>
 \x1bA
 \x1bCS4
 \x1b#E2
-\x1bQ{Quantity}
-\x1bA3H-17V0005
+\x1bA3{EngineReferenceMove}
 \x1b%2
-\x1bH890\x1bV0600\x1bL0101\x1bSColor/Couleur
-\x1bH640\x1bV0600\x1bSShape/Forme:
-\x1bH890\x1bV0583\x1bL0203\x1bS\x1bWB1{ItemNumberMasked}
-\x1bH220\x1bV0523\x1bL0101\x1bM{Inspector} {StackNumber}
-\x1bH885\x1bV0498\x1bBG03085>H{CartonBarcodeSerial}
-\x1bH888\x1bV0416\x1bFW03H675
-\x1bH865\x1bV0409\x1bL0101\x1bM{CartonBarcodeSerial}
-\x1bH905\x1bV0388\x1bL0102\x1bM{ColorDesc}
-\x1bH905\x1bV0348\x1bL0102\x1bM{ShapeDesc}
-\x1bH905\x1bV0303\x1bL0102\x1bM{PartDescription}
-\x1bH440\x1bV0193\x1bL0102\x1bS{SeriesDesc}
-\x1bH320\x1bV0408\x1bL0101\x1bSShade/Teinte/Tono
-\x1bH305\x1bV0393\x1bL0101\x1bWL1{Shade}
-\x1bH305\x1bV0338\x1bSQual/Cal:
-\x1bH210\x1bV0338\x1bL0101\x1bM{Grade}
-\x1bH305\x1bV0315\x1bSLoc:
-\x1bH260\x1bV0318\x1bL0101\x1bM{Plant}
-\x1bH305\x1bV0295\x1bL0101\x1bM{MfgDateCode}
-\x1bH305\x1bV0268\x1bL0101\x1bM{SalesQty} {SalesUom}
-\x1bH305\x1bV0243\x1bL0101\x1bM{PackageWeight} LB
-\x1bH305\x1bV0218\x1bL0101\x1bM{LisQty} UNITS
-\x1bH890\x1bV0133\x1bFW03H487
-\x1bH888\x1bV0133\x1bBD202075{UccBarcode}
-\x1bH890\x1bV0060\x1bFW03H487
-\x1bH815\x1bV0048\x1bL0102\x1bS{UccBarcode}
-\x1bH355\x1bV0148\x1bD3021100{CartonUpc}
-\x1bH357\x1bV0151\x1bFW03H194
-\x1bH378\x1bV0043\x1bL0102\x1bS{CartonUpcNumSys}
-\x1bH335\x1bV0038\x1bS{CartonUpcMfg}
-\x1bH243\x1bV0038\x1bL0102\x1bS{CartonUpcProd}
-\x1bH155\x1bV0043\x1bS{CartonUpcChkdgt}
+\x1bH840\x1bV0545\x1bL0101\x1bSColor/Couleur;
+\x1bH605\x1bV0545\x1bL0101\x1bSShape/Forme:
+\x1bH230\x1bV0545\x1bL0101\x1bS{MachineLineTerminalCode}
+\x1bH840\x1bV0520\x1bL0202\x1bS\x1bWB1{ItemNumberMasked}
+\x1bH145\x1bV0490\x1bL0101\x1bM{InspectorDisplay}
+\x1bH840\x1bV0460\x1bBG03075{CartonBarcodeCommand}
+\x1bH843\x1bV0386\x1bFW03H675
+\x1bH820\x1bV0366\x1bL0101\x1bM{CartonBarcodeSerial}
+\x1bH845\x1bV0332\x1bL0102\x1bXS{ColorDesc}
+\x1bH845\x1bV0302\x1bL0102\x1bXS{ShapeDesc}
+\x1bH845\x1bV0272\x1bL0102\x1bXS{ColorDescFrench}
+\x1bH845\x1bV0242\x1bL0102\x1bXS{ColorDescSpanish}
+\x1bH845\x1bV0212\x1bL0102\x1bXS{ShapeDescFrench}
+\x1bH845\x1bV0177\x1bL0102\x1bM{SeriesDesc}
+\x1bH840\x1bV0120\x1bL0101\x1bWL1{BrandName}
+\x1bH265\x1bV0366\x1bL0101\x1bSShade/Telnte
+\x1bH265\x1bV0339\x1bL0101\x1bWL1{ShadeLotCode}
+\x1bH265\x1bV0284\x1bSQual/Cal:
+\x1bH165\x1bV0289\x1bL0101\x1bM{Grade}
+\x1bH265\x1bV0263\x1bSLoc:
+\x1bH215\x1bV0263\x1bL0101\x1bM{Plant}
+\x1bH265\x1bV0239\x1bL0101\x1bM{MfgDateCodeShort}:
+\x1bH265\x1bV0219\x1bL0101\x1bM{SalesQtyFormatted} {SalesUom}
+\x1bH265\x1bV0199\x1bL0101\x1bM{PackageWeightFormatted} LBS
+\x1bH265\x1bV0179\x1bL0101\x1bM{LisQty} {LisDesc}
+\x1bH300\x1bV0149\x1bD3020700{CartonUpcNumSys}{CartonUpcMfg}{CartonUpcProd}{CartonUpcChkdgt}
+\x1bH303\x1bV0149\x1bFW03H198
+\x1bH315\x1bV0089\x1bL0102\x1bS{CartonUpcNumSys}
+\x1bH280\x1bV0069\x1bL0102\x1bS{CartonUpcMfg}
+\x1bH190\x1bV0069\x1bL0102\x1bS{CartonUpcProd}
+\x1bH098\x1bV0089\x1bL0102\x1bS{CartonUpcChkdgt}
+{GradeHighlightBlock}
+\x1bQ{Quantity}
 \x1bZ
 <ETX>
