@@ -15,8 +15,10 @@
   body { margin: 0; font: 14px/1.4 "Segoe UI", system-ui, sans-serif; color: var(--ink); background: var(--bg); }
   .app { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
   nav { background: var(--nav); color: var(--nav-ink); padding: 18px 0; }
-  nav .brand { padding: 0 20px 18px; color: #fff; font-weight: 600; font-size: 16px; }
-  nav .brand small { display: block; color: var(--nav-ink); font-weight: 400; font-size: 12px; margin-top: 2px; }
+  nav { padding-top: 14px; }
+  nav .brand { margin: 0 12px 16px; padding: 12px 12px 8px; background: #fff; border-radius: 8px; text-align: center; }
+  nav .brand img { display: block; width: 100%; height: auto; }
+  nav .brand small { display: block; color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; margin-top: 4px; }
   nav button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 11px 20px; border: 0; background: none;
                color: inherit; font: inherit; text-align: left; cursor: pointer; border-left: 3px solid transparent; }
   nav button:hover { background: rgba(255,255,255,.06); }
@@ -62,6 +64,18 @@
   .kv div:nth-child(odd) { color: var(--muted); }
   .roles { margin: 6px 0 10px; display: flex; gap: 6px; flex-wrap: wrap; }
   .empty { padding: 30px; text-align: center; color: var(--muted); }
+  .actions { display: flex; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+  .btn { font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer; }
+  .btn:hover { border-color: #b9c7e3; background: #f5f8fe; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { background: #2760c2; }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1f2a44; color: #fff; padding: 10px 16px;
+           border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,.2); font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+  @keyframes flash { 0%, 35% { background-color: #fff1a8; } 100% { background-color: transparent; } }
+  .flash { animation: flash 3s ease-out; }
+  .tile.flash, .station.flash { animation-name: flash-card; }
+  @keyframes flash-card { 0%, 35% { background-color: #fff1a8; border-color: #e0c341; } 100% { background-color: #fff; } }
   /* detail drawer */
   .shade { position: fixed; inset: 0; background: rgba(15,20,35,.35); display: none; }
   .shade.open { display: block; }
@@ -84,7 +98,7 @@
 <body>
 <div class="app">
   <nav id="nav">
-    <div class="brand">StandAlone Data Lake<small>plants · stations · cartons · pallets</small></div>
+    <div class="brand"><img src="logo.png" alt="StandAlone"><small>Data Lake</small></div>
   </nav>
   <main>
     <header>
@@ -100,6 +114,7 @@
 </div>
 <div class="shade" id="shade"></div>
 <aside id="drawer"></aside>
+<div class="toast" id="toast"></div>
 
 <script>
 const PAGES = [
@@ -185,19 +200,41 @@ function filtered() {
 
 function render() {
   const rows = filtered();
-  if (state.page === "stations") return renderStations(rows);
+  if (state.page === "stations") { renderStations(rows); return flashChanges(); }
   let html = "";
   if (state.page === "summary") html += summaryTiles(rows);
   html += tableHtml(state.page, rows);
   $("content").innerHTML = html;
   wireTable();
+  flashChanges();
+}
+
+// ── live-change highlighting ────────────────────────────────────────────────
+// Every tile, row, cell and station card carries a data-k key. After each render its text is
+// compared with the previous render of the same page/plant/search; anything new or different
+// flashes, so a carton or pallet landing during the demo is visible at a glance.
+const rowKey = r => r.Pallet ?? r.Barcode ?? (r.Item ? [r.Plant, r.Item, r.Shade, r.Status].join("|") : r.Plant) ?? "";
+const keyed = (td, k) => k ? td.replace(/^<td/, `<td data-k="${esc(k)}"`) : td;
+function flashChanges() {
+  const scope = [state.page, state.plant, state.search].join("|");
+  const now = new Map();
+  const compare = state.prev && state.prevScope === scope;
+  document.querySelectorAll("#content [data-k]").forEach(el => {
+    const k = el.dataset.k, text = el.textContent;
+    now.set(k, text);
+    if (!compare) return;
+    const before = state.prev.get(k);
+    if (before === undefined ? el.dataset.row || el.classList.contains("station") : before !== text) el.classList.add("flash");
+  });
+  state.prev = now;
+  state.prevScope = scope;
 }
 
 function summaryTiles(rows) {
   const sum = k => rows.reduce((a, r) => a + (Number(r[k]) || 0), 0);
   const tiles = [["Plants", rows.length], ["Stations", sum("Stations")], ["Cartons printed", sum("CartonsPrinted")],
                  ["Pallets on hand", sum("PalletsOnHand")], ["Pallets backflushed", sum("PalletsBackflushed")]];
-  return `<div class="tiles">${tiles.map(([k, v]) => `<div class="tile"><div class="k">${k}</div><div class="v">${fmtNum(v)}</div></div>`).join("")}</div>`;
+  return `<div class="tiles">${tiles.map(([k, v]) => `<div class="tile" data-k="tile:${k}"><div class="k">${k}</div><div class="v">${fmtNum(v)}</div></div>`).join("")}</div>`;
 }
 
 // ── tables ──────────────────────────────────────────────────────────────────
@@ -219,8 +256,8 @@ function tableHtml(key, rows) {
     const arrow = sort && sort[0] === f ? `<span class="arrow">${sort[1] > 0 ? " ▲" : " ▼"}</span>` : "";
     return `<th class="${t === "num" || t === "hours" ? "num" : ""}" data-f="${f}">${esc(label || f)}${arrow}</th>`;
   }).join("");
-  const body = rows.map(r => `<tr class="${rowTarget(key, r) ? "click" : ""}" data-t='${esc(JSON.stringify(rowTarget(key, r)))}'>` +
-    cols.map(([f, t]) => cell(r, f, t)).join("") + "</tr>").join("");
+  const body = rows.map(r => `<tr class="${rowTarget(key, r) ? "click" : ""}" data-k="r:${esc(rowKey(r))}" data-row="1" data-t='${esc(JSON.stringify(rowTarget(key, r)))}'>` +
+    cols.map(([f, t]) => keyed(cell(r, f, t), t === "hours" ? null : `c:${rowKey(r)}:${f}`)).join("") + "</tr>").join("");
   let foot = "";
   if (TOTALS[key]) {
     foot = "<tfoot><tr>" + cols.map(([f], i) =>
@@ -267,7 +304,7 @@ function wireTable() {
 function renderStations(rows) {
   if (!rows.length) { $("content").innerHTML = `<div class="card"><div class="empty">No stations.</div></div>`; return; }
   $("content").innerHTML = `<div class="stations">` + rows.map(s => `
-    <div class="station" data-p="${esc(s.Plant)}" data-s="${esc(s.Station)}">
+    <div class="station" data-k="st:${esc(s.Plant)}-${esc(s.Station)}" data-p="${esc(s.Plant)}" data-s="${esc(s.Station)}">
       <div class="top"><div class="name">${esc(s.Plant)} · Station ${esc(s.Station)}</div>${badge(s.State)}</div>
       <div class="muted">Line ${esc(s.Line)} · last start ${fmtDate(s.LastHeartbeatUtc)}</div>
       <div class="roles">${(s.Roles || []).map(r => `<span class="chip">${esc(r)}</span>`).join("") || '<span class="muted">no role recorded</span>'}</div>
@@ -278,8 +315,28 @@ function renderStations(rows) {
         <div>Backflush vehicle</div><div>${esc(s.BackflushVehicle)}</div>
         <div>Pallet location</div><div>${esc(s.PalletLocation)}</div>
       </div>
+      <div class="actions">
+        <button class="btn" data-act="download">⭳ Download configuration</button>
+        <button class="btn primary" data-act="push">⭱ Push configuration</button>
+      </div>
     </div>`).join("") + `</div>`;
   document.querySelectorAll(".station").forEach(el => el.onclick = () => openTarget({ type: "station", plant: el.dataset.p, station: el.dataset.s }));
+  // Placeholders for station configuration management (not wired to anything yet).
+  document.querySelectorAll(".station .btn").forEach(b => b.onclick = e => {
+    e.stopPropagation();
+    const card = b.closest(".station");
+    const what = b.dataset.act === "download" ? "Download configuration" : "Push configuration";
+    toast(`${what} for ${card.dataset.p} · Station ${card.dataset.s} — coming soon.`);
+  });
+}
+
+let toastTimer;
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2800);
 }
 
 // ── detail drawer ───────────────────────────────────────────────────────────
@@ -330,7 +387,7 @@ async function openTarget(t) {
 
 // ── boot ────────────────────────────────────────────────────────────────────
 $("search").oninput = e => { state.search = e.target.value; render(); };
-setInterval(() => { if ($("auto").checked && !$("drawer").classList.contains("open")) load(); }, 15000);
+setInterval(() => { if ($("auto").checked && !$("drawer").classList.contains("open")) load(); }, 5000);
 buildNav();
 (async () => {
   try {
