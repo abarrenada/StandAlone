@@ -31,7 +31,7 @@ recreate("v_station_config", "stations", [
       LastHeartbeatUtc: 1,
       HoursSinceHeartbeat: { $round: [{ $divide: [{ $dateDiff: { startDate: "$LastHeartbeatUtc", endDate: "$$NOW", unit: "minute" } }, 60] }, 1] },
   } },
-  { $addFields: { State: { $cond: [{ $lte: ["$HoursSinceHeartbeat", 12] }, "Active", "Idle"] } } },
+  { $addFields: { State: { $cond: [{ $lte: ["$HoursSinceHeartbeat", 24] }, "Active", "Idle"] } } },
   { $sort: { Plant: 1, Station: 1 } },
 ]);
 

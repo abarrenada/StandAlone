@@ -4,4 +4,5 @@
   <Project Path="StandAlone.Tests/StandAlone.Tests.csproj" />
   <Project Path="StandAlone.Worker/StandAlone.Worker.csproj" />
   <Project Path="StandAlone.CartonUi/StandAlone.CartonUi.csproj" />
+  <Project Path="StandAlone.DataLakeUi/StandAlone.DataLakeUi.csproj" />
 </Solution>

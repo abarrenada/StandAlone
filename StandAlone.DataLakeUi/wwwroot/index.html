@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StandAlone Data Lake</title>
+<style>
+  :root {
+    --bg: #f4f5f7; --panel: #ffffff; --ink: #1d2330; --muted: #667085; --line: #e3e6eb;
+    --nav: #1f2a44; --nav-ink: #c9d2e3; --nav-active: #ffffff; --accent: #2f6fdb;
+    --printed: #2f6fdb; --scanned: #c98a00; --backflushed: #1f9d55; --failed: #d64545; --palletized: #7a4fd0;
+    --active: #1f9d55; --idle: #98a2b3;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.4 "Segoe UI", system-ui, sans-serif; color: var(--ink); background: var(--bg); }
+  .app { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+  nav { background: var(--nav); color: var(--nav-ink); padding: 18px 0; }
+  nav .brand { padding: 0 20px 18px; color: #fff; font-weight: 600; font-size: 16px; }
+  nav .brand small { display: block; color: var(--nav-ink); font-weight: 400; font-size: 12px; margin-top: 2px; }
+  nav button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 11px 20px; border: 0; background: none;
+               color: inherit; font: inherit; text-align: left; cursor: pointer; border-left: 3px solid transparent; }
+  nav button:hover { background: rgba(255,255,255,.06); }
+  nav button.active { color: var(--nav-active); background: rgba(255,255,255,.1); border-left-color: #6ea2ff; }
+  nav .ico { width: 18px; text-align: center; opacity: .9; }
+  main { padding: 20px 26px 40px; min-width: 0; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 18px; }
+  header h1 { font-size: 20px; margin: 0 auto 0 0; }
+  select, input[type=search] { font: inherit; padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+  input[type=search] { width: 240px; }
+  label.toggle { display: flex; gap: 6px; align-items: center; color: var(--muted); }
+  .stamp { color: var(--muted); font-size: 12px; }
+  .banner { padding: 10px 14px; border-radius: 6px; background: #fdecec; color: #8a1f1f; margin-bottom: 14px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .tile { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+  .tile .k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+  .tile .v { font-size: 28px; font-weight: 600; margin-top: 4px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .card h2 { font-size: 14px; margin: 0; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { padding: 9px 12px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+  th { font-size: 12px; color: var(--muted); font-weight: 600; background: #fafbfc; cursor: pointer; user-select: none; position: sticky; top: 0; }
+  th .arrow { color: var(--accent); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tbody tr.click { cursor: pointer; }
+  tbody tr.click:hover { background: #f1f5fd; }
+  tfoot td { font-weight: 600; background: #fafbfc; }
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; color: #fff; }
+  .s-Printed { background: var(--printed); } .s-Scanned { background: var(--scanned); } .s-Backflushed { background: var(--backflushed); }
+  .s-BackflushFailed { background: var(--failed); } .s-Palletized { background: var(--palletized); }
+  .s-Active { background: var(--active); } .s-Idle { background: var(--idle); }
+  .chips { display: flex; gap: 6px; align-items: center; }
+  .chip { font-size: 12px; padding: 2px 8px; border-radius: 4px; background: #eef1f6; }
+  .chip b { font-weight: 600; }
+  .muted { color: var(--muted); }
+  .stations { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; }
+  .station { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; cursor: pointer; }
+  .station:hover { border-color: #b9c7e3; }
+  .station .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .station .name { font-size: 16px; font-weight: 600; }
+  .kv { display: grid; grid-template-columns: 130px 1fr; gap: 3px 10px; font-size: 13px; }
+  .kv div:nth-child(odd) { color: var(--muted); }
+  .roles { margin: 6px 0 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .empty { padding: 30px; text-align: center; color: var(--muted); }
+  /* detail drawer */
+  .shade { position: fixed; inset: 0; background: rgba(15,20,35,.35); display: none; }
+  .shade.open { display: block; }
+  aside { position: fixed; top: 0; right: 0; height: 100%; width: min(560px, 100%); background: #fff; box-shadow: -8px 0 24px rgba(0,0,0,.12);
+          transform: translateX(100%); transition: transform .18s ease; overflow-y: auto; padding: 20px 22px 40px; }
+  aside.open { transform: none; }
+  aside h3 { margin: 0 0 4px; font-size: 18px; word-break: break-all; }
+  aside .close { float: right; border: 0; background: none; font-size: 22px; cursor: pointer; color: var(--muted); }
+  aside h4 { margin: 20px 0 8px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .timeline { list-style: none; margin: 0; padding: 0 0 0 16px; border-left: 2px solid var(--line); }
+  .timeline li { position: relative; margin: 0 0 14px 6px; }
+  .timeline li::before { content: ""; position: absolute; left: -24px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--dot, var(--accent)); }
+  .timeline .when { color: var(--muted); font-size: 12px; }
+  a.link { color: var(--accent); cursor: pointer; text-decoration: underline; }
+  @media (max-width: 760px) { .app { grid-template-columns: 1fr; } nav { display: flex; overflow-x: auto; padding: 0; }
+    nav .brand { display: none; } nav button { width: auto; white-space: nowrap; border-left: 0; border-bottom: 3px solid transparent; }
+    nav button.active { border-bottom-color: #6ea2ff; } input[type=search] { width: 100%; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <nav id="nav">
+    <div class="brand">StandAlone Data Lake<small>plants · stations · cartons · pallets</small></div>
+  </nav>
+  <main>
+    <header>
+      <h1 id="title">Overview</h1>
+      <select id="plant" title="Plant"></select>
+      <input id="search" type="search" placeholder="Search this page…">
+      <label class="toggle"><input id="auto" type="checkbox" checked> Auto-refresh</label>
+      <span class="stamp" id="stamp"></span>
+    </header>
+    <div id="banner" class="banner" hidden></div>
+    <div id="content"></div>
+  </main>
+</div>
+<div class="shade" id="shade"></div>
+<aside id="drawer"></aside>
+
+<script>
+const PAGES = [
+  { key: "summary",   title: "Overview",          ico: "▦" },
+  { key: "stations",  title: "Stations",          ico: "⚙" },
+  { key: "pallets",   title: "Pallet Inventory",  ico: "▤" },
+  { key: "inventory", title: "Inventory by Item", ico: "∑" },
+  { key: "trail",     title: "Pallet Trail",      ico: "➜" },
+  { key: "cartons",   title: "Cartons",           ico: "▢" },
+];
+
+// Column definitions per table page. t: "num" | "date" | "status" | "hours"
+const COLS = {
+  summary: [["Plant"], ["Stations", "num"], ["CartonsPrinted", "num", "Cartons printed"], ["PalletsPrinted", "num", "Pallets printed"],
+            ["PalletsOnHand", "num", "Pallets on hand"], ["PalletsBackflushed", "num", "Backflushed"], ["LastHeartbeatUtc", "date", "Last station start"]],
+  pallets: [["Pallet"], ["Plant"], ["Status", "status"], ["Item"], ["Color"], ["Size"], ["Shade"], ["Grade", "num"], ["Cartons", "num"], ["Pieces", "num"],
+            ["PrintedAtStation", null, "Printed at"], ["LastStation", null, "Last station"], ["CreatedUtc", "date", "Printed"], ["AgeHours", "hours", "Age"]],
+  inventory: [["Plant"], ["Item"], ["Color"], ["Size"], ["Shade"], ["Status", "status"], ["Pallets", "num"], ["Cartons", "num"], ["Pieces", "num"], ["LastActivityUtc", "date", "Last activity"]],
+  trail: [["Pallet"], ["Plant"], ["Item"], ["Status", "status"], ["_journey", "journey", "Journey"], ["MinutesToBackflush", "num", "Min to backflush"]],
+  cartons: [["Barcode"], ["Plant"], ["Item"], ["Line", "num"], ["Stack", "num"], ["Status", "status"], ["PrintedAtStation", null, "Printed at"],
+            ["LastStation", null, "Last station"], ["Pallet"], ["TimesPrinted", "num", "Printed ×"], ["TimesPalletized", "num", "Palletized ×"], ["LastActivityUtc", "date", "Last activity"]],
+};
+const TOTALS = { pallets: ["Cartons", "Pieces"], inventory: ["Pallets", "Cartons", "Pieces"], cartons: ["TimesPrinted", "TimesPalletized"] };
+
+const store = {
+  get(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
+const hashPage = location.hash.slice(1);
+const state = { page: PAGES.some(p => p.key === hashPage) ? hashPage : store.get("page", "summary"), plant: store.get("plant", "__default"), sort: {}, rows: [], search: "" };
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmtDate = v => v ? new Date(v).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
+const fmtNum = v => v == null || v === "" ? "" : Number(v).toLocaleString();
+const fmtHours = h => h == null ? "" : h < 1 ? `${Math.round(h * 60)} min` : h < 48 ? `${h.toFixed(1)} h` : `${(h / 24).toFixed(1)} d`;
+const badge = s => s ? `<span class="badge s-${esc(s)}">${esc(s)}</span>` : "";
+
+async function api(path) {
+  const r = await fetch(path);
+  if (!r.ok) throw new Error((await r.text()) || r.statusText);
+  return r.json();
+}
+
+// ── navigation ──────────────────────────────────────────────────────────────
+function buildNav() {
+  for (const p of PAGES) {
+    const b = document.createElement("button");
+    b.innerHTML = `<span class="ico">${p.ico}</span>${p.title}`;
+    b.dataset.key = p.key;
+    b.onclick = () => { state.page = p.key; store.set("page", p.key); history.replaceState(null, "", "#" + p.key); state.search = ""; $("search").value = ""; load(); };
+    $("nav").appendChild(b);
+  }
+}
+
+async function loadPlants() {
+  const plants = await api("/api/plants");
+  if (state.plant === "__default") state.plant = plants.includes("Marazzi") ? "Marazzi" : "";
+  $("plant").innerHTML = `<option value="">All plants</option>` + plants.map(p => `<option ${p === state.plant ? "selected" : ""}>${esc(p)}</option>`).join("");
+  $("plant").onchange = e => { state.plant = e.target.value; store.set("plant", state.plant); load(); };
+}
+
+// ── page load ───────────────────────────────────────────────────────────────
+async function load() {
+  const page = PAGES.find(p => p.key === state.page) || PAGES[0];
+  $("title").textContent = page.title;
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b.dataset.key === page.key));
+  try {
+    state.rows = await api(`/api/view/${page.key}?plant=${encodeURIComponent(state.plant)}`);
+    $("banner").hidden = true;
+    render();
+    $("stamp").textContent = "Updated " + new Date().toLocaleTimeString();
+  } catch (e) {
+    $("banner").textContent = "Could not load data: " + e.message;
+    $("banner").hidden = false;
+  }
+}
+
+function filtered() {
+  const q = state.search.trim().toLowerCase();
+  if (!q) return state.rows;
+  return state.rows.filter(r => JSON.stringify(r).toLowerCase().includes(q));
+}
+
+function render() {
+  const rows = filtered();
+  if (state.page === "stations") return renderStations(rows);
+  let html = "";
+  if (state.page === "summary") html += summaryTiles(rows);
+  html += tableHtml(state.page, rows);
+  $("content").innerHTML = html;
+  wireTable();
+}
+
+function summaryTiles(rows) {
+  const sum = k => rows.reduce((a, r) => a + (Number(r[k]) || 0), 0);
+  const tiles = [["Plants", rows.length], ["Stations", sum("Stations")], ["Cartons printed", sum("CartonsPrinted")],
+                 ["Pallets on hand", sum("PalletsOnHand")], ["Pallets backflushed", sum("PalletsBackflushed")]];
+  return `<div class="tiles">${tiles.map(([k, v]) => `<div class="tile"><div class="k">${k}</div><div class="v">${fmtNum(v)}</div></div>`).join("")}</div>`;
+}
+
+// ── tables ──────────────────────────────────────────────────────────────────
+function tableHtml(key, rows) {
+  let cols = COLS[key];
+  if (state.plant) cols = cols.filter(c => c[0] !== "Plant" || key === "summary");
+  const sort = state.sort[key];
+  if (sort) {
+    const [f, dir] = sort;
+    rows = [...rows].sort((a, b) => {
+      const x = a[f], y = b[f];
+      if (x == null) return 1; if (y == null) return -1;
+      return (typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y), undefined, { numeric: true })) * dir;
+    });
+  }
+  if (!rows.length) return `<div class="card"><div class="empty">Nothing to show${state.search ? " for this search" : ""}.</div></div>`;
+
+  const head = cols.map(([f, t, label]) => {
+    const arrow = sort && sort[0] === f ? `<span class="arrow">${sort[1] > 0 ? " ▲" : " ▼"}</span>` : "";
+    return `<th class="${t === "num" || t === "hours" ? "num" : ""}" data-f="${f}">${esc(label || f)}${arrow}</th>`;
+  }).join("");
+  const body = rows.map(r => `<tr class="${rowTarget(key, r) ? "click" : ""}" data-t='${esc(JSON.stringify(rowTarget(key, r)))}'>` +
+    cols.map(([f, t]) => cell(r, f, t)).join("") + "</tr>").join("");
+  let foot = "";
+  if (TOTALS[key]) {
+    foot = "<tfoot><tr>" + cols.map(([f], i) =>
+      TOTALS[key].includes(f) ? `<td class="num">${fmtNum(rows.reduce((a, r) => a + (Number(r[f]) || 0), 0))}</td>`
+                              : `<td>${i === 0 ? `Total (${rows.length} rows)` : ""}</td>`).join("") + "</tr></tfoot>";
+  }
+  return `<div class="card"><div class="scroll"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody>${foot}</table></div></div>`;
+}
+
+function cell(r, f, t) {
+  const v = r[f];
+  switch (t) {
+    case "num": return `<td class="num">${fmtNum(v)}</td>`;
+    case "hours": return `<td class="num">${fmtHours(v)}</td>`;
+    case "date": return `<td>${fmtDate(v)}</td>`;
+    case "status": return `<td>${badge(v)}</td>`;
+    case "journey": {
+      const step = (s, at, by) => at ? `<span class="chip"><b>${s}</b> @${esc(by)} ${fmtDate(at)}</span>` : "";
+      const parts = [step("Printed", r.PrintedUtc, r.PrintedBy), step("Scanned", r.ScannedUtc, r.ScannedBy), step("Backflushed", r.BackflushedUtc, r.BackflushedBy)].filter(Boolean);
+      return `<td><div class="chips">${parts.join('<span class="muted">→</span>')}</div></td>`;
+    }
+    default: return `<td>${esc(v)}</td>`;
+  }
+}
+
+// What clicking a row opens.
+function rowTarget(key, r) {
+  if ((key === "pallets" || key === "trail") && r.Pallet) return { type: "pallet", id: r.Pallet };
+  if (key === "cartons" && r.Barcode) return { type: "carton", id: r.Barcode };
+  if (key === "summary" && r.Plant) return { type: "plant", id: r.Plant };
+  return null;
+}
+
+function wireTable() {
+  document.querySelectorAll("th[data-f]").forEach(th => th.onclick = () => {
+    const cur = state.sort[state.page];
+    state.sort[state.page] = [th.dataset.f, cur && cur[0] === th.dataset.f ? -cur[1] : 1];
+    render();
+  });
+  document.querySelectorAll("tr.click").forEach(tr => tr.onclick = () => openTarget(JSON.parse(tr.dataset.t)));
+}
+
+// ── stations ────────────────────────────────────────────────────────────────
+function renderStations(rows) {
+  if (!rows.length) { $("content").innerHTML = `<div class="card"><div class="empty">No stations.</div></div>`; return; }
+  $("content").innerHTML = `<div class="stations">` + rows.map(s => `
+    <div class="station" data-p="${esc(s.Plant)}" data-s="${esc(s.Station)}">
+      <div class="top"><div class="name">${esc(s.Plant)} · Station ${esc(s.Station)}</div>${badge(s.State)}</div>
+      <div class="muted">Line ${esc(s.Line)} · last start ${fmtDate(s.LastHeartbeatUtc)}</div>
+      <div class="roles">${(s.Roles || []).map(r => `<span class="chip">${esc(r)}</span>`).join("") || '<span class="muted">no role recorded</span>'}</div>
+      <div class="kv">
+        <div>Printer</div><div>${esc(s.PrinterModel)} (${esc(s.PrinterLanguage)}, ${esc(s.LabelOutput)})</div>
+        <div>PLC</div><div>${esc(s.PlcConnection)} ${esc(s.PlcAddress) || '<span class="muted">none</span>'}</div>
+        <div>Carton print mode</div><div>${esc(s.CartonPrintMode)}</div>
+        <div>Backflush vehicle</div><div>${esc(s.BackflushVehicle)}</div>
+        <div>Pallet location</div><div>${esc(s.PalletLocation)}</div>
+      </div>
+    </div>`).join("") + `</div>`;
+  document.querySelectorAll(".station").forEach(el => el.onclick = () => openTarget({ type: "station", plant: el.dataset.p, station: el.dataset.s }));
+}
+
+// ── detail drawer ───────────────────────────────────────────────────────────
+function openDrawer(html) { $("drawer").innerHTML = `<button class="close" onclick="closeDrawer()">×</button>` + html; $("drawer").classList.add("open"); $("shade").classList.add("open"); }
+function closeDrawer() { $("drawer").classList.remove("open"); $("shade").classList.remove("open"); }
+$("shade").onclick = closeDrawer;
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); });
+
+const DOT = { Printed: "--printed", Scanned: "--scanned", Backflushed: "--backflushed", BackflushFailed: "--failed", Palletized: "--palletized" };
+function timeline(history) {
+  if (!history || !history.length) return `<div class="muted">No history.</div>`;
+  return `<ul class="timeline">` + history.map(h => `<li style="--dot: var(${DOT[h.Status] || "--accent"})">
+      ${badge(h.Status)} <span class="muted">at Station ${esc(h.StationId || "?")}</span>
+      <div class="when">${new Date(h.TimestampUtc).toLocaleString()}</div>
+      ${h.Detail ? `<div>${esc(h.Detail)}</div>` : ""}</li>`).join("") + `</ul>`;
+}
+function kv(pairs) { return `<div class="kv">` + pairs.filter(([, v]) => v !== undefined && v !== null && v !== "").map(([k, v]) => `<div>${k}</div><div>${v}</div>`).join("") + `</div>`; }
+
+async function openTarget(t) {
+  if (!t) return;
+  try {
+    if (t.type === "plant") { state.plant = t.id; store.set("plant", t.id); $("plant").value = t.id; state.page = "stations"; store.set("page", "stations"); return load(); }
+    if (t.type === "pallet") {
+      const { pallet: p, cartons } = await api(`/api/pallet?id=${encodeURIComponent(t.id)}`);
+      openDrawer(`<h3>Pallet ${esc(p._id)}</h3>${badge(p.Status)}
+        <h4>Pallet</h4>${kv([["Plant", esc(p.PlantName)], ["Item", esc(p.ItemNumber)], ["Color", esc(p.ColorDesc)], ["Size", esc(p.ShapeDesc)],
+          ["Series", esc(p.SeriesDesc)], ["Shade", esc(p.Shade)], ["Grade", esc(p.Grade)], ["Cartons", fmtNum(p.BoxesPerPallet)],
+          ["Pieces", fmtNum((p.BoxesPerPallet || 0) * (p.LisQty || 0))], ["Printed at", "Station " + esc(p.StationId)], ["Shop order", esc(p.ShopOrder)]])}
+        <h4>History</h4>${timeline(p.History)}
+        <h4>Cartons scanned onto this pallet</h4>${cartons.length ? cartons.map(c => `<div><a class="link" onclick='openTarget(${esc(JSON.stringify({ type: "carton", id: c._id }))})'>${esc(c._id)}</a> <span class="muted">${esc(c.ItemNumber)}</span></div>`).join("") : '<div class="muted">None recorded.</div>'}`);
+    } else if (t.type === "carton") {
+      const c = await api(`/api/carton?id=${encodeURIComponent(t.id)}`);
+      openDrawer(`<h3>Carton ${esc(c._id)}</h3>${badge(c.Status)}
+        <h4>Carton</h4>${kv([["Plant", esc(c.PlantName)], ["Item", esc(c.ItemNumber)], ["Line", esc(c.LineNumber)], ["Stack", esc(c.StackNumber)],
+          ["Printed at", "Station " + esc(c.StationId)],
+          ["Pallet", c.PalletId ? `<a class="link" onclick='openTarget(${esc(JSON.stringify({ type: "pallet", id: c.PalletId }))})'>${esc(c.PalletId)}</a>` : ""]])}
+        <p class="muted">Identical cartons printed the same day share one barcode, so each "Printed" entry below is one carton.</p>
+        <h4>History</h4>${timeline(c.History)}`);
+    } else if (t.type === "station") {
+      const s = await api(`/api/station?plant=${encodeURIComponent(t.plant)}&station=${encodeURIComponent(t.station)}`);
+      const section = (title, obj) => obj ? `<h4>${title}</h4>` + kv(Object.entries(obj).map(([k, v]) => [esc(k), esc(v)])) : "";
+      openDrawer(`<h3>${esc(s.PlantName)} · Station ${esc(s.StationId)}</h3>
+        ${kv([["Line", esc(s.LineNumber)], ["Roles", esc((s.Roles || []).join(", "))], ["Last start", new Date(s.LastHeartbeatUtc).toLocaleString()]])}
+        ${section("Hardware", s.Hardware)}${section("Configuration", s.Config)}`);
+    }
+  } catch (e) { openDrawer(`<h3>Not found</h3><p class="muted">${esc(e.message)}</p>`); }
+}
+
+// ── boot ────────────────────────────────────────────────────────────────────
+$("search").oninput = e => { state.search = e.target.value; render(); };
+setInterval(() => { if ($("auto").checked && !$("drawer").classList.contains("open")) load(); }, 15000);
+buildNav();
+(async () => {
+  try {
+    const h = await api("/api/health");
+    if (!h.ok) { $("banner").textContent = h.error ? `MongoDB not reachable: ${h.error}` : `Missing views: ${h.missingViews.join(", ")} — run tools/create-datalake-views.js`; $("banner").hidden = false; }
+    await loadPlants();
+  } catch (e) { $("banner").textContent = "Server not reachable: " + e.message; $("banner").hidden = false; }
+  load();
+})();
+</script>
+</body>
+</html>
